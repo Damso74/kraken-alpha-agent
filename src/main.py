@@ -1,0 +1,168 @@
+"""High-level orchestrator used by the agent scripts.
+
+``run_one_cycle`` walks the full pipeline for every symbol in the universe and
+returns the list of decisions. The function is import-safe (no side effects
+at module import time) so it can be unit-tested.
+"""
+
+from __future__ import annotations
+
+import time
+from typing import Iterable
+
+from . import (
+    execution as execution_mod,
+    features as features_mod,
+    llm_explainer,
+    market_data,
+    pnl as pnl_mod,
+    portfolio,
+    risk as risk_mod,
+    storage,
+)
+from .config import get_settings
+from .logger import get_logger
+from .schemas import Decision
+from .strategies import breakout_score, combine, mean_reversion_score, momentum_score
+from .universe import get_universe
+from .utils import new_id, utc_now_iso, utc_now_ms
+
+logger = get_logger(__name__)
+
+
+def _vote_for(features) -> list:
+    return [
+        momentum_score(features),
+        breakout_score(features),
+        mean_reversion_score(features),
+    ]
+
+
+def _build_decision(*, cycle_id: str, ticker: dict, candles: list[dict], symbol: str) -> Decision:
+    settings = get_settings()
+    feats = features_mod.compute_features(symbol=symbol, ticker=ticker, candles=candles)
+    votes = _vote_for(feats)
+    ensemble = combine(features=feats, votes=votes)
+    snapshot = portfolio.get_snapshot()
+    risk = risk_mod.evaluate_risk(
+        ensemble=ensemble,
+        features=feats,
+        portfolio=snapshot,
+        settings=settings,
+    )
+    execution_result = execution_mod.execute(
+        features=feats,
+        ensemble=ensemble,
+        risk=risk,
+    )
+    decision = Decision(
+        cycle_id=cycle_id,
+        symbol=symbol,
+        action=ensemble.action,
+        final_score=ensemble.final_score,
+        confidence=ensemble.confidence,
+        suggested_size_usd=ensemble.suggested_size_usd,
+        approved_size_usd=risk.adjusted_size_usd if risk.approved else 0.0,
+        regime=ensemble.regime,
+        features=feats,
+        votes=ensemble.votes,
+        risk=risk,
+        execution=execution_result,
+        mode=settings.env.trading_mode.lower(),  # type: ignore[arg-type]
+        rationale=ensemble.rationale,
+    )
+    if settings.env.featherless_api_key:
+        try:
+            decision.llm = llm_explainer.explain(decision)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("LLM explainer failed for %s: %s", symbol, exc)
+    return decision
+
+
+def _persist(decision: Decision) -> None:
+    storage.write_decision(decision)
+    storage.write_order(decision_id=decision.id, result=decision.execution)
+    execution_mod.apply_to_portfolio(decision)
+    if decision.risk.approved and decision.action in ("BUY", "SELL"):
+        risk_mod.mark_traded(decision.symbol)
+
+
+def run_one_cycle(
+    symbols: Iterable[str] | None = None,
+    *,
+    cycle_id: str | None = None,
+) -> list[Decision]:
+    settings = get_settings()
+    cycle_id = cycle_id or new_id("cyc")
+    storage.start_cycle(cycle_id, settings.env.trading_mode.lower())
+    started_ms = utc_now_ms()
+    universe = list(symbols) if symbols else [u.ticker for u in get_universe()]
+    decisions: list[Decision] = []
+    errors = 0
+    for symbol in universe:
+        try:
+            ticker = market_data.get_ticker(symbol, settings.config.universe.quote)
+            candles = market_data.get_ohlc(
+                symbol,
+                settings.config.universe.quote,
+                interval_minutes=60,
+                count=24,
+            )
+            decision = _build_decision(
+                cycle_id=cycle_id,
+                ticker=ticker,
+                candles=candles,
+                symbol=symbol,
+            )
+            _persist(decision)
+            decisions.append(decision)
+            logger.info(
+                "cycle=%s %s action=%s score=%+.3f conf=%.2f approved=%s",
+                cycle_id, symbol, decision.action, decision.final_score,
+                decision.confidence, decision.risk.approved,
+            )
+        except Exception as exc:  # noqa: BLE001
+            errors += 1
+            logger.exception("cycle=%s %s failed: %s", cycle_id, symbol, exc)
+            storage.record_error("run_one_cycle", str(exc), {"symbol": symbol})
+
+    snap = pnl_mod.snapshot_and_persist()
+    duration_ms = utc_now_ms() - started_ms
+    approved = sum(1 for d in decisions if d.risk.approved)
+    storage.finish_cycle(
+        cycle_id,
+        duration_ms=duration_ms,
+        symbols_seen=len(universe),
+        decisions=len(decisions),
+        approved=approved,
+        errors=errors,
+        summary={
+            "net_pnl_usd": snap.net_usd,
+            "equity_usd": snap.equity_usd,
+            "approved_actions": [d.symbol for d in decisions if d.risk.approved],
+            "started_at": utc_now_iso(),
+        },
+    )
+    return decisions
+
+
+def run_loop(stop_event=None) -> None:
+    """Continuous cycle runner used by ``scripts/run_agent_loop.py``."""
+    settings = get_settings()
+    interval = max(2, settings.config.trading.cycle_interval_seconds)
+    while True:
+        if stop_event is not None and stop_event.is_set():
+            break
+        try:
+            run_one_cycle()
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("cycle crashed: %s", exc)
+            storage.record_error("run_loop", str(exc))
+        # Sleep in 1-second slices so Ctrl+C remains responsive.
+        for _ in range(interval):
+            if stop_event is not None and stop_event.is_set():
+                return
+            time.sleep(1)
+
+
+__all__ = ["run_one_cycle", "run_loop"]

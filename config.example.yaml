@@ -1,0 +1,75 @@
+competition:
+  name: "AI Agent Olympics - Kraken Trading Performance"
+  alias_public: "Kraken Sentinel"
+  agent_codename: "Kraken Alpha Agent"
+  starting_equity_usd: 10000.0
+
+trading:
+  mode: dry_run          # dry_run | paper | live
+  base_currency: USD
+  cycle_interval_seconds: 60
+  max_decisions_per_minute: 4
+
+universe:
+  symbols:
+    - NVDAx
+    - TSLAx
+    - AAPLx
+    - MSFTx
+    - AMZNx
+    - GOOGLx
+    - METAx
+    - SPYx
+    - QQQx
+    - MSTRx
+    - HOODx
+    - CRCLx
+    - GLDx
+  quote: USD
+  allow_outside_market_hours: true  # only assets advertised as 24/7 will be picked at night
+
+strategy:
+  ensemble_weights:
+    momentum: 0.40
+    breakout: 0.25
+    mean_reversion: 0.20
+    volatility_penalty: 0.10
+    spread_penalty: 0.05
+  thresholds:
+    buy: 0.35
+    sell: -0.35
+  min_confidence_to_trade: 0.30
+
+risk:
+  max_open_positions: 5
+  max_position_notional_usd: 1500.0
+  max_total_exposure_usd: 6000.0
+  max_daily_drawdown_pct: 5.0
+  max_spread_bps: 60
+  cooldown_seconds_per_symbol: 90
+  block_unknown_symbol: true
+  block_if_regime: ["LOW_LIQUIDITY", "HIGH_VOLATILITY"]
+
+execution:
+  default_order_type: market
+  dry_run_size_usd: 250.0
+  paper_size_usd: 250.0
+  live_size_usd: 100.0
+  require_validate_first: true
+  dead_mans_switch_seconds: 120
+
+llm:
+  enabled: false           # auto-enabled when FEATHERLESS_API_KEY is set
+  base_url: "https://api.featherless.ai/v1"
+  model: ""                # e.g. deepseek-ai/DeepSeek-V3.2
+  timeout_seconds: 20
+  allow_override: false    # LLM cannot overrule the deterministic engine
+
+logging:
+  level: INFO
+  mask_secrets: true
+
+dashboard:
+  host: "127.0.0.1"
+  port: 8000
+  refresh_seconds: 5

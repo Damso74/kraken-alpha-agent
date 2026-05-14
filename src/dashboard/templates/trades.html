@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Trades — {{ alias_public }}</title>
+  <meta http-equiv="refresh" content="{{ settings.config.dashboard.refresh_seconds }}" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header>
+    <div><h1>{{ alias_public }} <span class="codename">// Trades</span></h1></div>
+    <nav>
+      <a href="/">Overview</a>
+      <a href="/decisions">Decisions</a>
+      <a class="active" href="/trades">Trades</a>
+      <a href="/pnl">PnL JSON</a>
+      <a href="/health">Health</a>
+    </nav>
+  </header>
+  <main>
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>Time</th><th>Mode</th><th>Symbol</th><th>Action</th><th>Status</th>
+            <th>Size $</th><th>Price</th><th>Volume</th><th>Fee</th><th>Order ID</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for o in orders_all %}
+          <tr>
+            <td class="mono">{{ o.at }}</td>
+            <td><span class="pill">{{ o.mode }}</span></td>
+            <td>{{ o.symbol or '-' }}</td>
+            <td>
+              <span class="badge {% if o.action == 'BUY' %}buy{% elif o.action == 'SELL' %}sell{% else %}hold{% endif %}">
+                {{ o.action or 'HOLD' }}
+              </span>
+            </td>
+            <td>{{ o.status }}</td>
+            <td>{% if o.requested_size_usd is not none %}{{ '%.2f' % o.requested_size_usd }}{% else %}-{% endif %}</td>
+            <td>{% if o.fill_price is not none %}{{ '%.4f' % o.fill_price }}{% else %}-{% endif %}</td>
+            <td>{% if o.volume is not none %}{{ '%.6f' % o.volume }}{% else %}-{% endif %}</td>
+            <td>{% if o.fee is not none %}{{ '%.4f' % o.fee }}{% else %}-{% endif %}</td>
+            <td class="mono">{{ o.order_id or '-' }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="10" class="mono">No trades yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </main>
+  <footer>hackathon prototype · no financial advice</footer>
+</body>
+</html>

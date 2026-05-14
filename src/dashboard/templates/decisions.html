@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Decisions — {{ alias_public }}</title>
+  <meta http-equiv="refresh" content="{{ settings.config.dashboard.refresh_seconds }}" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header>
+    <div><h1>{{ alias_public }} <span class="codename">// Decisions</span></h1></div>
+    <nav>
+      <a href="/">Overview</a>
+      <a class="active" href="/decisions">Decisions</a>
+      <a href="/trades">Trades</a>
+      <a href="/pnl">PnL JSON</a>
+      <a href="/health">Health</a>
+    </nav>
+  </header>
+  <main>
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>Time</th><th>Symbol</th><th>Action</th><th>Score</th><th>Conf</th>
+            <th>Regime</th><th>Approved</th><th>Mode</th><th>Rationale</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in decisions_all %}
+          <tr>
+            <td class="mono">{{ d.at }}</td>
+            <td>{{ d.symbol }}</td>
+            <td>
+              <span class="badge {% if d.action == 'BUY' %}buy{% elif d.action == 'SELL' %}sell{% else %}hold{% endif %}">
+                {{ d.action }}
+              </span>
+            </td>
+            <td>{{ '%+.3f' % d.final_score }}</td>
+            <td>{{ '%.2f' % d.confidence }}</td>
+            <td><span class="pill">{{ d.regime }}</span></td>
+            <td>{% if d.approved %}<span class="badge ok">yes</span>{% else %}<span class="badge warn">no</span>{% endif %}</td>
+            <td><span class="pill">{{ d.mode }}</span></td>
+            <td class="mono">{{ d.rationale }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="9" class="mono">No decisions yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </main>
+  <footer>hackathon prototype · no financial advice</footer>
+</body>
+</html>
