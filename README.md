@@ -79,15 +79,73 @@ opt-in. See [`DISCLAIMER.md`](./DISCLAIMER.md) for the full text.
 - **Breakout** — proximity to the 1h high/low. Buys near the 1h high, sells near the
   1h low.
 - **Mean reversion** — fades sharp 15m moves that do not match the 1h direction.
-- **Ensemble** —
+- **Ensemble v2** — competition-grade weighted blend with liquidity awareness:
   ```
-  final_score = 0.40 * momentum
-              + 0.25 * breakout
-              + 0.20 * mean_reversion
-              - 0.10 * volatility_penalty
-              - 0.05 * spread_penalty
+  final_score = w_mom * momentum
+              + w_brk * breakout
+              + w_mr  * mean_reversion
+              + w_liq * liquidity_score      (reinforces directional bias)
+              - w_vol * volatility_penalty
+              - w_spr * spread_penalty
   ```
-  Action is `BUY` above `+0.35`, `SELL` below `-0.35`, otherwise `HOLD`.
+  Action is `BUY` above the profile's `buy` threshold, `SELL` below `sell`,
+  otherwise `HOLD`. Confidence is dampened by low liquidity and high volatility
+  so a strong signal on a dead book does not produce an oversized position.
+
+## Competition mode
+
+The agent exposes a **profile system** so the same codebase can run in
+defensive, balanced, or aggressive configurations without code changes.
+
+### Profiles
+
+`config.yaml` ships three profiles; the active one is selected by the
+top-level `profile:` key or by the `KRAKEN_ALPHA_PROFILE` environment
+variable (which wins over the file).
+
+| Profile                  | Use case                              | Notable defaults                                                        |
+|--------------------------|---------------------------------------|--------------------------------------------------------------------------|
+| `balanced` (default)     | Reasonable thresholds, max 5 positions| `min_conf=0.30`, `max_position=$1500`, `max_trades_hour=20`, `buy=±0.20` |
+| `aggressive_competition` | Higher activity for the Kraken track  | `min_conf=0.22`, `max_position=$2500`, `max_trades_hour=40`, `buy=±0.15` |
+| `conservative_debug`     | Tight thresholds, max 2 positions     | `min_conf=0.45`, `max_position=$500`, `max_trades_hour=6`, `buy=±0.30`   |
+
+**Live opt-in is profile-independent** — every profile still requires the
+full triple opt-in to place a live order. A dedicated regression test
+(`tests/test_risk_aggressive.py`) verifies this.
+
+```powershell
+# Switch profile for the current shell
+$env:KRAKEN_ALPHA_PROFILE = "aggressive_competition"
+python scripts/dry_run_once.py
+```
+
+### Ranking, dynamic universe, paper smoke test
+
+```powershell
+# 1. Rank xStocks (read-only, writes data/xstocks_rank_<ts>.json + .csv)
+python scripts/rank_xstocks.py --top 5
+python scripts/rank_xstocks.py --profile aggressive_competition --top 10
+
+# 2. Switch to dynamic universe in config.yaml
+#   universe:
+#     mode: dynamic
+#     top_n: 8
+# The agent loop will run a ranking pass and trade only the top-N opportunities.
+python scripts/dry_run_once.py
+
+# 3. Paper smoke test (read-only by default — no order placed)
+python scripts/paper_smoke_test.py
+# Initialise the paper account (one-time, opt-in):
+python scripts/paper_smoke_test.py --init
+# Place a single mini paper order AAPLx/USD 0.001 (paper, never live):
+python scripts/paper_smoke_test.py --place-test-order
+```
+
+The dashboard surfaces a **Competition** section that reads
+`data/xstocks_rank_latest.json` (TTL 60 s) and a `/ranking` JSON endpoint
+for the raw payload. Banners at the top of the page declare the active
+profile, the PnL source (`local_estimate` / `paper` / `live`) and whether
+the paper account is initialised.
 
 ## Modes
 
@@ -125,6 +183,15 @@ copy .env.example .env        # macOS/Linux: cp .env.example .env
 ```powershell
 # Probe the CLI (and run a safe read-only sample call):
 python scripts/check_kraken_cli.py
+
+# Real xStocks probe (read-only — 4 calls × N symbols):
+python scripts/probe_xstocks.py
+
+# Rank xStocks by opportunity score (writes data/xstocks_rank_*.json+csv):
+python scripts/rank_xstocks.py --top 5
+
+# Paper smoke test (read-only by default; --init / --place-test-order are opt-in):
+python scripts/paper_smoke_test.py
 
 # Run exactly one full cycle and print a summary:
 python scripts/dry_run_once.py

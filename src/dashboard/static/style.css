@@ -144,3 +144,29 @@ footer {
   margin-bottom: 16px;
   font-size: 11px;
 }
+
+.banner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--bg-elev);
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+.banner.profile {
+  border-color: rgba(54, 211, 153, 0.4);
+  background: rgba(54, 211, 153, 0.06);
+}
+.banner.warn {
+  border-color: rgba(247, 201, 72, 0.5);
+  background: rgba(247, 201, 72, 0.08);
+  color: var(--warn);
+}
+.banner.danger {
+  border-color: rgba(255, 107, 107, 0.5);
+  background: rgba(255, 107, 107, 0.08);
+  color: var(--danger);
+}

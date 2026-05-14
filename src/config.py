@@ -1,12 +1,13 @@
 """Configuration loader.
 
 Combines:
-- environment variables (loaded via `python-dotenv` so `.env` works automatically)
-- the YAML file pointed to by `CONFIG_PATH` (defaults to `config.yaml`, falls
-  back to `config.example.yaml` so the agent runs out of the box).
+- environment variables (loaded via ``python-dotenv`` so ``.env`` works automatically)
+- the YAML file pointed to by ``CONFIG_PATH`` (defaults to ``config.yaml``, falls
+  back to ``config.example.yaml`` so the agent runs out of the box).
 
-The merged result is exposed through `get_settings()` (cached) so any module
-can call it without re-parsing.
+The YAML file may define a ``profile`` and a ``profiles:`` map. The active
+profile is deep-merged on top of the base config so module code never needs
+to know which profile is active — it just reads the merged structure.
 """
 
 from __future__ import annotations
@@ -41,6 +42,7 @@ class TradingConfig(BaseModel):
 
 
 class UniverseConfig(BaseModel):
+    mode: str = "static"          # "static" | "dynamic"
     symbols: list[str] = Field(
         default_factory=lambda: [
             "NVDAx", "TSLAx", "AAPLx", "MSFTx", "AMZNx",
@@ -50,6 +52,11 @@ class UniverseConfig(BaseModel):
     )
     quote: str = "USD"
     allow_outside_market_hours: bool = True
+    max_spread_bps: int = 80
+    min_trade_count: int = 10
+    min_volume: float = 100.0
+    top_n: int = 8
+    ranking_cache_seconds: int = 60
 
 
 class StrategyConfig(BaseModel):
@@ -58,12 +65,13 @@ class StrategyConfig(BaseModel):
             "momentum": 0.40,
             "breakout": 0.25,
             "mean_reversion": 0.20,
+            "liquidity": 0.10,
             "volatility_penalty": 0.10,
             "spread_penalty": 0.05,
         }
     )
     thresholds: dict[str, float] = Field(
-        default_factory=lambda: {"buy": 0.35, "sell": -0.35}
+        default_factory=lambda: {"buy": 0.20, "sell": -0.20}
     )
     min_confidence_to_trade: float = 0.30
 
@@ -79,6 +87,9 @@ class RiskConfig(BaseModel):
     block_if_regime: list[str] = Field(
         default_factory=lambda: ["LOW_LIQUIDITY", "HIGH_VOLATILITY"]
     )
+    stop_loss_pct: float = 1.5
+    take_profit_pct: float = 2.5
+    max_trades_per_hour: int = 20
 
 
 class ExecutionConfig(BaseModel):
@@ -111,6 +122,8 @@ class DashboardConfig(BaseModel):
 
 class YAMLConfig(BaseModel):
     competition: CompetitionConfig = Field(default_factory=CompetitionConfig)
+    profile: str = "balanced"
+    profile_description: str = ""
     trading: TradingConfig = Field(default_factory=TradingConfig)
     universe: UniverseConfig = Field(default_factory=UniverseConfig)
     strategy: StrategyConfig = Field(default_factory=StrategyConfig)
@@ -151,6 +164,8 @@ class Settings(BaseModel):
     env: EnvSettings
     config: YAMLConfig
     config_source: str = "defaults"
+    available_profiles: list[str] = Field(default_factory=list)
+    active_profile: str = "balanced"
 
     @property
     def project_root(self) -> Path:
@@ -195,13 +210,80 @@ def _resolve_config_path(env_path: str) -> tuple[Path, str]:
     return candidate, "defaults"
 
 
+def _deep_merge(base: dict, overlay: dict) -> dict:
+    """Recursive shallow-mutate-free merge. ``overlay`` wins on key collisions."""
+    out = dict(base)
+    for key, val in overlay.items():
+        if (
+            key in out
+            and isinstance(out[key], dict)
+            and isinstance(val, dict)
+        ):
+            out[key] = _deep_merge(out[key], val)
+        else:
+            out[key] = val
+    return out
+
+
+def load_active_profile(
+    raw_yaml: dict[str, Any], *, override: str | None = None
+) -> tuple[dict[str, Any], str, list[str]]:
+    """Return ``(merged_yaml, active_profile, available_profiles)``.
+
+    Profile lookup order:
+      1. explicit ``override`` argument (used by tests / scripts)
+      2. ``KRAKEN_ALPHA_PROFILE`` environment variable
+      3. ``profile:`` field in the YAML file
+      4. ``"balanced"`` fallback
+
+    Unknown profile names fall back to ``balanced`` and emit a warning string
+    in ``available_profiles`` so callers can surface it without crashing.
+    """
+    profiles_map = raw_yaml.get("profiles") or {}
+    available = sorted(profiles_map.keys())
+    requested = (
+        override
+        or os.environ.get("KRAKEN_ALPHA_PROFILE")
+        or raw_yaml.get("profile")
+        or "balanced"
+    )
+    if requested not in profiles_map and profiles_map:
+        # Fallback silently to the first available profile, preferring balanced.
+        requested = "balanced" if "balanced" in profiles_map else available[0]
+
+    base = {k: v for k, v in raw_yaml.items() if k != "profiles"}
+    profile_overlay = profiles_map.get(requested, {}) if isinstance(profiles_map.get(requested, {}), dict) else {}
+    merged = _deep_merge(base, profile_overlay)
+
+    # Make sure the merged structure tells downstream code which profile is live.
+    merged["profile"] = requested
+    description = ""
+    if isinstance(profile_overlay, dict):
+        description = str(profile_overlay.get("description", ""))
+    merged["profile_description"] = description
+    # Profile overlays may legally include a "description" key that does not
+    # belong on the YAMLConfig itself — keep it out of the strict model.
+    if "strategy" in merged and isinstance(merged["strategy"], dict):
+        merged["strategy"].pop("description", None)
+    if "risk" in merged and isinstance(merged["risk"], dict):
+        merged["risk"].pop("description", None)
+    return merged, requested, available
+
+
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
     env = EnvSettings()
     cfg_path, source = _resolve_config_path(env.config_path)
     raw = _read_yaml(cfg_path) if cfg_path.exists() else {}
-    config = YAMLConfig(**raw)
-    return Settings(env=env, config=config, config_source=source)
+    merged, active, available = load_active_profile(raw)
+    config = YAMLConfig(**merged)
+    return Settings(
+        env=env,
+        config=config,
+        config_source=source,
+        available_profiles=available,
+        active_profile=active,
+    )
 
 
 def reload_settings() -> Settings:
@@ -211,19 +293,22 @@ def reload_settings() -> Settings:
 
 def safe_env_snapshot() -> dict[str, Any]:
     """Snapshot suitable for the dashboard / audit bundle: never leaks secrets."""
-    s = get_settings().env
+    s = get_settings()
+    e = s.env
     return {
-        "trading_mode": s.trading_mode,
-        "live_trading": s.live_trading,
-        "allow_live_orders": s.allow_live_orders,
-        "kraken_api_key_set": bool(s.kraken_api_key),
-        "kraken_api_secret_set": bool(s.kraken_api_secret),
-        "featherless_api_key_set": bool(s.featherless_api_key),
-        "featherless_base_url": s.featherless_base_url,
-        "featherless_model": s.featherless_model,
-        "database_path": s.database_path,
-        "config_path": s.config_path,
-        "log_level": s.log_level,
+        "trading_mode": e.trading_mode,
+        "live_trading": e.live_trading,
+        "allow_live_orders": e.allow_live_orders,
+        "kraken_api_key_set": bool(e.kraken_api_key),
+        "kraken_api_secret_set": bool(e.kraken_api_secret),
+        "featherless_api_key_set": bool(e.featherless_api_key),
+        "featherless_base_url": e.featherless_base_url,
+        "featherless_model": e.featherless_model,
+        "database_path": e.database_path,
+        "config_path": e.config_path,
+        "log_level": e.log_level,
+        "active_profile": s.active_profile,
+        "available_profiles": s.available_profiles,
     }
 
 
@@ -234,5 +319,6 @@ __all__ = [
     "get_settings",
     "reload_settings",
     "safe_env_snapshot",
+    "load_active_profile",
     "PROJECT_ROOT",
 ]

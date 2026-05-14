@@ -566,6 +566,71 @@ def fetch_system_status() -> dict[str, Any]:
     return {"source": "mock", "using_mock": True, "data": {"status": "unknown"}}
 
 
+def _wrap_paper_result(result: CLIResult, key: str) -> dict[str, Any]:
+    if result.ok and result.stdout_json is not None:
+        return {
+            "source": "kraken_cli",
+            "transport": result.transport,
+            "data": result.stdout_json,
+        }
+    return {
+        "source": "mock",
+        "using_mock": True,
+        "transport": result.transport,
+        "data": None,
+        "cli_payload": result.stdout_json,
+        "note": (result.stderr[:200] if result.stderr else f"paper {key} unavailable"),
+    }
+
+
+def fetch_paper_balance() -> dict[str, Any]:
+    """Read-only paper balance. Never modifies state."""
+    return _wrap_paper_result(run_cli(["paper", "balance"]), "balance")
+
+
+def fetch_paper_orders() -> dict[str, Any]:
+    """Read-only list of currently open paper orders."""
+    return _wrap_paper_result(run_cli(["paper", "orders"]), "orders")
+
+
+def fetch_paper_history() -> dict[str, Any]:
+    """Read-only paper trade history."""
+    return _wrap_paper_result(run_cli(["paper", "history"]), "history")
+
+
+def paper_init(balance: float = 10_000.0, currency: str = "USD") -> CLIResult:
+    """Initialize the paper account. Caller is responsible for opt-in.
+
+    This MUST only ever be invoked from a dedicated script that the user
+    runs with an explicit flag — never automatically by the agent loop.
+    """
+    args = [
+        "paper", "init",
+        "--balance", str(balance),
+        "--currency", currency,
+        "--yes",
+    ]
+    return run_cli(args, timeout=30)
+
+
+def paper_place_order(
+    *,
+    symbol_pair: str,
+    action: Action,
+    volume: float,
+    order_type: str = "market",
+) -> CLIResult:
+    """Place a paper order. Caller must guard this behind an explicit flag."""
+    if action not in ("BUY", "SELL"):
+        return CLIResult(ok=False, status="blocked", command=[], stderr="action must be BUY or SELL")
+    side = "buy" if action == "BUY" else "sell"
+    args = [
+        "paper", side, symbol_pair, str(volume),
+        "--type", order_type, "--yes",
+    ]
+    return run_cli(args, timeout=20)
+
+
 def cancel_after(seconds: int) -> CLIResult:
     """Dead-man's switch: cancel all open orders after N seconds of silence."""
     return run_cli(["order", "cancel-after", str(int(seconds))])
@@ -636,7 +701,12 @@ __all__ = [
     "fetch_trades",
     "fetch_balances",
     "fetch_paper_status",
+    "fetch_paper_balance",
+    "fetch_paper_orders",
+    "fetch_paper_history",
     "fetch_system_status",
+    "paper_init",
+    "paper_place_order",
     "cancel_after",
     "validate_live_order",
     "place_order",

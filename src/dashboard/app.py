@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 from typing import Any
 
@@ -12,13 +13,15 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from .. import kraken_cli, storage
-from ..config import get_settings, safe_env_snapshot
+from ..config import PROJECT_ROOT, get_settings, safe_env_snapshot
 from ..logger import get_logger
 from ..pnl import compute_pnl
 from ..portfolio import get_snapshot
 from ..utils import fmt_money, utc_now_iso
 
 logger = get_logger(__name__)
+
+_RANKING_CACHE: dict[str, Any] = {"loaded_at": 0.0, "payload": None, "source": "none"}
 
 BASE_DIR = Path(__file__).resolve().parent
 TEMPLATES = Jinja2Templates(directory=str(BASE_DIR / "templates"))
@@ -37,6 +40,71 @@ def _decode_payload(raw: str | None) -> dict[str, Any]:
         return {}
 
 
+def _pnl_source_label() -> str:
+    settings = get_settings()
+    mode = (settings.env.trading_mode or "dry_run").lower()
+    if mode == "live":
+        return "live"
+    if mode == "paper":
+        return "paper"
+    return "local_estimate"
+
+
+def _paper_initialised() -> bool:
+    try:
+        status = kraken_cli.fetch_paper_status()
+    except Exception:  # noqa: BLE001
+        return False
+    if not isinstance(status, dict):
+        return False
+    if status.get("using_mock"):
+        return False
+    data = status.get("data") or {}
+    if not isinstance(data, dict):
+        return False
+    return any(k in data for k in ("balance", "balances", "cash", "equity"))
+
+
+def _load_latest_ranking(force: bool = False) -> dict[str, Any]:
+    """Cached read of the most recent xstocks_rank_*.json file (60s TTL)."""
+    settings = get_settings()
+    ttl = max(15, settings.config.universe.ranking_cache_seconds or 60)
+    if not force and (time.time() - _RANKING_CACHE["loaded_at"]) < ttl and _RANKING_CACHE["payload"] is not None:
+        return _RANKING_CACHE["payload"]
+
+    data_dir = PROJECT_ROOT / "data"
+    latest = data_dir / "xstocks_rank_latest.json"
+    if latest.exists():
+        try:
+            payload = json.loads(latest.read_text(encoding="utf-8"))
+            _RANKING_CACHE["payload"] = payload
+            _RANKING_CACHE["loaded_at"] = time.time()
+            _RANKING_CACHE["source"] = "file"
+            return payload
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("failed to parse %s: %s", latest, exc)
+
+    # Fallback: pick the newest timestamped file.
+    candidates = sorted(data_dir.glob("xstocks_rank_*.json"), reverse=True)
+    for candidate in candidates:
+        if candidate.name == "xstocks_rank_latest.json":
+            continue
+        try:
+            payload = json.loads(candidate.read_text(encoding="utf-8"))
+            _RANKING_CACHE["payload"] = payload
+            _RANKING_CACHE["loaded_at"] = time.time()
+            _RANKING_CACHE["source"] = candidate.name
+            return payload
+        except Exception:  # noqa: BLE001
+            continue
+
+    empty = {"generated_at": None, "profile": None, "count": 0, "rows": []}
+    _RANKING_CACHE["payload"] = empty
+    _RANKING_CACHE["loaded_at"] = time.time()
+    _RANKING_CACHE["source"] = "missing"
+    return empty
+
+
 def _common_context() -> dict[str, Any]:
     settings = get_settings()
     portfolio_snap = get_snapshot()
@@ -46,11 +114,16 @@ def _common_context() -> dict[str, Any]:
     errors = storage.fetch_recent_errors(limit=5)
     last_decision = decisions[0] if decisions else None
     last_order = orders[0] if orders else None
+    env_snap = safe_env_snapshot()
+    ranking = _load_latest_ranking()
+    pnl_source = _pnl_source_label()
+    paper_ok = _paper_initialised() if pnl_source == "paper" else None
     return {
         "settings": settings,
-        "env_snapshot": safe_env_snapshot(),
+        "env_snapshot": env_snap,
         "portfolio": portfolio_snap,
         "pnl": pnl,
+        "pnl_source": pnl_source,
         "decisions": decisions,
         "orders": orders,
         "errors": errors,
@@ -62,6 +135,12 @@ def _common_context() -> dict[str, Any]:
         "kraken_version": kraken_cli.get_version(),
         "alias_public": settings.config.competition.alias_public,
         "agent_codename": settings.config.competition.agent_codename,
+        "active_profile": settings.active_profile,
+        "available_profiles": settings.available_profiles,
+        "ranking": ranking,
+        "ranking_source": _RANKING_CACHE.get("source"),
+        "no_api_key": not env_snap.get("kraken_api_key_set"),
+        "paper_initialised": paper_ok,
         "now": utc_now_iso(),
     }
 
@@ -84,6 +163,20 @@ def decisions_page(request: Request) -> HTMLResponse:
     ctx = _common_context()
     ctx["decisions_all"] = storage.fetch_recent_decisions(limit=200)
     return TEMPLATES.TemplateResponse(request, "decisions.html", ctx)
+
+
+@app.get("/ranking")
+def ranking_json() -> JSONResponse:
+    payload = _load_latest_ranking()
+    return JSONResponse(
+        {
+            "source": _RANKING_CACHE.get("source"),
+            "generated_at": payload.get("generated_at"),
+            "profile": payload.get("profile"),
+            "count": payload.get("count", 0),
+            "rows": payload.get("rows", []),
+        }
+    )
 
 
 @app.get("/pnl")

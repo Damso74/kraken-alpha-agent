@@ -11,14 +11,28 @@ from .universe import is_in_allowlist
 
 
 _LAST_TRADE_TS: dict[str, float] = {}
+_RECENT_TRADE_TIMES: list[float] = []
 
 
 def reset_cooldowns() -> None:
     _LAST_TRADE_TS.clear()
+    _RECENT_TRADE_TIMES.clear()
 
 
 def mark_traded(symbol: str, *, when: float | None = None) -> None:
-    _LAST_TRADE_TS[symbol] = when if when is not None else time.time()
+    ts = when if when is not None else time.time()
+    _LAST_TRADE_TS[symbol] = ts
+    _RECENT_TRADE_TIMES.append(ts)
+    # Trim to last 2h so the structure cannot grow unbounded during long runs.
+    cutoff = ts - 7200
+    while _RECENT_TRADE_TIMES and _RECENT_TRADE_TIMES[0] < cutoff:
+        _RECENT_TRADE_TIMES.pop(0)
+
+
+def _trades_in_last_hour(now: float | None = None) -> int:
+    now = now if now is not None else time.time()
+    cutoff = now - 3600
+    return sum(1 for t in _RECENT_TRADE_TIMES if t >= cutoff)
 
 
 def _check(name: str, passed: bool, detail: str = "") -> RiskCheck:
@@ -145,7 +159,25 @@ def evaluate_risk(
             f"drawdown {drawdown_pct:.2f}% above {cfg.max_daily_drawdown_pct}% cap"
         )
 
-    # 10) Live-trading triple opt-in.
+    # 10) Trade rate limiter (per profile).
+    max_trades_hour = getattr(cfg, "max_trades_per_hour", 0) or 0
+    rate_ok = True
+    if max_trades_hour > 0:
+        recent = _trades_in_last_hour()
+        rate_ok = recent < max_trades_hour
+        checks.append(
+            _check(
+                "max_trades_per_hour",
+                rate_ok,
+                f"recent={recent} max={max_trades_hour}",
+            )
+        )
+        if not rate_ok:
+            reasons.append(
+                f"trade rate {recent}/h exceeds profile cap of {max_trades_hour}/h"
+            )
+
+    # 11) Live-trading triple opt-in.
     blocked_for_live_flags = False
     if mode == "live":
         live_flags_ok = settings.all_live_flags_on()

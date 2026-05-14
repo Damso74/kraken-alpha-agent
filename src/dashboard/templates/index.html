@@ -16,11 +16,46 @@
       <a class="active" href="/">Overview</a>
       <a href="/decisions">Decisions</a>
       <a href="/trades">Trades</a>
+      <a href="/ranking">Ranking JSON</a>
       <a href="/pnl">PnL JSON</a>
       <a href="/health">Health</a>
     </nav>
   </header>
   <main>
+    <div class="banner profile">
+      <div>
+        <strong>Profile:</strong>
+        <span class="badge ok">{{ active_profile }}</span>
+        {% if available_profiles %}
+          <span class="kpi-sub">available: {{ available_profiles | join(', ') }}</span>
+        {% endif %}
+      </div>
+      <div>
+        <strong>PnL source:</strong>
+        <span class="badge {% if pnl_source == 'live' %}danger{% elif pnl_source == 'paper' %}warn{% else %}ok{% endif %}">
+          {{ pnl_source }}
+        </span>
+      </div>
+      <div>
+        <strong>Universe mode:</strong>
+        <span class="pill">{{ settings.config.universe.mode }}</span>
+      </div>
+    </div>
+
+    {% if pnl_source == 'paper' and paper_initialised is sameas false %}
+    <div class="banner danger">
+      Paper account is <strong>NOT initialised</strong>. Run
+      <code>kraken paper init --balance 10000 --currency USD --yes</code> in WSL,
+      or <code>python scripts/paper_smoke_test.py --init</code> (one-time).
+    </div>
+    {% endif %}
+    {% if no_api_key %}
+    <div class="banner warn">
+      No Kraken API key configured — agent operates on
+      <strong>read-only public market data</strong> only.
+    </div>
+    {% endif %}
+
     <div class="disclaimer">
       Hackathon project. Not financial advice. Default mode is
       <strong>dry_run</strong>. Live trading requires a triple opt-in.
@@ -89,6 +124,48 @@
           {% endfor %}
         </tbody>
       </table>
+    </div>
+
+    <h3 class="section-title">Competition — top xStocks</h3>
+    <div class="card">
+      {% if ranking and ranking.rows %}
+        <div class="kpi-sub">
+          generated_at: <span class="mono">{{ ranking.generated_at }}</span>
+          · profile: <span class="pill">{{ ranking.profile or '-' }}</span>
+          · source: <span class="pill">{{ ranking_source }}</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Symbol</th>
+              <th>Spread (bps)</th>
+              <th>Liquidity</th>
+              <th>Momentum</th>
+              <th>Opportunity</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in ranking.rows[:10] %}
+            <tr>
+              <td><strong>{{ r.symbol }}</strong> <span class="pill">{{ r.pair }}</span></td>
+              <td>{{ '%.1f' % r.spread_bps }}</td>
+              <td>{{ '%.2f' % r.liquidity_score }}</td>
+              <td class="{% if r.momentum_score >= 0 %}pos{% else %}neg{% endif %}">
+                {{ '%+.3f' % r.momentum_score }}
+              </td>
+              <td class="{% if r.opportunity_score >= 0 %}pos{% else %}neg{% endif %}">
+                {{ '%+.3f' % r.opportunity_score }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="mono">
+          No ranking data yet. Run <code>python scripts/rank_xstocks.py</code>
+          to populate <code>data/xstocks_rank_latest.json</code>.
+        </p>
+      {% endif %}
     </div>
 
     <h3 class="section-title">Last decision</h3>

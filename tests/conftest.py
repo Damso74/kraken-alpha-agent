@@ -30,6 +30,11 @@ def _isolated_paths(tmp_path, monkeypatch):
     monkeypatch.setenv("KRAKEN_API_KEY", "")
     monkeypatch.setenv("KRAKEN_API_SECRET", "")
     monkeypatch.setenv("FEATHERLESS_API_KEY", "")
+    # Force CLI wrapper into deterministic mock mode for the test suite —
+    # no test should ever shell out to a real Kraken CLI.
+    monkeypatch.setenv("KRAKEN_CLI_TRANSPORT", "mock")
+    # Make sure no leftover profile override leaks between tests.
+    monkeypatch.delenv("KRAKEN_ALPHA_PROFILE", raising=False)
 
     # Drop any cached Settings so the new env values take effect.
     from src import config as cfg

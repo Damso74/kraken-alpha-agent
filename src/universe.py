@@ -77,6 +77,57 @@ def pair_format(ticker: str, quote: str = "USD") -> str:
     return normalize_symbol(ticker, quote).pair_slash
 
 
+def build_dynamic_universe(rank_data, config) -> list[str]:
+    """Filter and select the top-N opportunities from a ranking pass.
+
+    Parameters
+    ----------
+    rank_data:
+        Iterable of objects with the attributes produced by
+        :mod:`src.ranking` — ``symbol``, ``spread_bps``, ``volume_24h``,
+        ``trade_count_recent``, ``last_price``, ``opportunity_score``.
+    config:
+        Either a :class:`UniverseConfig` or a plain mapping with the same
+        keys (``max_spread_bps``, ``min_volume``, ``min_trade_count``,
+        ``top_n``, ``symbols``).
+
+    Returns
+    -------
+    list[str]
+        Ordered list of symbol tickers, length ≤ ``top_n``. When the dynamic
+        filter yields no candidate (e.g. fully calm market), falls back to
+        the static allowlist so the agent keeps making decisions.
+    """
+    # Lazy import to keep universe.py importable from ranking.py if needed.
+    from .ranking import apply_filters, select_top_n
+
+    def _attr(obj, name, default=None):
+        if isinstance(obj, dict):
+            return obj.get(name, default)
+        return getattr(obj, name, default)
+
+    max_spread = float(_attr(config, "max_spread_bps", 80))
+    min_volume = float(_attr(config, "min_volume", 100))
+    min_tc = int(_attr(config, "min_trade_count", 10))
+    top_n = int(_attr(config, "top_n", 8))
+    static_allow = list(_attr(config, "symbols", []) or [])
+
+    ranked = list(rank_data) if rank_data is not None else []
+    if not ranked:
+        return static_allow[:top_n] if top_n else static_allow
+
+    annotated = apply_filters(
+        ranked,
+        max_spread_bps=max_spread,
+        min_volume=min_volume,
+        min_trade_count=min_tc,
+    )
+    selected = select_top_n(annotated, top_n=top_n)
+    if not selected:
+        return static_allow[:top_n] if top_n else static_allow
+    return [r.symbol for r in selected]
+
+
 __all__ = [
     "UniverseSymbol",
     "normalize_symbol",
@@ -85,5 +136,6 @@ __all__ = [
     "is_in_allowlist",
     "candidate_pair_forms",
     "pair_format",
+    "build_dynamic_universe",
     "TWENTY_FOUR_SEVEN",
 ]

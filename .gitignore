@@ -7,6 +7,9 @@
 data/*.sqlite
 data/*.sqlite-*
 data/*.jsonl
+data/*.json
+data/*.csv
+!data/.gitkeep
 
 # Build artefacts
 export/
