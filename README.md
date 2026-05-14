@@ -189,24 +189,38 @@ python scripts/export_audit_bundle.py
 - Add a portfolio rebalancer that targets equal-risk contribution across the
   approved active positions.
 
-## Confirmed vs. TODO Kraken CLI commands
+## Kraken CLI status
 
-| Command                                          | Status       |
-|--------------------------------------------------|--------------|
-| `kraken ticker <pair> --output json`             | Confirmed    |
-| `kraken ohlc <pair> --interval 60 --output json` | Confirmed    |
-| `kraken paper init/buy/sell/reset`               | Confirmed    |
-| `kraken order buy/sell`                          | Confirmed    |
-| `kraken order cancel-after <seconds>`            | Confirmed    |
-| `kraken <order> --validate`                      | Confirmed    |
-| `kraken mcp -s all`                              | Confirmed    |
-| `kraken balance`                                 | TODO confirm |
-| `kraken paper status`                            | TODO confirm |
-| `kraken orderbook <pair>`                        | TODO confirm |
-| xStocks symbol form `TICKERx/USD` vs `TICKERxUSD`| TODO confirm |
+Validated against `kraken 0.3.2` on 2026-05-14 — full report:
+[`CLI_VALIDATION.md`](./CLI_VALIDATION.md). **52/52 read-only calls
+succeeded; 0 orders placed.**
 
-Each TODO is isolated in `src/kraken_cli.py` with a deterministic mock
-fallback so the agent runs even when the CLI is unavailable.
+| Command                                                              | Status       |
+|----------------------------------------------------------------------|--------------|
+| `kraken status -o json`                                              | Confirmed    |
+| `kraken ticker <pair> --asset-class tokenized_asset -o json`         | Confirmed    |
+| `kraken ohlc <pair> --interval 60 --asset-class tokenized_asset -o json` | Confirmed |
+| `kraken orderbook <pair> --count <n> --asset-class tokenized_asset -o json` | Confirmed |
+| `kraken trades <pair> --count <n> --asset-class tokenized_asset -o json` | Confirmed |
+| `kraken paper init/reset/buy/sell/status/balance/history/orders -o json` | Available; only `status` exercised (no order placed) |
+| `kraken order buy/sell <pair> <vol> --type <t> [--price] --asset-class tokenized_asset --validate` | Confirmed (help only) |
+| `kraken order cancel-after <s>`                                      | Documented (not exercised) |
+| xStocks symbol form `TICKERx/USD`                                    | **Confirmed** (slash form) |
+
+### Transport selection
+
+`src/kraken_cli.py` invokes the CLI through one of three transports,
+auto-detected at runtime:
+
+| `KRAKEN_CLI_TRANSPORT` | Behaviour                                                                 |
+|------------------------|---------------------------------------------------------------------------|
+| `auto` (default)       | Try native Windows binary first, then `wsl -- bash -lc "kraken ..."`, else mock. |
+| `windows`              | Force the Windows binary on PATH; mock if absent.                         |
+| `wsl`                  | Force the binary inside the default WSL distro; mock if absent.           |
+| `mock`                 | Use the deterministic mock generator (useful in CI / tests).              |
+
+On Windows the official installer doesn't ship a native binary today, so
+install via WSL (see `CLI_VALIDATION.md` §8).
 
 ## License
 

@@ -17,32 +17,41 @@ Track: AI Agent Olympics — Kraken Trading Performance.
 - https://featherless.ai/docs/api-examples-and-snippets
 - https://lablab.ai/ai-hackathons/milan-ai-week-hackathon
 
-## Confirmed Kraken CLI commands (from tutorial + official site)
-- `kraken ticker <pair> --output json`
-- `kraken ohlc <pair> --interval 60 --output json`
-- `kraken paper init --balance <n> --currency <ccy>`
-- `kraken paper buy <pair> <volume> --yes`
-- `kraken paper sell <pair> <volume> --yes`
-- `kraken paper reset --balance <n> --currency <ccy> --yes`
-- `kraken order buy|sell ...` (live)
-- `kraken order cancel-after <seconds>` (dead-man's switch)
-- `kraken <order-cmd> --validate` (live simulation, no order placed)
-- `kraken mcp -s all` (MCP server)
-- Global output flag: `--output json` (also documented as `-o json`)
-- Public market data needs no API keys.
+## Confirmed Kraken CLI commands (validated against `kraken 0.3.2`)
 
-## Commands marked TODO (not 100% confirmed by primary sources)
-- `kraken balance` / `kraken account balance` — wrapper falls back to mock with TODO.
-- `kraken trades history` — wrapper falls back to mock with TODO.
-- `kraken orderbook <pair>` — wrapper falls back to mock with TODO.
-- `kraken paper status` (referenced in tutorial dashboard) — wrapper falls back to mock with TODO.
-- xStocks pair format on the CLI (`TSLAx/USD` vs `TSLAxUSD`). Normalisation
-  helper tries both and reports the first one accepted; default form is
-  `<TICKERx>/USD`.
-- Tested via `--validate` before any real exposure.
+See [`CLI_VALIDATION.md`](./CLI_VALIDATION.md) for the full validation log.
 
-These are all isolated behind `kraken_cli.py`; nothing breaks if a command is
-renamed: the wrapper returns a deterministic mock and logs a TODO.
+- `kraken status -o json` — system status.
+- `kraken ticker <pair> --asset-class tokenized_asset -o json` — required flag for xStocks.
+- `kraken ohlc <pair> --interval 60 --asset-class tokenized_asset -o json`.
+- `kraken orderbook <pair> --count <n> --asset-class tokenized_asset -o json` (note `--count`, not `--depth`).
+- `kraken trades <pair> --count <n> --asset-class tokenized_asset -o json`.
+- `kraken paper init/reset/buy/sell/status/balance/history` — paper engine is
+  local and never sends real orders. Only `status` was exercised during
+  validation.
+- `kraken order buy|sell <pair> <vol> --type <t> [--price ...] --asset-class tokenized_asset --validate` — confirmed via `--help`; no real order placed.
+- `kraken order cancel-after <s>` — dead-man's switch (documented, not exercised).
+- Global output flag: `-o json` (equivalent to `--output json`).
+
+### Confirmed xStocks pair format
+
+Slash form, e.g. `AAPLx/USD`, `TSLAx/USD`, `NVDAx/USD`. The wrapper still
+retries the compact form (`AAPLxUSD`) defensively.
+
+### Transport
+
+On Windows the official installer does not ship a native binary, so the
+wrapper invokes `kraken` through WSL: `wsl -- bash -lc "kraken ..."`. The
+transport is controllable via `KRAKEN_CLI_TRANSPORT=auto|windows|wsl|mock`.
+
+## Items still mocked / not exercised
+
+- Authenticated `kraken balance` (requires a read-only API key on the host).
+- `kraken paper init` and a `paper buy/sell` round-trip (we deliberately did
+  not initialise a paper account during validation — the wrapper still
+  produces clearly-labelled simulated fills until `paper init` is run).
+- `kraken order ... --validate` against an xStock (validate-only, no money
+  moves; gated by the triple opt-in for safety).
 
 ## File structure
 ```

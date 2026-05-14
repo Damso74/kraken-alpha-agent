@@ -61,9 +61,20 @@ def is_in_allowlist(ticker: str) -> bool:
 
 
 def candidate_pair_forms(ticker: str, quote: str = "USD") -> list[str]:
-    """Return the pair-symbol forms to try against the Kraken CLI, in order."""
+    """Return the pair-symbol forms to try against the Kraken CLI, in order.
+
+    Officially confirmed against ``kraken 0.3.2``: the slash form
+    (e.g. ``AAPLx/USD``) is what the Kraken CLI exposes for xStocks ticker /
+    ohlc / orderbook / trades / order subcommands. We still attempt the
+    compact form as a defensive retry in case some operation requires it.
+    """
     sym = normalize_symbol(ticker, quote)
     return [sym.pair_slash, sym.pair_compact]
+
+
+def pair_format(ticker: str, quote: str = "USD") -> str:
+    """Return the official Kraken CLI pair form for an xStocks ticker."""
+    return normalize_symbol(ticker, quote).pair_slash
 
 
 __all__ = [
@@ -73,5 +84,6 @@ __all__ = [
     "get_universe_tickers",
     "is_in_allowlist",
     "candidate_pair_forms",
+    "pair_format",
     "TWENTY_FOUR_SEVEN",
 ]
