@@ -30,6 +30,9 @@ dist/
 venv/
 env/
 
+# Runtime logs
+*.log
+
 # IDE / OS
 .idea/
 .vscode/

@@ -17,6 +17,27 @@ opt-in. See [`DISCLAIMER.md`](./DISCLAIMER.md) for the full text.
 
 ---
 
+## Quickstart for judges
+
+```powershell
+git clone <this-repo> && cd kraken-alpha-agent
+python -m venv .venv && .venv\Scripts\Activate.ps1   # source .venv/bin/activate on macOS/Linux
+pip install -r requirements.txt
+copy .env.example .env                               # cp .env.example .env
+pytest                                               # 96 tests, ~2s
+python scripts/dry_run_once.py                       # one full cycle, no orders
+uvicorn src.dashboard.app:app --reload               # http://127.0.0.1:8000
+```
+
+No Kraken account, no API key, no WSL install required for the dry-run path —
+the CLI wrapper falls back to a deterministic mock so judges can audit the
+agent's decision pipeline end-to-end on a fresh machine.
+
+For the full "paper competition" runbook see
+[Competition simulation runbook](#calibration-knobs).
+
+---
+
 ## What it does
 
 1. Polls public xStocks market data from the Kraken CLI (or a deterministic
@@ -41,14 +62,20 @@ opt-in. See [`DISCLAIMER.md`](./DISCLAIMER.md) for the full text.
    explanation via **Featherless** (OpenAI-compatible API).
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│ market_data ──> features ──> regime ──> strategies ──> ensemble ──> risk│
-│                                                              │           │
-│                                                              ▼           │
-│                                          dry_run / paper / live  (CLI)   │
-│                                                              │           │
-│                                              persist ────────┴──> dashboard
-└─────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ kraken_cli ──> market_data ──> features ──> regime ──> strategies ──> ensemble
+│                                                                     │         │
+│                                                                     ▼         │
+│                                                              actionability    │
+│                                                                     │         │
+│                                                                     ▼         │
+│                                                                    risk       │
+│                                                                     │         │
+│                                                                     ▼         │
+│                                              execution (dry_run / paper / live)
+│                                                                     │         │
+│                                              storage ───────────────┴──> dashboard
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Architecture
@@ -64,6 +91,7 @@ opt-in. See [`DISCLAIMER.md`](./DISCLAIMER.md) for the full text.
 | Features         | `src/features.py`            | Pure feature engineering                                       |
 | Regime           | `src/regime.py`              | Rule-based regime classifier                                   |
 | Strategies       | `src/strategies/*.py`        | momentum / breakout / mean_reversion / ensemble                |
+| Actionability    | `src/actionability.py`       | BUY threshold, SELL exit-only, no-short, liquidity dampener    |
 | Risk             | `src/risk.py`                | Single gate for any order — incl. live triple opt-in           |
 | Execution        | `src/execution.py`           | `dry_run` / `paper` / `live` execution router                  |
 | Portfolio + PnL  | `src/portfolio.py`, `pnl.py` | Local-estimate bookkeeping (clearly labelled)                  |
@@ -72,7 +100,7 @@ opt-in. See [`DISCLAIMER.md`](./DISCLAIMER.md) for the full text.
 | Dashboard        | `src/dashboard/`             | FastAPI + Jinja2 trading-terminal style                        |
 | Orchestrator     | `src/main.py`                | `run_one_cycle` / `run_loop`                                   |
 
-## Strategy
+## Strategy & actionability gates
 
 - **Momentum** — leans on short-horizon returns (5m, 15m, 1h) with a saturating tanh-like
   squash. Strong moves score close to ±1.
@@ -91,6 +119,12 @@ opt-in. See [`DISCLAIMER.md`](./DISCLAIMER.md) for the full text.
   Action is `BUY` above the profile's `buy` threshold, `SELL` below `sell`,
   otherwise `HOLD`. Confidence is dampened by low liquidity and high volatility
   so a strong signal on a dead book does not produce an oversized position.
+- **Actionability layer** (`src/actionability.py`) — sits **between** the
+  ensemble and the risk manager and downgrades unsafe intents to `HOLD`
+  before they ever reach the order builder: BUY below threshold,
+  negative-opportunity veto, SELL exit-only (no short by default), SELL
+  size clamp to the open quantity, and low-liquidity size dampener. Full
+  knobs: [Calibration knobs](#calibration-knobs).
 
 ## Competition mode
 
@@ -175,7 +209,7 @@ cached probe of `kraken paper status`. If the paper account is not
 initialised, the execution layer returns
 `status="blocked_paper_not_initialized"` and **never calls the CLI**.
 
-### How to run a paper competition simulation
+### Competition simulation runbook
 
 ```powershell
 # 1. Initialise the paper account (manual, one-time, $0 real)
