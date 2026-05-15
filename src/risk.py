@@ -153,26 +153,46 @@ def evaluate_risk(
         reasons.append(f"already holding {open_count} positions (max {cfg.max_open_positions})")
 
     # 8) Exposure caps.
+    # Exit-only SELLs are reduce-only by construction (they never increase
+    # exposure — they close an existing long). Without this carve-out the
+    # symmetric ``current_exposure + adjusted <= cap`` check would block
+    # exits whenever the agent is already at the per-account exposure
+    # ceiling, which is exactly when an exit is most needed. The carve-out
+    # also bypasses the per-position notional cap for the SELL leg so the
+    # full open quantity can be flattened in one shot (otherwise a 44 USD
+    # position would only get a 25 USD partial exit).
     current_exposure = sum(abs(p.notional_usd) for p in portfolio.positions)
     size_cap = {
         "dry_run": exec_cfg.dry_run_size_usd,
         "paper": exec_cfg.paper_size_usd,
         "live": exec_cfg.live_size_usd,
     }.get(mode, exec_cfg.dry_run_size_usd)
-    suggested = min(ensemble.suggested_size_usd, cfg.max_position_notional_usd, size_cap)
-    adjusted = max(suggested, 0.0)
-    exposure_ok = (current_exposure + adjusted) <= cfg.max_total_exposure_usd
-    checks.append(
-        _check(
-            "max_total_exposure",
-            exposure_ok,
-            f"current={current_exposure:.2f} adding={adjusted:.2f} cap={cfg.max_total_exposure_usd}",
+    if is_exit_action and ensemble.action == "SELL":
+        suggested = float(ensemble.suggested_size_usd or 0.0)
+        adjusted = max(suggested, 0.0)
+        exposure_ok = True
+        checks.append(
+            _check(
+                "max_total_exposure",
+                True,
+                f"current={current_exposure:.2f} sell_exit bypasses cap (adjusted={adjusted:.2f})",
+            )
         )
-    )
-    if not exposure_ok:
-        reasons.append(
-            f"exposure {current_exposure + adjusted:.2f} would exceed cap {cfg.max_total_exposure_usd}"
+    else:
+        suggested = min(ensemble.suggested_size_usd, cfg.max_position_notional_usd, size_cap)
+        adjusted = max(suggested, 0.0)
+        exposure_ok = (current_exposure + adjusted) <= cfg.max_total_exposure_usd
+        checks.append(
+            _check(
+                "max_total_exposure",
+                exposure_ok,
+                f"current={current_exposure:.2f} adding={adjusted:.2f} cap={cfg.max_total_exposure_usd}",
+            )
         )
+        if not exposure_ok:
+            reasons.append(
+                f"exposure {current_exposure + adjusted:.2f} would exceed cap {cfg.max_total_exposure_usd}"
+            )
 
     # 9) Drawdown circuit-breaker.
     starting = settings.config.competition.starting_equity_usd or 0.0
