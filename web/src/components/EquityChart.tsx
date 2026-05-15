@@ -31,12 +31,14 @@ export function EquityChart({
   points,
   startingCapital,
   positive,
-  height = 300,
+  height,
+  className,
 }: {
   points: EquityPoint[];
   startingCapital: number;
   positive: boolean;
   height?: number;
+  className?: string;
 }) {
   const data: ChartPoint[] = points.map((p) => ({
     ts: p.ts,
@@ -51,8 +53,8 @@ export function EquityChart({
   if (data.length === 0) {
     return (
       <div
-        className="grid place-items-center text-[12px] text-[var(--text-tertiary)] border border-dashed border-[var(--border)] rounded-md"
-        style={{ height }}
+        className={`grid place-items-center text-[12px] text-[var(--text-tertiary)] border border-dashed border-[var(--border)] rounded-md ${className ?? ""}`}
+        style={height ? { height } : undefined}
       >
         No equity points to display.
       </div>
@@ -64,8 +66,15 @@ export function EquityChart({
   const pad = Math.max((maxEq - minEq) * 0.15, 1);
 
   return (
-    <div style={{ width: "100%", height }}>
-      <ResponsiveContainer width="100%" height="100%">
+    <div
+      className={className}
+      style={
+        height
+          ? { width: "100%", height }
+          : { width: "100%", height: "100%", minHeight: 180 }
+      }
+    >
+      <ResponsiveContainer width="100%" height="100%" minHeight={180}>
         <AreaChart data={data} margin={{ top: 16, right: 12, left: 4, bottom: 0 }}>
           <defs>
             <linearGradient id="equityFillUp" x1="0" y1="0" x2="0" y2="1">

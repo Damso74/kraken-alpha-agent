@@ -43,7 +43,7 @@ export function Section({
         className,
       )}
     >
-      <header className="flex items-start gap-3 px-5 pt-5 pb-3">
+      <header className="flex items-start gap-3 px-4 sm:px-5 pt-4 sm:pt-5 pb-3">
         {Icon ? (
           <div
             className={cn(
@@ -63,7 +63,7 @@ export function Section({
           />
         )}
         <div className="min-w-0">
-          <h3 className="text-[14px] font-semibold tracking-tight text-[var(--text-primary)]">
+          <h3 className="text-[13.5px] sm:text-[14px] font-semibold tracking-tight text-[var(--text-primary)]">
             {title}
           </h3>
           {description ? (
@@ -73,7 +73,7 @@ export function Section({
           ) : null}
         </div>
       </header>
-      <div className={cn("px-5 pb-5 pt-1", contentClassName)}>{children}</div>
+      <div className={cn("px-4 sm:px-5 pb-4 sm:pb-5 pt-1", contentClassName)}>{children}</div>
     </section>
   );
 }

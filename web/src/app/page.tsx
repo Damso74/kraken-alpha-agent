@@ -42,36 +42,36 @@ export default function Page() {
     <div className="min-h-screen flex">
       <Sidebar />
 
-      <main className="flex-1 min-w-0">
+      <main className="flex-1 min-w-0 pt-14 lg:pt-0">
         {/* Header */}
-        <header className="border-b border-[var(--border)] bg-[var(--surface-0)]/80 backdrop-blur supports-[backdrop-filter]:bg-[var(--surface-0)]/60 sticky top-0 z-10">
-          <div className="px-6 lg:px-10 py-5 flex flex-wrap items-start justify-between gap-6">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2.5 text-[11px] text-[var(--text-tertiary)] uppercase tracking-[0.16em]">
+        <header className="border-b border-[var(--border)] bg-[var(--surface-0)]/80 backdrop-blur supports-[backdrop-filter]:bg-[var(--surface-0)]/60 lg:sticky lg:top-0 z-10">
+          <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-5 flex flex-col lg:flex-row lg:flex-wrap items-start lg:justify-between gap-4 lg:gap-6">
+            <div className="min-w-0 w-full lg:w-auto">
+              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[10.5px] sm:text-[11px] text-[var(--text-tertiary)] uppercase tracking-[0.14em] sm:tracking-[0.16em]">
                 <span className="text-[var(--gold)] font-semibold">Hackathon submission</span>
                 <span className="h-1 w-1 rounded-full bg-[var(--text-tertiary)]" />
                 <span>lablab AI Agent Olympics</span>
-                <span className="h-1 w-1 rounded-full bg-[var(--text-tertiary)]" />
-                <span>Kraken Trading Performance</span>
+                <span className="hidden sm:inline h-1 w-1 rounded-full bg-[var(--text-tertiary)]" />
+                <span className="hidden sm:inline">Kraken Trading Performance</span>
               </div>
-              <h1 className="mt-2 text-[26px] sm:text-[30px] font-semibold tracking-tight text-[var(--text-primary)]">
+              <h1 className="mt-2 text-[24px] sm:text-[28px] lg:text-[30px] font-semibold tracking-tight text-[var(--text-primary)]">
                 Kraken Alpha Agent
               </h1>
-              <p className="mt-1 text-[13px] text-[var(--text-secondary)] max-w-[680px]">
+              <p className="mt-1 text-[12.5px] sm:text-[13px] text-[var(--text-secondary)] max-w-[680px] leading-relaxed">
                 Production-grade trading agent with deterministic signal stack, defence-in-depth risk engine, and a fully audited 30-day xStocks backtest on real Kraken OHLC data.
               </p>
             </div>
 
-            <div className="flex flex-col gap-3 items-end shrink-0">
-              <span className="inline-flex items-center gap-2 rounded-full bg-[color:var(--success)]/10 border border-[color:var(--success)]/30 px-3 py-1 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-[var(--success)]">
+            <div className="flex flex-col gap-3 items-stretch lg:items-end w-full lg:w-auto shrink-0">
+              <span className="self-start lg:self-end inline-flex items-center gap-2 rounded-full bg-[color:var(--success)]/10 border border-[color:var(--success)]/30 px-3 py-1 text-[11px] sm:text-[11.5px] font-semibold uppercase tracking-[0.14em] text-[var(--success)]">
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full rounded-full bg-[var(--success)] opacity-60 animate-ping" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--success)]" />
                 </span>
                 Ready for demo
               </span>
-              <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-3 py-2 flex items-center gap-3">
-                <div>
+              <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-3 py-2 flex items-center justify-between sm:justify-start gap-3 w-full lg:w-auto">
+                <div className="min-w-0">
                   <div className="text-[10.5px] uppercase tracking-[0.12em] text-[var(--text-tertiary)] font-medium">
                     Equity curve · {period.days ?? 30}d
                   </div>
@@ -86,20 +86,22 @@ export default function Page() {
                     </span>
                   </div>
                 </div>
-                <MiniSpark
-                  points={equity_curve}
-                  positive={positive}
-                  width={200}
-                  height={48}
-                />
+                <div className="shrink-0">
+                  <MiniSpark
+                    points={equity_curve}
+                    positive={positive}
+                    width={140}
+                    height={40}
+                  />
+                </div>
               </div>
             </div>
           </div>
         </header>
 
-        <div className="px-6 lg:px-10 py-6 lg:py-8 space-y-8 max-w-[1380px]">
+        <div className="px-4 sm:px-6 lg:px-10 py-5 sm:py-6 lg:py-8 space-y-6 sm:space-y-7 lg:space-y-8 max-w-[1380px]">
           {/* KPI cards */}
-          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5 lg:gap-4">
             <KPICard
               label="Tests passed"
               value={`${tests.passed} / ${tests.passed}`}
@@ -131,7 +133,7 @@ export default function Page() {
           </section>
 
           {/* 2x2 grid */}
-          <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <section className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4">
             <Section
               title="What worked"
               description="All hackathon-required surfaces are deployed, tested, and audited."
@@ -298,35 +300,35 @@ export default function Page() {
             tone="info"
             icon={PlayCircle}
           >
-            <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-6">
-              <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-0)] p-4">
-                <div className="flex items-baseline justify-between mb-3">
-                  <div>
-                    <div className="text-[11px] uppercase tracking-[0.12em] text-[var(--text-tertiary)] font-medium">
+            <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-4 lg:gap-6">
+              <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-0)] p-3 sm:p-4">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2 mb-3">
+                  <div className="min-w-0">
+                    <div className="text-[10.5px] sm:text-[11px] uppercase tracking-[0.12em] text-[var(--text-tertiary)] font-medium">
                       Portfolio equity
                     </div>
                     <div
-                      className={`mt-1 text-[22px] font-semibold tabular tracking-tight ${
+                      className={`mt-1 text-[19px] sm:text-[22px] font-semibold tabular tracking-tight ${
                         positive ? "text-[var(--success)]" : "text-[var(--warning)]"
                       }`}
                     >
                       {fmtUsd(summary.ending_capital_usd)}
-                      <span className="ml-2 text-[12px] font-normal text-[var(--text-tertiary)]">
+                      <span className="ml-2 text-[11.5px] sm:text-[12px] font-normal text-[var(--text-tertiary)] whitespace-nowrap">
                         from {fmtUsd(summary.starting_capital_usd)}
                       </span>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-[11px] uppercase tracking-[0.12em] text-[var(--text-tertiary)] font-medium">
+                    <div className="text-[10.5px] sm:text-[11px] uppercase tracking-[0.12em] text-[var(--text-tertiary)] font-medium">
                       Net PnL
                     </div>
                     <div
-                      className={`mt-1 text-[18px] font-semibold tabular tracking-tight ${
+                      className={`mt-1 text-[16px] sm:text-[18px] font-semibold tabular tracking-tight ${
                         positive ? "text-[var(--success)]" : "text-[var(--warning)]"
                       }`}
                     >
                       {fmtUsd(summary.total_pnl_usd, { signed: true })}
-                      <span className="ml-1.5 text-[12px] font-normal text-[var(--text-tertiary)]">
+                      <span className="ml-1.5 text-[11.5px] sm:text-[12px] font-normal text-[var(--text-tertiary)] whitespace-nowrap">
                         ({fmtPct(summary.total_pnl_pct, { signed: true, decimals: 4 })})
                       </span>
                     </div>
@@ -336,11 +338,11 @@ export default function Page() {
                   points={equity_curve}
                   startingCapital={summary.starting_capital_usd}
                   positive={positive}
-                  height={280}
+                  className="w-full h-[180px] sm:h-[230px] lg:h-[280px]"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3 content-start">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-2.5 sm:gap-3 content-start">
                 <Stat label="Trades" value={summary.total_trades.toString()} sub={`${summary.buy_count} buy · ${summary.sell_count} sell`} />
                 <Stat
                   label="Win rate"
@@ -399,7 +401,7 @@ export default function Page() {
           </Section>
 
           {/* Activity feed + Judge takeaway */}
-          <section className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-4">
+          <section className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-3 lg:gap-4">
             <Section title="Recent activity" description="Operational signals from the deployed agent." tone="info" icon={Sparkles}>
               <ActivityFeed
                 generatedAt={data.generated_at}
@@ -410,7 +412,7 @@ export default function Page() {
               />
             </Section>
 
-            <div className="space-y-4">
+            <div className="space-y-3 lg:space-y-4">
               <JudgeTakeaway message="Production-grade agent with real exchange integration, strong safeguards, and a clearly diagnosed venue-level xStocks restriction — ready for any eligible account." />
 
               <Section title="Per-symbol breakdown" tone="neutral" icon={CircleDollarSign}>
@@ -462,8 +464,8 @@ export default function Page() {
           </section>
 
           {/* Footer */}
-          <footer className="pt-6 pb-10 border-t border-[var(--border)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3 text-[12px] text-[var(--text-secondary)]">
+          <footer className="pt-5 sm:pt-6 pb-8 sm:pb-10 border-t border-[var(--border)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-center sm:text-left">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[12px] text-[var(--text-secondary)]">
               <span className="inline-flex items-center gap-1.5">
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full rounded-full bg-[var(--success)] opacity-60 animate-ping" />
