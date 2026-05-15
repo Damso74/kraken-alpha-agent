@@ -7,6 +7,7 @@ at module import time) so it can be unit-tested.
 
 from __future__ import annotations
 
+import os
 import time
 from typing import Iterable
 
@@ -317,9 +318,27 @@ def run_one_cycle(
 
 
 def run_loop(stop_event=None) -> None:
-    """Continuous cycle runner used by ``scripts/run_agent_loop.py``."""
+    """Continuous cycle runner used by ``scripts/run_agent_loop.py``.
+
+    The cycle interval is sourced from
+    ``settings.config.trading.cycle_interval_seconds`` by default. The
+    ``LOOP_INTERVAL_SECONDS`` env var, when set to a positive integer,
+    overrides the YAML value (used by the crypto-perps fast-rotation
+    profile to drop the cycle from 60s down to ~20s without editing
+    config files). Values <2 are clamped to 2 so the loop stays
+    responsive to Ctrl+C.
+    """
     settings = get_settings()
-    interval = max(2, settings.config.trading.cycle_interval_seconds)
+    cfg_interval = settings.config.trading.cycle_interval_seconds
+    env_override = os.environ.get("LOOP_INTERVAL_SECONDS")
+    chosen = cfg_interval
+    if env_override:
+        try:
+            chosen = int(env_override)
+        except ValueError:
+            logger.warning("LOOP_INTERVAL_SECONDS=%r ignored (not int)", env_override)
+            chosen = cfg_interval
+    interval = max(2, int(chosen))
     while True:
         if stop_event is not None and stop_event.is_set():
             break

@@ -240,3 +240,81 @@ profiles:
       max_funding_rate_pct_per_hour: 0.5
       dry_run_mode_uses_paper_engine: true
       symbol_mapping: {}
+
+  # Crypto Perps fallback profile (conservative defaults).
+  #
+  # When the xStocks track is venue-blocked at the account class layer
+  # (e.g. PEDSL-CY where every xStocks Perp BUY/SELL is rejected with
+  # status=wouldNotReducePosition), this profile re-routes the same
+  # futures engine onto native crypto Perps (BTC/ETH/SOL/XRP/DOGE/AVAX/
+  # LINK/ADA/DOT/LTC). It exists so the deterministic pipeline can still
+  # be exercised end-to-end against real venue interaction without
+  # bypassing any safeguard. Defaults committed here are intentionally
+  # conservative (the same envelope as ``micro_live_100eur``): live use
+  # always requires the triple opt-in.
+  #
+  # Notes:
+  # - Leverage stays hardcoded at 1.0x (``futures.max_leverage`` is also
+  #   clamped by ``risk.HARDCODED_MAX_LEVERAGE``; the wrapper raises on
+  #   any value >1x).
+  # - Shorting is disabled in the engine (no SELL without an open long).
+  # - Funding-rate gate is left wide-open because crypto Perps publish
+  #   funding on an 8h period (vs 1h for xStocks Perps); the existing
+  #   per-hour cap would block every BUY on a profile that holds <30
+  #   minutes anyway. The funding cost on a 30-minute hold is <0.001 USD
+  #   per trade so the gate adds no protective value here.
+  micro_live_100eur_crypto:
+    description: "Crypto Perps fallback (BTC/ETH/SOL/... @ 1x, conservative caps, mirror of micro_live_100eur)."
+    trading:
+      shorting_enabled: false       # NEVER touch
+      min_opportunity_score_buy: 0.05
+      min_opportunity_score_sell: 0.05
+      cycle_interval_seconds: 20    # 20s cycle (overridable via LOOP_INTERVAL_SECONDS)
+      allowed_entry_sessions: []    # no session guard — crypto is 24/7
+    universe:
+      mode: static
+      static:
+        - "BTC"
+        - "ETH"
+        - "SOL"
+        - "XRP"
+        - "DOGE"
+        - "AVAX"
+        - "LINK"
+        - "ADA"
+        - "DOT"
+        - "LTC"
+      quote: USD
+      max_spread_bps: 50
+      top_n: 10
+    strategy:
+      thresholds: { buy: 0.05, sell: -0.05 }
+      min_confidence_to_trade: 0.25
+    risk:
+      max_open_positions: 3
+      max_position_notional_usd: 10.0   # USER CAP — mirror of micro_live_100eur
+      max_total_exposure_usd: 30.0      # USER CAP — mirror of micro_live_100eur
+      max_daily_drawdown_pct: 5.0
+      max_spread_bps: 50
+      cooldown_seconds_per_symbol: 60
+      stop_loss_pct: 1.0
+      take_profit_pct: 1.2
+      max_trades_per_hour: 60
+      block_if_regime: ["LOW_LIQUIDITY", "HIGH_VOLATILITY"]
+    exit:
+      time_stop_minutes: 30
+      flatten_before_close_enabled: false
+      momentum_exit_enabled: true
+    execution:
+      dry_run_size_usd: 10.0
+      paper_size_usd: 10.0
+      live_size_usd: 10.0
+      require_validate_first: false
+      dead_mans_switch_seconds: 60
+      engine: futures
+    futures:
+      enabled: true
+      max_leverage: 1.0               # NEVER touch — hard-capped by risk gate too
+      max_funding_rate_pct_per_hour: 999.0
+      dry_run_mode_uses_paper_engine: true
+      symbol_mapping: {}

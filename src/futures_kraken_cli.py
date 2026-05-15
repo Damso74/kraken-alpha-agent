@@ -71,6 +71,23 @@ SPOT_TO_FUTURES: dict[str, str] = {
     "CRCLx": "PF_CRCLXUSD",
     "HOODx": "PF_HOODXUSD",
     "GLDx": "PF_GLDXUSD",
+    # Native crypto Perps fallback (used when xStocks venue is blocked at
+    # the account level — e.g. PEDSL-CY blocks both Spot and Futures
+    # xStocks). All 10 confirmed live on the same account 2026-05-15
+    # (status=placed, real fills). Note: BTC is "XBT" in Kraken's pair
+    # naming convention. fundingRate semantics differ from xStocks Perps
+    # (typically 8h period for crypto vs 1h for xStocks) so the funding
+    # gate must be relaxed for these in the profile.
+    "BTC": "PF_XBTUSD",
+    "ETH": "PF_ETHUSD",
+    "SOL": "PF_SOLUSD",
+    "XRP": "PF_XRPUSD",
+    "DOGE": "PF_DOGEUSD",
+    "AVAX": "PF_AVAXUSD",
+    "LINK": "PF_LINKUSD",
+    "ADA": "PF_ADAUSD",
+    "DOT": "PF_DOTUSD",
+    "LTC": "PF_LTCUSD",
 }
 
 # Reverse map for diagnostics. Populated lazily so unit tests can shim
@@ -116,15 +133,21 @@ class FuturesCLIResult:
 # ---------------------------------------------------------------------------
 
 
-_SLASH_RE = re.compile(r"^(?P<ticker>[A-Za-z0-9]+x)/(?P<quote>[A-Za-z]{3,5})$")
+_SLASH_RE = re.compile(r"^(?P<ticker>[A-Za-z0-9]+)/(?P<quote>[A-Za-z]{3,5})$")
 
 
 def to_futures_symbol(spot_pair_or_ticker: str) -> str | None:
-    """Translate an xStocks spot pair/ticker to its Kraken Futures symbol.
+    """Translate an xStocks spot pair/ticker (or a bare crypto ticker) to its
+    Kraken Futures symbol.
 
-    Accepts the canonical slash form (e.g. ``AAPLx/USD``) and the bare
-    ticker (e.g. ``AAPLx``). Returns ``None`` when the symbol has no
-    Futures counterpart (e.g. MSFTx, AMZNx, METAx are spot-only).
+    Accepts the canonical xStocks slash form (e.g. ``AAPLx/USD``), the bare
+    xStocks ticker (e.g. ``AAPLx``), bare crypto tickers (``BTC``), or
+    crypto slash pairs (``BTC/USD``). Returns ``None`` when the symbol
+    has no Futures counterpart (e.g. MSFTx, AMZNx, METAx are spot-only).
+
+    Lookup is case-sensitive for xStocks (preserves the lowercase ``x``)
+    but case-insensitive for crypto since the canonical form is uppercase
+    (``BTC``, ``ETH``, ...).
     """
 
     if not spot_pair_or_ticker:
@@ -134,7 +157,11 @@ def to_futures_symbol(spot_pair_or_ticker: str) -> str | None:
     match = _SLASH_RE.match(raw)
     if match:
         ticker = match.group("ticker")
-    return SPOT_TO_FUTURES.get(ticker)
+    # Try the verbatim form first (preserves xStocks lowercase ``x``), then
+    # the uppercase form (crypto canonical key).
+    if ticker in SPOT_TO_FUTURES:
+        return SPOT_TO_FUTURES[ticker]
+    return SPOT_TO_FUTURES.get(ticker.upper())
 
 
 def to_spot_ticker(futures_symbol: str) -> str | None:

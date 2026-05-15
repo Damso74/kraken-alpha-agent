@@ -41,3 +41,14 @@ env/
 *.swo
 .DS_Store
 Thumbs.db
+
+# Local working scripts (PowerShell/bash one-shots, audit dumps, manual
+# rescue scripts that stay on the operator's workstation and the VPS).
+# Restricted to the repo root so they never sneak into git status without
+# masking ``.cursor/`` or any source tree entry.
+/.*.sh
+/.*.py
+/paper_run_report*.md
+/start_shadow_futures.sh
+/summarize_decisions.py
+/trades.jsonl

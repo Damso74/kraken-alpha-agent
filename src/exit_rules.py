@@ -58,6 +58,8 @@ class _ExitParams:
     max_hold_minutes: float
     stale_position_min_pnl_pct: float
     flatten_before_close_minutes: float
+    flatten_before_close_enabled: bool = True
+    momentum_exit_enabled: bool = True
 
 
 # ---------------------------------------------------------------------------
@@ -97,18 +99,31 @@ def _resolve_params(config: Any) -> _ExitParams:
     stop = float(risk_stop) if risk_stop is not None else float(base_stop)
     take = float(risk_take) if risk_take is not None else float(base_take)
 
+    # ``time_stop_minutes`` is the crypto-fast-rotation alias; when set,
+    # it overrides the legacy ``max_hold_minutes``. Both keep being read
+    # so the existing xStocks profiles are unaffected.
+    base_max_hold = float(_get_attr(exit_cfg, "max_hold_minutes", 90.0))
+    time_stop_alias = _get_attr(exit_cfg, "time_stop_minutes", None)
+    max_hold = float(time_stop_alias) if time_stop_alias is not None else base_max_hold
+
     return _ExitParams(
         stop_loss_pct=stop,
         take_profit_pct=take,
         momentum_exit_score=float(
             _get_attr(exit_cfg, "momentum_exit_score", -0.03)
         ),
-        max_hold_minutes=float(_get_attr(exit_cfg, "max_hold_minutes", 90.0)),
+        max_hold_minutes=max_hold,
         stale_position_min_pnl_pct=float(
             _get_attr(exit_cfg, "stale_position_min_pnl_pct", 0.3)
         ),
         flatten_before_close_minutes=float(
             _get_attr(exit_cfg, "flatten_before_close_minutes", 15.0)
+        ),
+        flatten_before_close_enabled=bool(
+            _get_attr(exit_cfg, "flatten_before_close_enabled", True)
+        ),
+        momentum_exit_enabled=bool(
+            _get_attr(exit_cfg, "momentum_exit_enabled", True)
         ),
     )
 
@@ -202,6 +217,8 @@ def momentum_exit(position: Any, opportunity_score: float, config: Any = None) -
     if not _is_long(position):
         return ExitDecision(should_exit=False, rule=None)
     params = _resolve_params(config)
+    if not params.momentum_exit_enabled:
+        return ExitDecision(should_exit=False)
     try:
         score = float(opportunity_score)
     except (TypeError, ValueError):
@@ -251,6 +268,8 @@ def flatten_before_close_exit(
     if not _is_long(position):
         return ExitDecision(should_exit=False, rule=None)
     params = _resolve_params(config)
+    if not params.flatten_before_close_enabled:
+        return ExitDecision(should_exit=False)
     now_utc = _ensure_utc(now)
     remaining = minutes_until_us_core_close(now_utc)
     if remaining is None:

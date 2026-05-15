@@ -70,6 +70,13 @@ class UniverseConfig(BaseModel):
     min_volume: float = 100.0
     top_n: int = 8
     ranking_cache_seconds: int = 60
+    # When non-empty this hardcoded list short-circuits the dynamic ranker
+    # and replaces ``symbols`` for the purposes of allowlist + universe
+    # resolution. Used by the crypto-perps fallback profile (BTC/ETH/SOL/...)
+    # so the xStocks ranker is bypassed entirely. Entries can be either bare
+    # tickers (``BTC``) or slash pairs (``BTC/USD``) — the trailing /QUOTE
+    # is stripped at load time.
+    static: list[str] = Field(default_factory=list)
 
 
 class StrategyConfig(BaseModel):
@@ -156,6 +163,17 @@ class ExitRulesConfig(BaseModel):
     max_hold_minutes: float = 90.0
     stale_position_min_pnl_pct: float = 0.3
     flatten_before_close_minutes: float = 15.0
+    # Alias used by the crypto-perps fast-rotation profile. When set,
+    # overrides ``max_hold_minutes`` so the time-stop fires earlier.
+    # Backwards compatible: legacy profiles that only set ``max_hold_minutes``
+    # keep working unchanged.
+    time_stop_minutes: Optional[float] = None
+    # Master switch for the ``flatten_before_close`` rule. Defaults to True
+    # for backward compatibility with the xStocks engine that runs against
+    # US equity hours. Crypto Perps (24/7 venue) set this to False so the
+    # rule never fires.
+    flatten_before_close_enabled: bool = True
+    momentum_exit_enabled: bool = True
 
 
 class LLMConfig(BaseModel):

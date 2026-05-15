@@ -22,6 +22,13 @@ TWENTY_FOUR_SEVEN: frozenset[str] = frozenset(
     {"TSLAx", "QQQx", "SPYx", "NVDAx", "CRCLx", "AAPLx", "HOODx", "MSTRx", "GLDx", "GOOGLx"}
 )
 
+# Native crypto tickers kept verbatim (no auto ``x`` suffix). Used by the
+# crypto-perps fallback profile when xStocks Spot/Futures are venue-blocked
+# on the current Kraken account class. Crypto Perps trade 24/7.
+KNOWN_CRYPTO_TICKERS: frozenset[str] = frozenset(
+    {"BTC", "ETH", "SOL", "XRP", "DOGE", "AVAX", "LINK", "ADA", "DOT", "LTC"}
+)
+
 
 @dataclass(frozen=True)
 class UniverseSymbol:
@@ -32,12 +39,34 @@ class UniverseSymbol:
     always_open: bool    # advertised as 24/7
 
 
+def _strip_pair(raw: str) -> str:
+    """Strip an optional ``/QUOTE`` tail so the caller can pass either a bare
+    ticker (``BTC``) or a slash pair (``BTC/USD``) interchangeably."""
+    if not raw:
+        return ""
+    head = raw.strip().split("/", 1)[0]
+    return head
+
+
 def normalize_symbol(ticker: str, quote: str = "USD") -> UniverseSymbol:
-    t = ticker.strip()
+    raw = _strip_pair(ticker)
+    upper = raw.upper()
+    q = quote.strip().upper() or "USD"
+    # Crypto path: keep the ticker verbatim (uppercased), do NOT auto-add
+    # the ``x`` xStocks suffix. The Kraken Spot CLI accepts ``BTC/USD`` and
+    # the Futures wrapper translates ``BTC`` to ``PF_XBTUSD``.
+    if upper in KNOWN_CRYPTO_TICKERS:
+        return UniverseSymbol(
+            ticker=upper,
+            quote=q,
+            pair_slash=f"{upper}/{q}",
+            pair_compact=f"{upper}{q}",
+            always_open=True,
+        )
+    t = raw
     if not t.endswith("x"):
         # Allow accidental input like "TSLA" -> "TSLAx".
         t = f"{t}x"
-    q = quote.strip().upper() or "USD"
     return UniverseSymbol(
         ticker=t,
         quote=q,
@@ -49,6 +78,11 @@ def normalize_symbol(ticker: str, quote: str = "USD") -> UniverseSymbol:
 
 def get_universe() -> list[UniverseSymbol]:
     cfg = get_settings().config.universe
+    # Profile-level static override (crypto-perps fallback). When present,
+    # entries are taken verbatim and the xStocks allowlist is bypassed.
+    static = list(getattr(cfg, "static", []) or [])
+    if static:
+        return [normalize_symbol(s, cfg.quote) for s in static]
     return [normalize_symbol(s, cfg.quote) for s in cfg.symbols]
 
 

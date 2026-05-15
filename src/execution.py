@@ -107,13 +107,18 @@ def _futures_size_contracts(size_usd: float, mark_price: float) -> float:
     """Convert a USD notional to a futures contract size.
 
     All xStocks Perps confirmed on 2026-05-15 use ``contractSize=1`` (one
-    contract = one underlying share, priced in USD). Size therefore equals
-    ``notional / markPrice`` and is rounded to 4 decimals — well above the
-    tickSize granularity advertised by Kraken Futures.
+    contract = one underlying share, priced in USD). The Kraken Futures
+    venue enforces ``contractValueTradePrecision`` per instrument (2 for
+    most xStocks names, 3 for SPYx/QQQx/GLDx). Rounding to 4 decimals as
+    we used to do produces sizes like ``0.0649`` that the venue rejects
+    with ``status:invalidSize``. Round to **2 decimals** so the result
+    is always a valid multiple of the most restrictive precision (and
+    still a valid multiple of precision=3, since 0.01 is a multiple of
+    0.001).
     """
 
     px = max(float(mark_price or 0.0), 0.01)
-    return round(max(float(size_usd), 0.0) / px, 4)
+    return round(max(float(size_usd), 0.0) / px, 2)
 
 
 def _execute_futures(
@@ -151,6 +156,20 @@ def _execute_futures(
             mode=mode, features=features, ensemble=ensemble,
             reason="mark price unavailable for futures sizing",
         )
+
+    # Kraken Futures rejects very small orders with status:invalidSize. The
+    # actual venue minimum on xStocks Perps depends on the per-instrument
+    # tick (typically 0.1 contract on small-name names, 0.01 on liquid ones).
+    # To be safe we floor BUY notionals to the per-position cap (or the
+    # configured floor below it) so we always submit at least one
+    # acceptable contract count. SELL is left untouched so reduce-only
+    # flatten still works on tiny dust positions.
+    MIN_FUTURES_BUY_NOTIONAL_USD = 25.0
+    if ensemble.action == "BUY" and 0.0 < size_usd < MIN_FUTURES_BUY_NOTIONAL_USD:
+        cap = float(get_settings().config.risk.max_position_notional_usd or 0.0)
+        floor = min(MIN_FUTURES_BUY_NOTIONAL_USD, cap) if cap > 0 else MIN_FUTURES_BUY_NOTIONAL_USD
+        if size_usd < floor:
+            size_usd = floor
 
     contracts = _futures_size_contracts(size_usd, mark_price)
     if contracts <= 0:
