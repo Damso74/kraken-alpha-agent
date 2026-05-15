@@ -83,13 +83,72 @@ python scripts/export_audit_bundle.py
 uvicorn src.dashboard.app:app --reload
 ```
 
+## Live result on this account (PEDSL-CY block)
+
+> **TL;DR.** Both the spot xStocks orderbook *and* the xStocks Perps
+> futures venue are blocked at the account-class layer on this Kraken
+> account (PEDSL-CY, Cyprus EU). The bot itself is API-correct end to end
+> — a BTC Perp control on the same key/IP fills cleanly — but the
+> hackathon-eligible xStocks track is structurally inaccessible from this
+> jurisdiction. **Final xStocks live PnL: 0.00 USD, 0 fill, 0 open
+> position at session end.**
+
+### Venue-level rejections observed (2026-05-15)
+
+| Engine               | Symbol             | Command                                           | Response                                                  |
+|----------------------|--------------------|---------------------------------------------------|-----------------------------------------------------------|
+| Spot xStocks         | `AAPLx/USD`        | `kraken order buy --asset-class tokenized_asset`  | `EGeneral:Permission denied` (also on SELL of owned token) |
+| Spot xStocks         | `AAPLx/USD`        | same, from VPS US-NJ IP                           | identical error (NOT IP/geo)                              |
+| Futures xStocks Perp | `PF_HOODXUSD`      | `kraken futures order buy ... --type market`      | `{"result":"success","status":"wouldNotReducePosition"}`  |
+| Futures xStocks Perp | `PF_AAPLXUSD`      | same                                              | identical `wouldNotReducePosition`                        |
+| Futures crypto Perp  | `PF_XBTUSD`        | same (control on same key/IP/account)             | `{"status":"placed"}` — real fill, position opened        |
+
+The misleading `wouldNotReducePosition` status (= "this account can only
+ever close xStocks Perps positions, never open them") is consistent with
+the **"EU/EEA excluded"** caveat in the Kraken xStocks Futures Trading
+Contest terms.
+
+The CLI parser was hardened (see commit `d15c62c`) so the bot no longer
+treats `wouldNotReducePosition` / `invalidSize` / `marketSuspended` as
+successful fills: `src/futures_kraken_cli.run_futures_cli` now downgrades
+any non-whitelisted Kraken Futures status to `ok=False` regardless of
+the HTTP-level `result=success` wrapper.
+
+### Crypto fallback diagnostic (outside xStocks track)
+
+To validate the rest of the deterministic pipeline against real venue
+interaction without dead-coding, a 19-minute crypto Perps live session
+was run with the same 1x-leverage / no-shorting / triple-opt-in
+safeguards:
+
+- 22 real fills (LTC / ETH / SOL / AVAX / BTC) across 10 candidate
+  symbols.
+- PnL ≈ **−0.55 USD** — essentially taker-fee burn plus drift on a
+  strategy not tuned for crypto micro-structure (xStocks-calibrated
+  thresholds).
+- Stopped automatically by the volume watchdog at 500 USD cumulative
+  turnover (LTC over-rotation detected) — exactly the throttle path
+  designed for runaway loops.
+- Confirms the futures engine, the dead-man cancel-after, the strict
+  parser whitelist, the volume watchdog and the flatten path all
+  function end-to-end against the live Kraken Futures venue.
+
+This crypto run is documented as a **technical diagnostic** and is
+explicitly outside the xStocks competition track. The active default
+profile remains `aggressive_competition` (spot xStocks engine); the
+`micro_live_100eur_crypto` profile shipped in `config.yaml` is gated
+behind `KRAKEN_ALPHA_PROFILE=micro_live_100eur_crypto` and never the
+default.
+
 ## Live execution — Perpetual Futures pivot
 
 > **Context.** EU / PEDSL-CY accounts (the user's jurisdiction) cannot trade
 > the spot xStocks orderbook on Kraken Spot at the time of submission.
 > Hackathon ranking is computed from live PnL, so the project pivoted the
 > live execution path to **Kraken Futures Perpetual xStocks**, which the
-> same jurisdiction is authorised to trade. The override of the original
+> same jurisdiction was *initially expected* to trade. Subsequent testing
+> on this account revealed an additional venue-level block on xStocks
+> Perps (see "Live result" section above). The override of the original
 > "no futures, no leverage" rule is **explicit and conscious** and is
 > paired with intransigeant safeguards centralised in the risk gate.
 
@@ -312,7 +371,7 @@ kraken-alpha-agent/
 │   ├── strategies/  (momentum / breakout / mean_reversion / ensemble)
 │   ├── universe.py
 │   └── utils.py
-├── tests/  (16 files, 96 tests)
+├── tests/  (29 files, 232 tests)
 └── data/.gitkeep
 ```
 
@@ -332,9 +391,11 @@ kraken-alpha-agent/
 9. FastAPI dashboard with Actionability, Ranking, Decisions, Trades, PnL
    pages and matching JSON routes.
 10. Optional Featherless LLM explainer (OpenAI-compatible API).
-11. **96/96 tests green**; CI-friendly mock transport.
+11. **232/232 tests green** (parser whitelist, risk gates, futures
+    execution, exit rules, futures CLI mapping, exit-action exposure
+    carve-out, etc.); CI-friendly mock transport.
 12. Submission docs (README, DISCLAIMER, PLAN, DEMO_SCRIPT, SUBMISSION,
-    CLI_VALIDATION).
+    CLI_VALIDATION, VPS_RUNBOOK, JURY_ACCESS_TEMPLATE).
 
 ## Submission checklist
 
@@ -343,13 +404,21 @@ kraken-alpha-agent/
       Safety, Submission).
 - [x] `docs/DEMO_SCRIPT.md` finalised.
 - [x] `docs/SUBMISSION.md` finalised (this file).
-- [x] `pytest` is green (96/96).
+- [x] `docs/JURY_ACCESS_TEMPLATE.md` finalised (read-only audit
+      protocol, no live keys committed).
+- [x] `pytest` is green (232/232 as of submission freeze).
 - [x] `python scripts/dry_run_once.py` runs end-to-end.
 - [x] Dashboard probed on `/`, `/ranking`, `/actionability`, `/health`.
 - [x] `python scripts/export_audit_bundle.py` writes an `export/<ts>/`
       bundle on demand.
+- [x] Live xStocks execution attempted and documented (PEDSL-CY block
+      reproduced — see "Live result on this account" section).
+- [x] Crypto fallback diagnostic recorded (22 fills, PnL ≈ −0.55 USD,
+      technical-only — outside xStocks track).
 - [ ] Kraken paper account initialised by the user (one-time, manual:
       `wsl -- bash -lc "kraken paper init --balance 10000 --currency USD --yes"`).
-- [ ] GitHub public push performed by the user (no remote configured in
-      this freeze; see README submission steps).
+- [ ] GitHub public push of the final submission branch performed by
+      the user.
 - [ ] 90-second demo video recorded against `docs/DEMO_SCRIPT.md`.
+- [ ] Jury-readable summary (this file) cross-linked from the lablab
+      submission form.
