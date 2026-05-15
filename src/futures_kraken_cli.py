@@ -300,9 +300,41 @@ def run_futures_cli(
             payload = json.loads(stdout)
         except json.JSONDecodeError:
             stderr = (stderr + f"\n[non-json stdout]: {stdout[:200]}").strip()
+    ok = proc.returncode == 0
+    status: Literal["ok", "error", "mock", "missing_cli", "blocked"] = "ok" if ok else "error"
+    # Kraken Futures REST returns HTTP 200 (returncode 0) even when the
+    # venue rejects the order. The actual outcome is in the top-level
+    # ``status`` field of the JSON payload (e.g. ``invalidSize``,
+    # ``wouldNotReducePosition``). The previous blacklist approach missed
+    # account-level / region-level rejection codes that Kraken can emit
+    # without warning (notably ``wouldNotReducePosition`` on PEDSL-CY for
+    # xStocks Perps), so the order looked successful while no fill ever
+    # happened. Switch to a strict whitelist: anything not in
+    # ``_SUCCESS_STATUSES`` is treated as a failure. ``status`` is
+    # sometimes a dict (e.g. ``cancel-after`` returns
+    # ``{"cancelOnly": true, ...}`` next to ``result="success"``) — those
+    # payloads must not be downgraded.
+    _SUCCESS_STATUSES = {
+        "placed",
+        "filled",
+        "partiallyFilled",
+        "received",
+        "triggered",
+        "edited",
+        "untouched",
+    }
+    if ok and isinstance(payload, dict):
+        raw_status = payload.get("status")
+        if isinstance(raw_status, str) and raw_status not in _SUCCESS_STATUSES:
+            ok = False
+            status = "error"
+            if not stderr:
+                stderr = (
+                    f"kraken futures returned status={raw_status!r} payload={json.dumps(payload)[:200]}"
+                )
     return FuturesCLIResult(
-        ok=proc.returncode == 0,
-        status="ok" if proc.returncode == 0 else "error",
+        ok=ok,
+        status=status,
         command=cmd, stdout_json=payload, stderr=stderr,
         exit_code=proc.returncode, duration_ms=duration_ms,
         transport=transport,
@@ -416,7 +448,7 @@ def _build_order_args(
             f"leverage {leverage} exceeds wrapper-level cap "
             f"{HARDCODED_MAX_LEVERAGE} — risk gate must approve <=1.0x only"
         )
-    cmd_prefix = ["paper"] if paper else []
+    cmd_prefix = ["paper"] if paper else ["order"]
     args: list[str] = [*cmd_prefix, side.lower(), symbol, str(size), "--type", order_type]
     # ``--leverage`` is only supported on ``paper buy/sell``; for live futures
     # orders the per-account leverage preference is enforced via the
