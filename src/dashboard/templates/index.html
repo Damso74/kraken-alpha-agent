@@ -19,6 +19,8 @@
       <a href="/ranking">Ranking JSON</a>
       <a href="/actionability">Actionability JSON</a>
       <a href="/pnl">PnL JSON</a>
+      <a href="/backtest">Backtest JSON</a>
+      <a href="/market-hours">Market hours JSON</a>
       <a href="/health">Health</a>
     </nav>
   </header>
@@ -97,6 +99,131 @@
           {% if kraken_version %}<span class="pill">{{ kraken_version }}</span>{% endif %}
         </div>
       </div>
+    </div>
+
+    <h3 class="section-title">Backtest latest</h3>
+    <div class="card">
+      {% if backtest_summary %}
+        <div class="kpi-sub">
+          generated_at: <span class="mono">{{ backtest_summary.generated_at }}</span>
+          · profile: <span class="pill">{{ backtest_summary.profile or '-' }}</span>
+          · source: <span class="pill">{{ backtest_summary.source }}</span>
+          · interval: <span class="pill">{{ backtest_summary.interval_minutes }}m</span>
+        </div>
+        <div class="grid cols-3">
+          <div>
+            <div class="kpi-sub">net_pnl_pct</div>
+            <div class="kpi {% if (backtest_summary.net_pnl_pct or 0) >= 0 %}pos{% else %}neg{% endif %}">
+              {{ '%+.2f' % (backtest_summary.net_pnl_pct or 0) }}%
+            </div>
+          </div>
+          <div>
+            <div class="kpi-sub">trades / win_rate</div>
+            <div class="kpi">
+              {{ backtest_summary.trades_count or 0 }}
+              <span class="kpi-sub">/ {{ '%.0f' % ((backtest_summary.win_rate or 0) * 100) }}%</span>
+            </div>
+          </div>
+          <div>
+            <div class="kpi-sub">max_drawdown_pct</div>
+            <div class="kpi neg">{{ '%.2f' % (backtest_summary.max_drawdown_pct or 0) }}%</div>
+          </div>
+        </div>
+        <div class="kpi-sub">
+          symbols:
+          {% for s in backtest_summary.symbols %}<span class="pill">{{ s }}</span>{% endfor %}
+          · buy={{ backtest_summary.buy_count or 0 }}
+          · sell={{ backtest_summary.sell_count or 0 }}
+          · hold={{ backtest_summary.hold_count or 0 }}
+          {% if backtest_summary.best_symbol %}
+            · best=<span class="pill">{{ backtest_summary.best_symbol }}</span>
+          {% endif %}
+          {% if backtest_summary.worst_symbol %}
+            · worst=<span class="pill">{{ backtest_summary.worst_symbol }}</span>
+          {% endif %}
+        </div>
+        {% if backtest_summary.best_config %}
+        <p class="mono">
+          recommended config:
+          {{ backtest_summary.best_config.overrides }}
+          {% if backtest_summary.best_config.rationale %}
+            <br><span class="kpi-sub">{{ backtest_summary.best_config.rationale }}</span>
+          {% endif %}
+        </p>
+        {% endif %}
+        <p class="kpi-sub">
+          Historical performance is not predictive of future results — see
+          <code>data/backtest_latest.json</code>.
+        </p>
+      {% else %}
+        <p class="mono">
+          No backtest yet. Run
+          <code>python scripts/backtest_xstocks.py --top 8 --grid-search</code>
+          to populate <code>data/backtest_latest.json</code>.
+        </p>
+      {% endif %}
+    </div>
+
+    <h3 class="section-title">Market hours latest</h3>
+    <div class="card">
+      {% if market_hours_summary %}
+        <div class="kpi-sub">
+          generated_at: <span class="mono">{{ market_hours_summary.timestamp_utc }}</span>
+          · profile: <span class="pill">{{ market_hours_summary.profile or '-' }}</span>
+          · source: <span class="pill">{{ market_hours_summary.source }}</span>
+          · report_kind: <span class="pill">{{ market_hours_summary.report_kind }}</span>
+        </div>
+        <div class="grid cols-3">
+          <div>
+            <div class="kpi-sub">Best session (Variant A)</div>
+            <div class="kpi">
+              {{ market_hours_summary.best_session or '-' }}
+              {% if market_hours_summary.best_session_net_pnl_pct is not none %}
+                <span class="kpi-sub">/ {{ '%+.2f' % (market_hours_summary.best_session_net_pnl_pct or 0) }}%</span>
+              {% endif %}
+            </div>
+          </div>
+          <div>
+            <div class="kpi-sub">LOW_LIQUIDITY runtime</div>
+            <div class="kpi">
+              <span class="badge {% if market_hours_summary.decision == 'KEEP_BLOCKING' %}ok{% else %}warn{% endif %}">
+                {{ market_hours_summary.decision }}
+              </span>
+            </div>
+          </div>
+          <div>
+            <div class="kpi-sub">Best window CEST</div>
+            <div class="kpi">{{ market_hours_summary.best_window_cest or 'n/a' }}</div>
+          </div>
+        </div>
+        <div class="kpi-sub">
+          candles_total: {{ market_hours_summary.candles_total }} ·
+          {% for sess, count in market_hours_summary.candles_per_session.items() %}
+            <span class="pill">{{ sess }}: {{ count }}</span>
+          {% endfor %}
+        </div>
+        {% if market_hours_summary.best_tickers_for_1530_cest %}
+        <p class="mono">
+          Top tickers (15h30 CEST · US_CORE):
+          {% for t in market_hours_summary.best_tickers_for_1530_cest[:3] %}
+            <span class="pill">{{ t.symbol }} ({{ '%+.2f' % t.us_core_realized_pnl }})</span>
+          {% endfor %}
+        </p>
+        {% endif %}
+        {% if market_hours_summary.rationale %}
+        <p class="kpi-sub">{{ market_hours_summary.rationale }}</p>
+        {% endif %}
+        <p class="kpi-sub">
+          Variant B is for backtest analysis only. Historical performance is not
+          predictive of future results — see <code>data/market_hours_report_latest.json</code>.
+        </p>
+      {% else %}
+        <p class="mono">
+          No market hours report yet. Run
+          <code>python scripts/backtest_xstocks.py --top 8 --market-hours-report</code>
+          to populate <code>data/market_hours_report_latest.json</code>.
+        </p>
+      {% endif %}
     </div>
 
     <h3 class="section-title">Open positions</h3>

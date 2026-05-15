@@ -105,6 +105,125 @@ def _load_latest_ranking(force: bool = False) -> dict[str, Any]:
     return empty
 
 
+def _load_latest_backtest() -> dict[str, Any] | None:
+    """Load ``data/backtest_latest.json`` if present.
+
+    Returns ``None`` when no backtest has been produced yet so callers can
+    render a "no data" UI fragment. Payloads written by the backtester
+    always carry ``source = "backtest_local_estimate"`` which we surface
+    as-is for transparency.
+    """
+    data_dir = PROJECT_ROOT / "data"
+    latest = data_dir / "backtest_latest.json"
+    if not latest.exists():
+        return None
+    try:
+        payload = json.loads(latest.read_text(encoding="utf-8"))
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("failed to parse %s: %s", latest, exc)
+        return None
+    if not isinstance(payload, dict):
+        return None
+    return payload
+
+
+def _load_latest_market_hours() -> dict[str, Any] | None:
+    """Load ``data/market_hours_report_latest.json`` if present.
+
+    The payload is always tagged ``source="backtest_local_estimate"`` and
+    ``report_kind="market_hours"`` — both are surfaced verbatim so the
+    operator can audit provenance.
+    """
+    data_dir = PROJECT_ROOT / "data"
+    latest = data_dir / "market_hours_report_latest.json"
+    if not latest.exists():
+        return None
+    try:
+        payload = json.loads(latest.read_text(encoding="utf-8"))
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("failed to parse %s: %s", latest, exc)
+        return None
+    if not isinstance(payload, dict):
+        return None
+    return payload
+
+
+def _summarise_market_hours(payload: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Compact market-hours summary used by the HTML view."""
+    if not payload:
+        return None
+    rec = payload.get("recommendation") or {}
+    variants = payload.get("variants") or {}
+    var_a = variants.get("A_block_low_liquidity") or {}
+    var_b = variants.get("B_allow_low_liquidity_simulation_only") or {}
+    by_session_a = var_a.get("by_session") or {}
+    # Pick the best session by net_pnl_pct in variant A (live-safe).
+    best_session = None
+    best_pnl = -1e18
+    for sess, agg in by_session_a.items():
+        if not isinstance(agg, dict):
+            continue
+        pnl = agg.get("net_pnl_pct") or 0.0
+        if pnl > best_pnl:
+            best_pnl = pnl
+            best_session = sess
+    decision = (
+        "KEEP_BLOCKING"
+        if rec.get("keep_low_liquidity_blocking_in_runtime")
+        and not rec.get("allow_in_paper_dry_run_only")
+        else (
+            "ALLOW_IN_DRY_RUN_ONLY"
+            if rec.get("allow_in_paper_dry_run_only")
+            else "KEEP_BLOCKING"
+        )
+    )
+    return {
+        "timestamp_utc": payload.get("timestamp_utc"),
+        "profile": payload.get("profile"),
+        "symbols": payload.get("symbols", []),
+        "candles_total": payload.get("candles_total", 0),
+        "candles_per_session": payload.get("candles_per_session") or {},
+        "best_session": best_session,
+        "best_session_net_pnl_pct": best_pnl if best_pnl > -1e17 else None,
+        "decision": decision,
+        "best_window_cest": rec.get("best_window_cest"),
+        "best_tickers_for_1530_cest": rec.get("best_tickers_for_1530_cest") or [],
+        "rationale": rec.get("rationale"),
+        "totals_a": var_a.get("totals") or {},
+        "totals_b": var_b.get("totals") or {},
+        "comparison": payload.get("comparison") or {},
+        "source": payload.get("source", "backtest_local_estimate"),
+        "report_kind": payload.get("report_kind", "market_hours"),
+    }
+
+
+def _summarise_backtest(payload: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Compact summary used by both the HTML view and the JSON route."""
+    if not payload:
+        return None
+    portfolio = payload.get("portfolio") or {}
+    grid = payload.get("grid") or {}
+    best_adj = grid.get("best_by_adjusted_score") if isinstance(grid, dict) else None
+    cautious = grid.get("cautious_recommendation") if isinstance(grid, dict) else None
+    return {
+        "generated_at": payload.get("generated_at"),
+        "profile": payload.get("profile"),
+        "symbols": payload.get("symbols", []),
+        "interval_minutes": payload.get("interval_minutes"),
+        "net_pnl_pct": portfolio.get("net_pnl_pct"),
+        "trades_count": portfolio.get("trades_count"),
+        "win_rate": portfolio.get("win_rate"),
+        "max_drawdown_pct": portfolio.get("max_drawdown_pct"),
+        "buy_count": portfolio.get("buy_count"),
+        "sell_count": portfolio.get("sell_count"),
+        "hold_count": portfolio.get("hold_count"),
+        "best_symbol": portfolio.get("best_symbol"),
+        "worst_symbol": portfolio.get("worst_symbol"),
+        "best_config": cautious or best_adj,
+        "source": payload.get("source", "backtest_local_estimate"),
+    }
+
+
 def _decode_decision_payload(row: dict[str, Any]) -> dict[str, Any]:
     """Decode the JSON blob persisted alongside a decision row."""
     payload = _decode_payload(row.get("payload_json"))
@@ -202,6 +321,10 @@ def _common_context() -> dict[str, Any]:
     pnl_source = _pnl_source_label()
     paper_ok = _paper_initialised() if pnl_source == "paper" else None
     actionability_panel = _build_actionability_panel(decisions=decisions, ranking=ranking)
+    backtest_payload = _load_latest_backtest()
+    backtest_summary = _summarise_backtest(backtest_payload)
+    market_hours_payload = _load_latest_market_hours()
+    market_hours_summary = _summarise_market_hours(market_hours_payload)
     return {
         "settings": settings,
         "env_snapshot": env_snap,
@@ -226,6 +349,8 @@ def _common_context() -> dict[str, Any]:
         "no_api_key": not env_snap.get("kraken_api_key_set"),
         "paper_initialised": paper_ok,
         "actionability_panel": actionability_panel,
+        "backtest_summary": backtest_summary,
+        "market_hours_summary": market_hours_summary,
         "now": utc_now_iso(),
     }
 
@@ -281,6 +406,52 @@ def pnl_json() -> JSONResponse:
             "history": history,
         }
     )
+
+
+@app.get("/backtest")
+def backtest_json() -> JSONResponse:
+    """Return the latest backtest payload, or a sentinel when none exists.
+
+    Strictly read-only: this route never triggers a backtest, it just
+    surfaces the JSON file written by ``scripts/backtest_xstocks.py``. The
+    payload is always tagged ``source = "backtest_local_estimate"``.
+    """
+    payload = _load_latest_backtest()
+    if payload is None:
+        return JSONResponse(
+            {
+                "status": "no_backtest",
+                "message": "Run scripts/backtest_xstocks.py to generate.",
+                "source": "backtest_local_estimate",
+            }
+        )
+    return JSONResponse(payload)
+
+
+@app.get("/market-hours")
+def market_hours_json() -> JSONResponse:
+    """Return the latest market-hours report, or a sentinel when missing.
+
+    Strictly read-only: this route only surfaces
+    ``data/market_hours_report_latest.json`` written by
+    ``scripts/backtest_xstocks.py --market-hours-report``. The payload
+    always carries ``source="backtest_local_estimate"`` and
+    ``report_kind="market_hours"``.
+    """
+    payload = _load_latest_market_hours()
+    if payload is None:
+        return JSONResponse(
+            {
+                "status": "no_market_hours_report",
+                "message": (
+                    "Run scripts/backtest_xstocks.py --market-hours-report "
+                    "to generate."
+                ),
+                "source": "backtest_local_estimate",
+                "report_kind": "market_hours",
+            }
+        )
+    return JSONResponse(payload)
 
 
 @app.get("/api/decisions")
