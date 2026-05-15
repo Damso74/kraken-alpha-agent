@@ -52,3 +52,10 @@ Thumbs.db
 /start_shadow_futures.sh
 /summarize_decisions.py
 /trades.jsonl
+
+# Next.js / web frontend
+web/.next/
+web/node_modules/
+web/out/
+web/.vercel/
+web/next-env.d.ts
