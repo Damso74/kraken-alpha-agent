@@ -248,12 +248,20 @@ def _build_payload(
     # the wider window so the "30 days" framing matches the OHLC depth.
     candles_per_symbol = src.get("candles_per_symbol") or {}
     interval_minutes = int(src.get("interval_minutes") or 60)
+    median_candles_per_symbol: int | None = None
     if candles_per_symbol:
         max_candles = max(int(v) for v in candles_per_symbol.values())
         ohlc_days = max(1, int(round(max_candles * interval_minutes / 60.0 / 24.0)))
         period["ohlc_days"] = ohlc_days
         period["active_days"] = period.get("days") or 0
         period["days"] = ohlc_days
+        sorted_counts = sorted(int(v) for v in candles_per_symbol.values())
+        mid = len(sorted_counts) // 2
+        median_candles_per_symbol = (
+            sorted_counts[mid]
+            if len(sorted_counts) % 2 == 1
+            else (sorted_counts[mid - 1] + sorted_counts[mid]) // 2
+        )
 
     by_symbol_summary = []
     for sym in universe:
@@ -297,6 +305,13 @@ def _build_payload(
             "per_trade_sharpe": per_trade_sharpe,
             "best_symbol": portfolio.get("best_symbol"),
             "worst_symbol": portfolio.get("worst_symbol"),
+            "interval_minutes": interval_minutes,
+            "candles_per_symbol": median_candles_per_symbol,
+            "candles_total": (
+                sum(int(v) for v in candles_per_symbol.values())
+                if candles_per_symbol
+                else None
+            ),
         },
         "by_symbol": by_symbol_summary,
         "equity_curve": equity_curve,
@@ -317,14 +332,46 @@ def _build_payload(
             "failed": int(tests_failed),
             "duration_s": float(tests_duration),
         },
-        "notes": [
-            "Equity curve is a step function over realised events. "
-            "Per-candle mark-to-market is not surfaced in the canonical payload.",
-            "Per-trade Sharpe is computed on SELL pnls; not annualised.",
-            "Trade pairs are FIFO-matched BUY → SELL inside each symbol.",
-        ],
+        "notes": _build_notes(src=src, interval_minutes=interval_minutes),
     }
     return payload
+
+
+def _build_notes(*, src: dict[str, Any], interval_minutes: int) -> list[str]:
+    notes: list[str] = [
+        "Equity curve is a step function over realised events. "
+        "Per-candle mark-to-market is not surfaced in the canonical payload.",
+        "Per-trade Sharpe is computed on SELL pnls; not annualised.",
+        "Trade pairs are FIFO-matched BUY → SELL inside each symbol.",
+        f"Replayed at {interval_minutes}-minute candle resolution.",
+    ]
+    # ``build_run_payload`` flattens extras into the payload root rather
+    # than nesting them under an ``extras`` key, so look in both spots.
+    extras_raw = src.get("extras") or {}
+    extras = {
+        "include_low_liquidity": extras_raw.get("include_low_liquidity")
+        if extras_raw.get("include_low_liquidity") is not None
+        else src.get("include_low_liquidity"),
+        "disable_realtime_cooldown": extras_raw.get("disable_realtime_cooldown")
+        if extras_raw.get("disable_realtime_cooldown") is not None
+        else src.get("disable_realtime_cooldown"),
+    }
+    if extras.get("include_low_liquidity"):
+        notes.append(
+            "Backtest analysis variant: LOW_LIQUIDITY gate relaxed to expose "
+            "the full deterministic-engine surface. Live and paper engines "
+            "keep the gate enabled (see AGENTS.md / src/risk.py)."
+        )
+    if extras.get("disable_realtime_cooldown"):
+        notes.append(
+            "Backtest analysis variant: per-symbol cooldown disabled "
+            "(cooldown_seconds_per_symbol = 0). The risk layer's cooldown "
+            "uses time.time() (wall clock), which does not advance during "
+            "candle replay; the override lets the strategy re-enter on "
+            "successive signals over the full window. Live and paper "
+            "engines keep the cooldown gate enabled."
+        )
+    return notes
 
 
 def main() -> int:

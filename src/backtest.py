@@ -682,6 +682,7 @@ def simulate_symbol(
     block_low_liquidity: Optional[bool] = None,
     interval_minutes: int = 60,
     record_decisions: bool = False,
+    disable_realtime_cooldown: bool = False,
 ) -> SymbolResult:
     """Replay a single symbol through the deterministic decision pipeline.
 
@@ -702,6 +703,14 @@ def simulate_symbol(
     block_low_liquidity:
         Simulation-only flag: when True, suppress BUY when the liquidity
         proxy is below ``_LIQUIDITY_BLOCK_THRESHOLD``. Defaults to True.
+    disable_realtime_cooldown:
+        Simulation-only flag. The risk layer's per-symbol cooldown uses
+        ``time.time()`` (wall clock) which does not advance with replayed
+        candles, so a single BUY effectively blocks every subsequent BUY
+        on the same symbol for the rest of the run. When True, the
+        cooldown gate is forced open on the cloned settings only — live
+        and paper paths are unaffected. Defaults to False to preserve
+        exact historical behaviour.
     """
     s = settings or get_settings()
     block_low_liq = True if block_low_liquidity is None else bool(block_low_liquidity)
@@ -717,6 +726,10 @@ def simulate_symbol(
             "starting_equity_usd": float(initial_cash),
         })
         s = s.model_copy(update={"config": s.config.model_copy(update={"competition": comp})})
+
+    if disable_realtime_cooldown:
+        risk_cfg = s.config.risk.model_copy(update={"cooldown_seconds_per_symbol": 0})
+        s = s.model_copy(update={"config": s.config.model_copy(update={"risk": risk_cfg})})
     result = SymbolResult(
         symbol=symbol,
         initial_cash=initial_cash,
@@ -1066,6 +1079,7 @@ def simulate_portfolio(
     overrides: Optional[Mapping[str, Any]] = None,
     interval_minutes: int = 60,
     record_decisions: bool = False,
+    disable_realtime_cooldown: bool = False,
 ) -> PortfolioResult:
     """Run :func:`simulate_symbol` for each symbol and aggregate the results.
 
@@ -1094,6 +1108,7 @@ def simulate_portfolio(
             block_low_liquidity=bool(block_low_liquidity),
             interval_minutes=interval_minutes,
             record_decisions=record_decisions,
+            disable_realtime_cooldown=disable_realtime_cooldown,
         )
         by_symbol[sym] = result
 

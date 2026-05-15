@@ -84,6 +84,18 @@ def _parse_args() -> argparse.Namespace:
             "Never touches config.yaml."
         ),
     )
+    p.add_argument(
+        "--disable-realtime-cooldown",
+        action="store_true",
+        help=(
+            "force cooldown_seconds_per_symbol = 0 inside the simulator. "
+            "The risk layer's cooldown gate uses time.time() (wall clock) "
+            "which does not advance with replayed candles, so a single BUY "
+            "would otherwise block every subsequent BUY on the same symbol "
+            "for the rest of the run. Simulation-only; live and paper paths "
+            "are unaffected (config.yaml is never mutated)."
+        ),
+    )
     p.add_argument("--grid-search", action="store_true", help="evaluate the calibration grid")
     p.add_argument(
         "--market-hours-report",
@@ -684,6 +696,7 @@ def main() -> int:
         settings=settings,
         overrides=overrides or None,
         interval_minutes=args.interval,
+        disable_realtime_cooldown=bool(args.disable_realtime_cooldown),
     )
 
     grid_result = None
@@ -719,6 +732,7 @@ def main() -> int:
         candles_per_symbol=candle_counts,
         extras={
             "include_low_liquidity": bool(args.include_low_liquidity),
+            "disable_realtime_cooldown": bool(args.disable_realtime_cooldown),
             "elapsed_seconds": round(time.time() - started, 3),
         },
     )
