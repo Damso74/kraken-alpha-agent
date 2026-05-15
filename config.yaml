@@ -5,24 +5,28 @@ competition:
   starting_equity_usd: 10000.0
 
 # Active profile applied on top of the base config below. See `profiles:`.
-profile: balanced
+# Switched to aggressive_competition for the 15:30 CEST competition session.
+# Live opt-in (TRADING_MODE/LIVE_TRADING/ALLOW_LIVE_ORDERS env vars) is
+# unchanged — this profile flip never opens any live trading path.
+profile: aggressive_competition
 
 trading:
   mode: dry_run
   base_currency: USD
   cycle_interval_seconds: 60
   max_decisions_per_minute: 4
-  # Calibration knobs (see README "Calibration knobs").
-  min_opportunity_score_buy: 0.18
-  min_opportunity_score_sell: 0.18
+  # Calibration knobs (see README "Calibration knobs"). Lowered for the
+  # competition session so the agent acts on smaller-edge opportunities.
+  min_opportunity_score_buy: 0.08
+  min_opportunity_score_sell: 0.10
   sell_exit_only: true
-  shorting_enabled: false
+  shorting_enabled: false      # PRESERVED: shorting stays disabled
   no_trade_if_negative_opportunity: true
   liquidity_size_dampener: 0.5
   liquidity_size_factor: 0.5
 
 universe:
-  mode: static                # static | dynamic
+  mode: dynamic               # static | dynamic — competition uses dynamic top-N
   symbols:                    # static allowlist; also the candidate pool for dynamic
     - NVDAx
     - TSLAx
@@ -39,10 +43,10 @@ universe:
     - GLDx
   quote: USD
   allow_outside_market_hours: true
-  max_spread_bps: 80          # dynamic filter
+  max_spread_bps: 100         # dynamic filter — slightly wider for thin xStocks books
   min_trade_count: 10         # dynamic filter
   min_volume: 100             # dynamic filter
-  top_n: 8                    # dynamic mode: keep top-N by opportunity_score
+  top_n: 5                    # dynamic mode: keep top-N by opportunity_score
   ranking_cache_seconds: 60
 
 strategy:

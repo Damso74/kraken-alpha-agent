@@ -36,6 +36,39 @@ logger = get_logger("paper_smoke_test")
 TEST_ORDER_SYMBOL = "AAPLx"
 TEST_ORDER_VOLUME = 0.001
 
+# Substrings (case-insensitive) returned by `kraken paper buy/sell` when the
+# paper engine cannot resolve a tokenized-asset pair such as ``AAPLx/USD``.
+# Confirmed against ``kraken 0.3.2``: the paper subcommand does not expose a
+# ``--asset-class`` flag, so xStocks are simply unknown to the paper book and
+# the call fails with ``EQuery:Unknown asset pair``.
+_XSTOCKS_PAPER_UNSUPPORTED_HINTS: tuple[str, ...] = (
+    "unknown asset pair",
+    "asset pair",
+)
+_XSTOCKS_PAPER_FALLBACK_MESSAGE = (
+    "Kraken CLI paper engine may not support xStocks; "
+    "falling back to local simulation."
+)
+
+
+def _is_xstocks_paper_unsupported(stderr: str, stdout_json: object = None) -> bool:
+    """Return ``True`` when a paper-order failure looks like an xStocks
+    not-supported error rather than a transient network / auth issue.
+
+    The Kraken CLI sometimes surfaces the API error on ``stderr`` and sometimes
+    as a structured payload on ``stdout`` (e.g. ``{"error":"api","message":
+    "EQuery:Unknown asset pair"}``). We inspect both so the smoke-test fallback
+    log fires in either case.
+    """
+    haystack = (stderr or "").lower()
+    if isinstance(stdout_json, dict):
+        for value in stdout_json.values():
+            if isinstance(value, str):
+                haystack += "\n" + value.lower()
+    if not haystack.strip():
+        return False
+    return any(hint in haystack for hint in _XSTOCKS_PAPER_UNSUPPORTED_HINTS)
+
 
 def _parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Paper trading smoke test (read-only by default).")
@@ -154,17 +187,34 @@ def main() -> int:
                 volume=TEST_ORDER_VOLUME,
                 order_type="market",
             )
+            xstocks_unsupported = (
+                not result.ok
+                and _is_xstocks_paper_unsupported(result.stderr, result.stdout_json)
+            )
             report["test_order_action"] = {
                 "command": " ".join(result.command),
                 "ok": result.ok,
                 "stderr": result.stderr[:500] if result.stderr else "",
                 "stdout_json": result.stdout_json,
                 "status": result.status,
+                "xstocks_paper_unsupported": xstocks_unsupported,
+                "fallback_message": (
+                    _XSTOCKS_PAPER_FALLBACK_MESSAGE if xstocks_unsupported else None
+                ),
             }
             if result.ok:
                 print(f"[paper-smoke] test paper order OK (paper, not live).")
+            elif xstocks_unsupported:
+                err_blob = result.stderr or json.dumps(result.stdout_json or {})
+                print(f"[paper-smoke] test paper order REJECTED by Kraken: {err_blob[:200]}")
+                print(f"[paper-smoke] {_XSTOCKS_PAPER_FALLBACK_MESSAGE}")
+                print(
+                    "[paper-smoke] The agent loop already routes paper failures through "
+                    "src.execution._simulate_paper_fill — see README 'Paper trading limitations'."
+                )
             else:
-                print(f"[paper-smoke] test paper order FAILED: {result.stderr[:200]}")
+                err_blob = result.stderr or json.dumps(result.stdout_json or {})
+                print(f"[paper-smoke] test paper order FAILED: {err_blob[:200]}")
 
     path = _persist(report, out_dir)
     print(f"\n[paper-smoke] report written to {path}")

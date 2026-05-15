@@ -249,6 +249,21 @@ prints a friendly `No paper run data yet` line.
 | `paper`   | Calls `kraken paper buy/sell ...` when the CLI is installed; otherwise falls back to a clearly labelled simulation.|
 | `live`    | Calls `kraken order buy/sell ...`. **Requires the full triple opt-in** (see below) and only places approved sizes. |
 
+### Paper trading limitations (xStocks)
+
+- **Read-only xStocks market data is confirmed** end-to-end against
+  `kraken 0.3.2` (52/52 ticker / ohlc / orderbook / trades calls succeeded
+  with `--asset-class tokenized_asset`).
+- **Paper xStocks support must be confirmed locally.** As of `kraken 0.3.2`,
+  `kraken paper buy/sell` does **not** expose `--asset-class`, so submitting
+  a tokenized pair like `AAPLx/USD` returns `EQuery:Unknown asset pair`. When
+  this happens, `scripts/paper_smoke_test.py --place-test-order` logs:
+  `Kraken CLI paper engine may not support xStocks; falling back to local
+  simulation.` and the agent loop transparently routes paper failures
+  through the deterministic `_simulate_paper_fill` path in
+  `src/execution.py`, so the competition cycle keeps producing fills, P&L
+  and audit rows.
+
 ## Setup
 
 > Python 3.11+ recommended.

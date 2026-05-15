@@ -58,3 +58,20 @@ def test_paper_status_wrapper_handles_mock_transport() -> None:
     assert isinstance(status, dict)
     # In mock transport the wrapper labels it as a mock fallback.
     assert status.get("using_mock") is True or status.get("source") == "mock"
+
+
+def test_xstocks_paper_unsupported_detects_stderr(paper_smoke) -> None:
+    assert paper_smoke._is_xstocks_paper_unsupported(
+        "EQuery:Unknown asset pair", None
+    ) is True
+
+
+def test_xstocks_paper_unsupported_detects_stdout_payload(paper_smoke) -> None:
+    payload = {"error": "api", "message": "EQuery:Unknown asset pair"}
+    assert paper_smoke._is_xstocks_paper_unsupported("", payload) is True
+
+
+def test_xstocks_paper_unsupported_ignores_unrelated_errors(paper_smoke) -> None:
+    assert paper_smoke._is_xstocks_paper_unsupported("connection refused", None) is False
+    assert paper_smoke._is_xstocks_paper_unsupported("", {"error": "auth", "message": "bad key"}) is False
+    assert paper_smoke._is_xstocks_paper_unsupported("", None) is False
