@@ -15,7 +15,7 @@ from __future__ import annotations
 import os
 from functools import lru_cache
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import yaml
 from dotenv import load_dotenv
@@ -39,6 +39,14 @@ class TradingConfig(BaseModel):
     base_currency: str = "USD"
     cycle_interval_seconds: int = 60
     max_decisions_per_minute: int = 4
+    # Calibration knobs (see README "Calibration knobs").
+    min_opportunity_score_buy: float = 0.18
+    min_opportunity_score_sell: float = 0.18
+    sell_exit_only: bool = True
+    shorting_enabled: bool = False
+    no_trade_if_negative_opportunity: bool = True
+    liquidity_size_dampener: float = 0.5
+    liquidity_size_factor: float = 0.5
 
 
 class UniverseConfig(BaseModel):
@@ -144,6 +152,13 @@ class EnvSettings(BaseSettings):
     trading_mode: str = "dry_run"
     live_trading: bool = False
     allow_live_orders: bool = False
+
+    # Optional env-level overrides for the actionability knobs. ``None`` means
+    # "use the YAML value"; an explicit value here wins. The env wins so an
+    # operator can lock down a host without editing config files.
+    shorting_enabled: Optional[bool] = None
+    min_opportunity_score_buy: Optional[float] = None
+    min_opportunity_score_sell: Optional[float] = None
 
     kraken_api_key: str = ""
     kraken_api_secret: str = ""
@@ -270,6 +285,22 @@ def load_active_profile(
     return merged, requested, available
 
 
+def _apply_env_overrides(config: YAMLConfig, env: EnvSettings) -> YAMLConfig:
+    """Env-level overrides for the calibration knobs.
+
+    The numeric thresholds are merged so the actionability layer sees a
+    single source of truth. ``shorting_enabled`` is **not** merged here —
+    we keep env and YAML separate so the gate requires *both* to be true
+    independently (defence in depth, see :mod:`src.actionability`).
+    """
+    trading = config.trading.model_copy()
+    if env.min_opportunity_score_buy is not None:
+        trading.min_opportunity_score_buy = float(env.min_opportunity_score_buy)
+    if env.min_opportunity_score_sell is not None:
+        trading.min_opportunity_score_sell = float(env.min_opportunity_score_sell)
+    return config.model_copy(update={"trading": trading})
+
+
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
     env = EnvSettings()
@@ -277,6 +308,7 @@ def get_settings() -> Settings:
     raw = _read_yaml(cfg_path) if cfg_path.exists() else {}
     merged, active, available = load_active_profile(raw)
     config = YAMLConfig(**merged)
+    config = _apply_env_overrides(config, env)
     return Settings(
         env=env,
         config=config,

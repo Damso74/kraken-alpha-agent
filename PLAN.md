@@ -106,6 +106,33 @@ data/                  SQLite + JSONL + rank JSON/CSV (gitignored)
 10. ✅ **Kraken CLI validation** (`CLI_VALIDATION.md`, 52/52 read-only calls OK).
 11. ✅ **Competition mode** — ranking, dynamic universe, profiles, ensemble v2,
     dashboard competition view, paper smoke test (read-only by default).
+12. ✅ **Calibration + submission ready** — actionability gates
+    (BUY threshold, negative-opp veto, SELL exit-only, no-short by default,
+    liquidity dampener), paper-init guard in execution, paper-run analyzer,
+    dashboard `/actionability` panel + JSON route, 96/96 tests green.
+
+## Calibration + submission readiness
+- `src/actionability.py` (pure) is the single gate between the ensemble and
+  the risk manager. It downgrades to HOLD when:
+  - `final_score < trading.min_opportunity_score_buy` (BUY only),
+  - `no_trade_if_negative_opportunity` and score < 0 (BUY only),
+  - `|final_score| < trading.min_opportunity_score_sell` (SELL only),
+  - SELL would open a short and `shorting_enabled` is off (env **and** YAML
+    must both opt in, intentionally checked independently),
+  - SELL is allowed but size is clamped to the open quantity.
+  It dampens the suggested size by `liquidity_size_factor` whenever
+  `liquidity_score < liquidity_size_dampener` (no action flip).
+- `src/execution.py` caches `kraken paper status` for 30 s and returns
+  `status="blocked_paper_not_initialized"` if the paper account isn't ready.
+  Tests assert no CLI call is ever attempted in that state.
+- `scripts/analyze_paper_run.py` reads SQLite + JSONL audit data and writes
+  `data/paper_run_report_<ts>.{md,json}` plus a stable `paper_run_report_latest.*`
+  pair. It computes cycle stats, action distribution, top symbols, opportunity
+  score distribution, actionability reason counts, FIFO win/loss pairing,
+  realised/unrealised/net PnL from the latest snapshot, and error counts by
+  source. Handles the no-data window gracefully.
+- The dashboard now exposes an **Actionability** panel on `/` (BUY candidates,
+  EXIT candidates, NO TRADE reasons) and a `/actionability` JSON route.
 
 ## Competition mode
 
@@ -126,12 +153,17 @@ data/                  SQLite + JSONL + rank JSON/CSV (gitignored)
   `/ranking` returns the raw JSON.
 
 ## Roadmap (post-hackathon)
-- One-time manual `kraken paper init` to unlock paper trading round-trips.
+- One-time manual `kraken paper init` to unlock paper trading round-trips
+  (the smoke script tells the operator which command to run; safer than an
+  auto-init from the agent).
 - Wire `kraken order cancel-after` into `scripts/run_agent_loop.py`.
 - Replace the rule-based regime classifier with a calibrated logistic
   regression over recent returns / realised vol / Amihud illiquidity.
 - Add a portfolio rebalancer that targets equal-risk contribution across
   the approved active positions.
+- Optional: implement a proper margin / collateral guard before flipping
+  `shorting_enabled` to true (today the gate forbids shorts entirely by
+  default, which is the safer state for a hackathon submission).
 
 ## Risks
 - Kraken CLI not installed in this build → mock fallback is mandatory.

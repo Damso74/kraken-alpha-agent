@@ -353,6 +353,15 @@ def fetch_recent_pnl(limit: int = 200) -> list[dict[str, Any]]:
     return _rows_to_dicts(rows)
 
 
+def fetch_recent_cycles(limit: int = 200) -> list[dict[str, Any]]:
+    init_db()
+    with _connect() as conn:
+        rows = conn.execute(
+            "SELECT * FROM cycles ORDER BY started_at DESC LIMIT ?", (limit,)
+        ).fetchall()
+    return _rows_to_dicts(rows)
+
+
 def fetch_positions() -> list[dict[str, Any]]:
     init_db()
     with _connect() as conn:
@@ -385,6 +394,7 @@ __all__ = [
     "fetch_recent_orders",
     "fetch_recent_errors",
     "fetch_recent_pnl",
+    "fetch_recent_cycles",
     "fetch_positions",
     "db_healthcheck",
 ]

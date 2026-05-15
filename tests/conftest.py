@@ -40,9 +40,12 @@ def _isolated_paths(tmp_path, monkeypatch):
     from src import config as cfg
 
     cfg.get_settings.cache_clear()
+    from src import execution as exec_mod
     from src import risk as risk_mod
 
     risk_mod.reset_cooldowns()
+    exec_mod.reset_paper_init_cache()
     yield
     cfg.get_settings.cache_clear()
     risk_mod.reset_cooldowns()
+    exec_mod.reset_paper_init_cache()

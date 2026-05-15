@@ -9,6 +9,7 @@ data/*.sqlite-*
 data/*.jsonl
 data/*.json
 data/*.csv
+data/*.md
 !data/.gitkeep
 
 # Build artefacts

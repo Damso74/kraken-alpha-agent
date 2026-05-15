@@ -105,11 +105,94 @@ def _load_latest_ranking(force: bool = False) -> dict[str, Any]:
     return empty
 
 
+def _decode_decision_payload(row: dict[str, Any]) -> dict[str, Any]:
+    """Decode the JSON blob persisted alongside a decision row."""
+    payload = _decode_payload(row.get("payload_json"))
+    return payload if isinstance(payload, dict) else {}
+
+
+def _build_actionability_panel(
+    *, decisions: list[dict[str, Any]], ranking: dict[str, Any]
+) -> dict[str, Any]:
+    """Group recent decisions into BUY / EXIT / NO TRADE buckets.
+
+    ``ranking`` is also consulted: high-opportunity rows that have no
+    matching decision yet appear under BUY candidates so the operator can
+    see fresh ideas before the next cycle.
+    """
+    buys: list[dict[str, Any]] = []
+    exits: list[dict[str, Any]] = []
+    no_trade: list[dict[str, Any]] = []
+    seen_symbols: set[str] = set()
+
+    for row in decisions:
+        payload = _decode_decision_payload(row)
+        actionability = payload.get("actionability") if isinstance(payload, dict) else None
+        symbol = row.get("symbol")
+        if symbol:
+            seen_symbols.add(symbol)
+        common = {
+            "symbol": symbol,
+            "action": row.get("action"),
+            "score": row.get("final_score"),
+            "confidence": row.get("confidence"),
+            "approved": row.get("approved"),
+            "at": row.get("at"),
+            "reason": (actionability or {}).get("reason") if isinstance(actionability, dict) else None,
+            "size_dampened": (actionability or {}).get("size_dampened")
+            if isinstance(actionability, dict)
+            else None,
+        }
+        if row.get("action") == "BUY" and row.get("approved"):
+            buys.append(common)
+        elif row.get("action") == "SELL" and row.get("approved"):
+            exits.append(common)
+        elif row.get("action") == "SELL":
+            exits.append(common)
+        else:
+            # Either HOLD or a blocked trade — surface the rejection reason.
+            risk_payload = payload.get("risk") if isinstance(payload, dict) else None
+            risk_reasons = []
+            if isinstance(risk_payload, dict):
+                risk_reasons = list(risk_payload.get("reasons") or [])
+            common["risk_reasons"] = risk_reasons
+            no_trade.append(common)
+
+    # Ranking rows not yet seen as decisions → additional BUY candidates
+    # so the dashboard surfaces fresh ideas during the gap between cycles.
+    ranking_rows = (ranking or {}).get("rows") or []
+    for r in ranking_rows:
+        if not isinstance(r, dict):
+            continue
+        sym = r.get("symbol")
+        if not sym or sym in seen_symbols:
+            continue
+        opp = r.get("opportunity_score") or 0
+        if opp <= 0:
+            continue
+        buys.append({
+            "symbol": sym,
+            "action": "BUY_CANDIDATE",
+            "score": opp,
+            "confidence": r.get("liquidity_score"),
+            "approved": False,
+            "at": None,
+            "reason": "ranking_candidate",
+            "size_dampened": None,
+        })
+
+    return {
+        "buy_candidates": buys[:20],
+        "exit_candidates": exits[:20],
+        "no_trade": no_trade[:30],
+    }
+
+
 def _common_context() -> dict[str, Any]:
     settings = get_settings()
     portfolio_snap = get_snapshot()
     pnl = compute_pnl(portfolio_snap)
-    decisions = storage.fetch_recent_decisions(limit=10)
+    decisions = storage.fetch_recent_decisions(limit=50)
     orders = storage.fetch_recent_orders(limit=10)
     errors = storage.fetch_recent_errors(limit=5)
     last_decision = decisions[0] if decisions else None
@@ -118,13 +201,14 @@ def _common_context() -> dict[str, Any]:
     ranking = _load_latest_ranking()
     pnl_source = _pnl_source_label()
     paper_ok = _paper_initialised() if pnl_source == "paper" else None
+    actionability_panel = _build_actionability_panel(decisions=decisions, ranking=ranking)
     return {
         "settings": settings,
         "env_snapshot": env_snap,
         "portfolio": portfolio_snap,
         "pnl": pnl,
         "pnl_source": pnl_source,
-        "decisions": decisions,
+        "decisions": decisions[:10],
         "orders": orders,
         "errors": errors,
         "last_decision": last_decision,
@@ -141,6 +225,7 @@ def _common_context() -> dict[str, Any]:
         "ranking_source": _RANKING_CACHE.get("source"),
         "no_api_key": not env_snap.get("kraken_api_key_set"),
         "paper_initialised": paper_ok,
+        "actionability_panel": actionability_panel,
         "now": utc_now_iso(),
     }
 
@@ -177,6 +262,13 @@ def ranking_json() -> JSONResponse:
             "rows": payload.get("rows", []),
         }
     )
+
+
+@app.get("/actionability")
+def actionability_json() -> JSONResponse:
+    decisions = storage.fetch_recent_decisions(limit=50)
+    ranking = _load_latest_ranking()
+    return JSONResponse(_build_actionability_panel(decisions=decisions, ranking=ranking))
 
 
 @app.get("/pnl")

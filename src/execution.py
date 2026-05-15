@@ -14,6 +14,7 @@ Three modes:
 
 from __future__ import annotations
 
+import time
 from typing import Any
 
 from . import kraken_cli, portfolio
@@ -30,6 +31,39 @@ from .universe import normalize_symbol
 from .utils import new_id, safe_float
 
 logger = get_logger(__name__)
+
+# 30-second cache for the paper-status probe so we do not hammer the CLI
+# at every cycle. Tests reset this via `reset_paper_init_cache()`.
+_PAPER_INIT_CACHE: dict[str, float | bool | None] = {
+    "checked_at": 0.0,
+    "initialised": None,
+}
+_PAPER_INIT_TTL_SECONDS = 30.0
+
+
+def reset_paper_init_cache() -> None:
+    _PAPER_INIT_CACHE["checked_at"] = 0.0
+    _PAPER_INIT_CACHE["initialised"] = None
+
+
+def _paper_initialised_cached() -> bool:
+    now = time.time()
+    last = float(_PAPER_INIT_CACHE.get("checked_at") or 0.0)
+    cached = _PAPER_INIT_CACHE.get("initialised")
+    if cached is not None and (now - last) < _PAPER_INIT_TTL_SECONDS:
+        return bool(cached)
+    try:
+        status = kraken_cli.fetch_paper_status()
+    except Exception:  # noqa: BLE001
+        status = None
+    initialised = False
+    if isinstance(status, dict) and not status.get("using_mock"):
+        data = status.get("data") or {}
+        if isinstance(data, dict):
+            initialised = any(k in data for k in ("balance", "balances", "cash", "equity"))
+    _PAPER_INIT_CACHE["checked_at"] = now
+    _PAPER_INIT_CACHE["initialised"] = initialised
+    return initialised
 
 
 def _build_blocked(
@@ -123,6 +157,23 @@ def execute(
                 ensemble=ensemble,
                 size_usd=size_usd,
                 note="kraken cli not installed — simulated fill",
+            )
+        # Paper init guard: never call `paper buy/sell` against an
+        # uninitialised account. The user must run
+        # `kraken paper init` (or `python scripts/paper_smoke_test.py --init`)
+        # exactly once before paper mode can produce fills.
+        if not _paper_initialised_cached():
+            return ExecutionResult(
+                status="blocked_paper_not_initialized",
+                mode="paper",
+                symbol=features.symbol,
+                action=ensemble.action,
+                requested_size_usd=size_usd,
+                error=(
+                    "paper account not initialised — run "
+                    "`kraken paper init --balance 10000 --currency USD --yes` "
+                    "or `python scripts/paper_smoke_test.py --init`"
+                ),
             )
         cli_result = kraken_cli.place_order(
             mode="paper",
@@ -224,4 +275,4 @@ def apply_to_portfolio(decision: Decision) -> None:
     portfolio.record_fill(decision.execution)
 
 
-__all__ = ["execute", "apply_to_portfolio"]
+__all__ = ["execute", "apply_to_portfolio", "reset_paper_init_cache"]

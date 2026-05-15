@@ -11,6 +11,13 @@ trading:
   base_currency: USD
   cycle_interval_seconds: 60
   max_decisions_per_minute: 4
+  min_opportunity_score_buy: 0.18
+  min_opportunity_score_sell: 0.18
+  sell_exit_only: true
+  shorting_enabled: false
+  no_trade_if_negative_opportunity: true
+  liquidity_size_dampener: 0.5
+  liquidity_size_factor: 0.5
 
 universe:
   mode: static

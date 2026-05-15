@@ -91,6 +91,7 @@ class ExecutionResult(BaseModel):
         "live_filled",
         "live_failed",
         "blocked",
+        "blocked_paper_not_initialized",
         "skipped",
     ]
     mode: Mode
@@ -144,6 +145,27 @@ class LLMExplanation(BaseModel):
     confidence_comment: str = ""
 
 
+class Actionability(BaseModel):
+    """Why the agent considers (or refuses) a symbol actionable this cycle.
+
+    The actionability layer runs *between* the ensemble and the risk manager:
+    it can downgrade a BUY/SELL to HOLD before risk evaluation when calibration
+    rules forbid the action (below threshold, negative opportunity, SELL
+    without an open position, etc.). The risk manager then sees a clean
+    ensemble and only re-evaluates trades that already passed actionability.
+    """
+
+    model_config = ConfigDict(extra="ignore")
+
+    buy_eligible: bool = False
+    sell_eligible: bool = False
+    reason: str = ""
+    size_dampened: bool = False
+    size_factor: float = 1.0
+    opportunity_score: float = 0.0
+    liquidity_score: float = 0.0
+
+
 class Decision(BaseModel):
     """Canonical decision record persisted to JSONL + SQLite."""
 
@@ -162,6 +184,7 @@ class Decision(BaseModel):
     votes: list[StrategyVote] = Field(default_factory=list)
     risk: RiskResult
     execution: ExecutionResult
+    actionability: Optional[Actionability] = None
     llm: Optional[LLMExplanation] = None
     mode: Mode = "dry_run"
     rationale: str = ""
@@ -182,5 +205,6 @@ __all__ = [
     "PortfolioSnapshot",
     "PnLSnapshot",
     "LLMExplanation",
+    "Actionability",
     "Decision",
 ]

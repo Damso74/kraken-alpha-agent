@@ -147,6 +147,66 @@ for the raw payload. Banners at the top of the page declare the active
 profile, the PnL source (`local_estimate` / `paper` / `live`) and whether
 the paper account is initialised.
 
+### Calibration knobs
+
+The actionability layer sits **between** the ensemble and the risk manager.
+It downgrades unsafe / unwarranted intents to `HOLD` before they ever reach
+the order builder. The knobs live under `trading:` in `config.yaml`
+(safe defaults shown):
+
+| Key                              | Default | Effect                                                                                    |
+|----------------------------------|---------|-------------------------------------------------------------------------------------------|
+| `min_opportunity_score_buy`      | `0.18`  | `BUY` requires `final_score ≥ this`. Below ⇒ HOLD, reason `below_buy_threshold`.          |
+| `min_opportunity_score_sell`     | `0.18`  | `SELL` requires `|final_score| ≥ this`. Below ⇒ HOLD, reason `below_sell_threshold`.      |
+| `sell_exit_only`                 | `true`  | SELL only allowed when the symbol has an open long position.                              |
+| `shorting_enabled`               | `false` | Must be `true` **and** env `SHORTING_ENABLED=true` to open a short. Otherwise SELL→HOLD.  |
+| `no_trade_if_negative_opportunity` | `true`| Catches edge cases where BUY would fire on a negative score.                              |
+| `liquidity_size_dampener`        | `0.5`   | If `liquidity_score < dampener` the suggested size is multiplied by …                     |
+| `liquidity_size_factor`          | `0.5`   | … this factor (default halves the size on low liquidity).                                 |
+
+Numeric thresholds can also be overridden via env (`MIN_OPPORTUNITY_SCORE_BUY`,
+`MIN_OPPORTUNITY_SCORE_SELL`). **Shorting is the one exception**:
+`SHORTING_ENABLED` and `trading.shorting_enabled` are kept independent on
+purpose — both must be opted-in, in two distinct places, before any short
+is permitted.
+
+In addition, `src/execution.py` gates paper orders behind a 30-second
+cached probe of `kraken paper status`. If the paper account is not
+initialised, the execution layer returns
+`status="blocked_paper_not_initialized"` and **never calls the CLI**.
+
+### How to run a paper competition simulation
+
+```powershell
+# 1. Initialise the paper account (manual, one-time, $0 real)
+wsl -- bash -lc "kraken paper init --balance 10000 --currency USD --yes"
+python scripts/paper_smoke_test.py    # verifies initialisation
+
+# 2. Snapshot the xStocks opportunity surface
+python scripts/rank_xstocks.py --top 8
+
+# 3. Switch to a dynamic universe (edit config.yaml)
+#    universe:
+#      mode: dynamic
+#      top_n: 8
+
+# 4. Run the paper loop (Ctrl+C to stop)
+$env:TRADING_MODE = "paper"
+python scripts/run_agent_loop.py
+
+# 5. Analyse the session (Markdown + JSON in data/)
+python scripts/analyze_paper_run.py --since 1
+```
+
+`analyze_paper_run.py` writes a Markdown executive summary plus a JSON
+payload. Reading order:
+
+- timestamped report: `data/paper_run_report_<ts>.md` / `.json`
+- stable "latest" copy:   `data/paper_run_report_latest.md` / `.json`
+
+When there is no data in the window the report still gets written and
+prints a friendly `No paper run data yet` line.
+
 ## Modes
 
 | Mode      | Behaviour                                                                                                          |
@@ -196,6 +256,9 @@ python scripts/paper_smoke_test.py
 # Run exactly one full cycle and print a summary:
 python scripts/dry_run_once.py
 
+# Analyse a paper / dry-run session (Markdown + JSON in data/):
+python scripts/analyze_paper_run.py --since 24
+
 # Continuous loop (Ctrl+C to stop):
 python scripts/run_agent_loop.py
 
@@ -239,11 +302,25 @@ python scripts/export_audit_bundle.py
 - `scripts/export_audit_bundle.py` writes a self-contained dump of decisions,
   orders, PnL snapshots and the configuration (with all secrets redacted) for
   the GitHub submission / demo video.
-- Submission checklist:
-  - [ ] GitHub repo public (this repo).
-  - [ ] Recorded demo video — `python scripts/dry_run_once.py` followed by the
-        dashboard, in under 90 seconds.
-  - [ ] Read-only Kraken API key submitted to lablab.ai / Kraken organisers.
+
+### Submission readiness
+
+| Stage              | Recommended mode | Why                                                                                |
+|--------------------|------------------|------------------------------------------------------------------------------------|
+| Demo video         | `dry_run`        | Deterministic logs, no external dependency, surfaces the full decision pipeline.   |
+| Calibration        | `paper`          | Real CLI feedback, real PnL accounting on a paper account — no real money at risk. |
+| Race / live audit  | `live`           | **Only** after user audit + read-only Kraken key configured + triple opt-in.       |
+
+Final checklist before submission:
+
+- [ ] `pytest` is green locally.
+- [ ] `python scripts/probe_xstocks.py` runs against the real Kraken CLI (WSL ok).
+- [ ] `python scripts/paper_smoke_test.py` confirms paper init status.
+- [ ] `python scripts/rank_xstocks.py --top 5` writes a fresh ranking.
+- [ ] `python scripts/analyze_paper_run.py --since 24` produces a Markdown
+      report you are happy to publish.
+- [ ] `python scripts/export_audit_bundle.py` packs decisions/orders/PnL/config
+      (secrets redacted) for the GitHub submission / demo video.
 
 ## Roadmap
 

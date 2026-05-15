@@ -17,6 +17,7 @@
       <a href="/decisions">Decisions</a>
       <a href="/trades">Trades</a>
       <a href="/ranking">Ranking JSON</a>
+      <a href="/actionability">Actionability JSON</a>
       <a href="/pnl">PnL JSON</a>
       <a href="/health">Health</a>
     </nav>
@@ -124,6 +125,84 @@
           {% endfor %}
         </tbody>
       </table>
+    </div>
+
+    <h3 class="section-title">Actionability</h3>
+    <div class="grid cols-3">
+      <div class="card">
+        <h2>BUY candidates</h2>
+        {% if actionability_panel.buy_candidates %}
+          <table>
+            <thead><tr><th>Symbol</th><th>Action</th><th>Score</th><th>Reason</th></tr></thead>
+            <tbody>
+              {% for c in actionability_panel.buy_candidates %}
+              <tr>
+                <td><strong>{{ c.symbol }}</strong></td>
+                <td>
+                  <span class="badge {% if c.action == 'BUY' %}buy{% else %}hold{% endif %}">
+                    {{ c.action }}
+                  </span>
+                </td>
+                <td class="pos">{% if c.score is not none %}{{ '%+.3f' % c.score }}{% else %}-{% endif %}</td>
+                <td class="mono">{{ c.reason or '-' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <p class="mono">No buy candidates this window.</p>
+        {% endif %}
+      </div>
+
+      <div class="card">
+        <h2>EXIT candidates</h2>
+        {% if actionability_panel.exit_candidates %}
+          <table>
+            <thead><tr><th>Symbol</th><th>Action</th><th>Score</th><th>Approved</th></tr></thead>
+            <tbody>
+              {% for c in actionability_panel.exit_candidates %}
+              <tr>
+                <td><strong>{{ c.symbol }}</strong></td>
+                <td><span class="badge sell">{{ c.action }}</span></td>
+                <td class="neg">{% if c.score is not none %}{{ '%+.3f' % c.score }}{% else %}-{% endif %}</td>
+                <td>
+                  {% if c.approved %}
+                    <span class="badge ok">yes</span>
+                  {% else %}
+                    <span class="badge warn">no</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <p class="mono">No exit candidates this window.</p>
+        {% endif %}
+      </div>
+
+      <div class="card">
+        <h2>NO TRADE — why</h2>
+        {% if actionability_panel.no_trade %}
+          <table>
+            <thead><tr><th>Symbol</th><th>Action</th><th>Reason</th></tr></thead>
+            <tbody>
+              {% for c in actionability_panel.no_trade %}
+              <tr>
+                <td>{{ c.symbol }}</td>
+                <td><span class="badge hold">{{ c.action }}</span></td>
+                <td class="mono">
+                  {{ c.reason or '-' }}
+                  {% if c.risk_reasons %}<br><span class="kpi-sub">{{ c.risk_reasons | join(' · ') }}</span>{% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <p class="mono">No rejections in this window.</p>
+        {% endif %}
+      </div>
     </div>
 
     <h3 class="section-title">Competition — top xStocks</h3>

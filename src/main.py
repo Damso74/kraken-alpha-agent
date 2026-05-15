@@ -11,6 +11,7 @@ import time
 from typing import Iterable
 
 from . import (
+    actionability as actionability_mod,
     execution as execution_mod,
     features as features_mod,
     llm_explainer,
@@ -50,8 +51,16 @@ def _build_decision(
     settings = get_settings()
     feats = features_mod.compute_features(symbol=symbol, ticker=ticker, candles=candles)
     votes = _vote_for(feats)
-    ensemble = combine(features=feats, votes=votes, liquidity_score=liquidity_score)
+    raw_ensemble = combine(features=feats, votes=votes, liquidity_score=liquidity_score)
     snapshot = portfolio.get_snapshot()
+    open_position = portfolio.get_position(symbol, snapshot=snapshot)
+    ensemble, actionability = actionability_mod.apply_actionability_gates(
+        ensemble=raw_ensemble,
+        features=feats,
+        position=open_position,
+        liquidity_score=float(liquidity_score or 0.0),
+        settings=settings,
+    )
     risk = risk_mod.evaluate_risk(
         ensemble=ensemble,
         features=feats,
@@ -76,6 +85,7 @@ def _build_decision(
         votes=ensemble.votes,
         risk=risk,
         execution=execution_result,
+        actionability=actionability,
         mode=settings.env.trading_mode.lower(),  # type: ignore[arg-type]
         rationale=ensemble.rationale,
     )

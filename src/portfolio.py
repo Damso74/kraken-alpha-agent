@@ -114,6 +114,19 @@ def get_snapshot() -> PortfolioSnapshot:
     return load_local_snapshot()
 
 
+def get_position(symbol: str, snapshot: PortfolioSnapshot | None = None) -> Position | None:
+    """Return the current ``Position`` for ``symbol`` if any.
+
+    Used by the actionability layer to enforce SELL exit-only (no shorts) and
+    to clamp SELL sizes to the actual open quantity.
+    """
+    snap = snapshot or get_snapshot()
+    for pos in snap.positions:
+        if pos.symbol == symbol and abs(pos.quantity) > 1e-9:
+            return pos
+    return None
+
+
 def record_fill(result: ExecutionResult) -> None:
     """Apply an execution result to the local portfolio (cash + positions)."""
     if result.status not in ("paper_filled", "live_filled", "dry_run_logged"):
@@ -180,6 +193,7 @@ def record_fill(result: ExecutionResult) -> None:
 
 __all__ = [
     "get_snapshot",
+    "get_position",
     "load_local_snapshot",
     "load_kraken_snapshot",
     "record_fill",
