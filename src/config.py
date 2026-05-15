@@ -15,7 +15,7 @@ from __future__ import annotations
 import os
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
 import yaml
 from dotenv import load_dotenv
@@ -47,6 +47,11 @@ class TradingConfig(BaseModel):
     no_trade_if_negative_opportunity: bool = True
     liquidity_size_dampener: float = 0.5
     liquidity_size_factor: float = 0.5
+    # Session guard for entries. SELL exits are always allowed regardless.
+    # Empty list disables the guard (any session can trigger BUY).
+    allowed_entry_sessions: list[str] = Field(
+        default_factory=lambda: ["US_CORE"]
+    )
 
 
 class UniverseConfig(BaseModel):
@@ -107,6 +112,50 @@ class ExecutionConfig(BaseModel):
     live_size_usd: float = 100.0
     require_validate_first: bool = True
     dead_mans_switch_seconds: int = 120
+    # ``spot`` keeps the historical xStocks orderbook routing; ``futures``
+    # pivots the live engine to Kraken Futures Perpetual xStocks (see
+    # :mod:`src.futures_kraken_cli`). The default stays ``spot`` so existing
+    # profiles never silently flip venues — only profiles that explicitly
+    # set ``execution.engine: futures`` will route through the futures CLI.
+    engine: Literal["spot", "futures"] = "spot"
+
+
+class FuturesConfig(BaseModel):
+    """Live-futures pivot configuration.
+
+    The values below are read by both the risk gate and the execution layer.
+    ``max_leverage`` is enforced *intransigeantly* by the risk gate: any
+    config/env value above 1.0 is rejected at evaluation time, regardless of
+    the source (config, env, override). The 1.0 ceiling makes the futures
+    branch effectively equivalent to spot — no margin call surface — while
+    keeping the same triple opt-in and the same exit-only SELL semantics.
+    """
+
+    enabled: bool = False
+    max_leverage: float = 1.0
+    max_funding_rate_pct_per_hour: float = 0.5
+    dry_run_mode_uses_paper_engine: bool = True
+    # Optional mapping override. When non-empty, replaces the hardcoded
+    # ``SPOT_TO_FUTURES`` table in :mod:`src.futures_kraken_cli` at runtime
+    # (useful for tests). Empty dict means "use the canonical table".
+    symbol_mapping: dict[str, str] = Field(default_factory=dict)
+
+
+class ExitRulesConfig(BaseModel):
+    """Defaults consumed by :mod:`src.exit_rules`.
+
+    Profile overrides for ``risk.stop_loss_pct`` / ``risk.take_profit_pct``
+    take precedence over the top-level values here; the exit engine reads
+    profile-level first and falls back to ``exit.*`` only when the profile
+    is silent (see ``src/exit_rules.py``).
+    """
+
+    stop_loss_pct: float = 1.5
+    take_profit_pct: float = 2.0
+    momentum_exit_score: float = -0.03
+    max_hold_minutes: float = 90.0
+    stale_position_min_pnl_pct: float = 0.3
+    flatten_before_close_minutes: float = 15.0
 
 
 class LLMConfig(BaseModel):
@@ -137,6 +186,8 @@ class YAMLConfig(BaseModel):
     strategy: StrategyConfig = Field(default_factory=StrategyConfig)
     risk: RiskConfig = Field(default_factory=RiskConfig)
     execution: ExecutionConfig = Field(default_factory=ExecutionConfig)
+    futures: FuturesConfig = Field(default_factory=FuturesConfig)
+    exit: ExitRulesConfig = Field(default_factory=ExitRulesConfig)
     llm: LLMConfig = Field(default_factory=LLMConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     dashboard: DashboardConfig = Field(default_factory=DashboardConfig)
@@ -162,6 +213,14 @@ class EnvSettings(BaseSettings):
 
     kraken_api_key: str = ""
     kraken_api_secret: str = ""
+
+    # Dedicated Kraken Futures credentials. When set, they take precedence
+    # over the spot keys for the futures engine (see
+    # :mod:`src.futures_kraken_cli`). The user creates these separately on
+    # https://futures.kraken.com — they are never required for the spot
+    # engine and never written back by the agent.
+    kraken_futures_api_key: str = ""
+    kraken_futures_api_secret: str = ""
 
     featherless_api_key: str = ""
     featherless_base_url: str = "https://api.featherless.ai/v1"
@@ -333,6 +392,8 @@ def safe_env_snapshot() -> dict[str, Any]:
         "allow_live_orders": e.allow_live_orders,
         "kraken_api_key_set": bool(e.kraken_api_key),
         "kraken_api_secret_set": bool(e.kraken_api_secret),
+        "kraken_futures_api_key_set": bool(e.kraken_futures_api_key),
+        "kraken_futures_api_secret_set": bool(e.kraken_futures_api_secret),
         "featherless_api_key_set": bool(e.featherless_api_key),
         "featherless_base_url": e.featherless_base_url,
         "featherless_model": e.featherless_model,

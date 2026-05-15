@@ -17,7 +17,7 @@ from __future__ import annotations
 import time
 from typing import Any
 
-from . import kraken_cli, portfolio
+from . import futures_kraken_cli, kraken_cli, portfolio
 from .config import get_settings
 from .logger import get_logger
 from .schemas import (
@@ -103,6 +103,234 @@ def _simulate_paper_fill(
     )
 
 
+def _futures_size_contracts(size_usd: float, mark_price: float) -> float:
+    """Convert a USD notional to a futures contract size.
+
+    All xStocks Perps confirmed on 2026-05-15 use ``contractSize=1`` (one
+    contract = one underlying share, priced in USD). Size therefore equals
+    ``notional / markPrice`` and is rounded to 4 decimals — well above the
+    tickSize granularity advertised by Kraken Futures.
+    """
+
+    px = max(float(mark_price or 0.0), 0.01)
+    return round(max(float(size_usd), 0.0) / px, 4)
+
+
+def _execute_futures(
+    *,
+    mode: str,
+    features: Features,
+    ensemble: EnsembleResult,
+    size_usd: float,
+    open_long_qty: float,
+) -> ExecutionResult:
+    """Route an order through the Kraken Futures Perpetual engine.
+
+    Hard guarantees:
+
+    * Leverage flag is forced to ``1.0`` at the wrapper. The risk gate has
+      already refused anything else upstream — this is the second barrier.
+    * SELL is reduce-only and clamped to the open long quantity. Without an
+      open long the order is blocked.
+    * The order payload is logged with ``cli_ord_id``, USD notional, mark
+      price and ``mode: "futures_perp_1x"`` so the audit trail differentiates
+      futures fills from legacy spot rows.
+    """
+
+    sym_spot = features.symbol
+    futures_symbol = futures_kraken_cli.to_futures_symbol(sym_spot)
+    if futures_symbol is None:
+        return _build_blocked(
+            mode=mode, features=features, ensemble=ensemble,
+            reason=f"no futures listing for {sym_spot} (xStocks Perp universe)",
+        )
+
+    mark_price = float(getattr(features, "mark_price", None) or features.last_price or 0.0)
+    if mark_price <= 0.0:
+        return _build_blocked(
+            mode=mode, features=features, ensemble=ensemble,
+            reason="mark price unavailable for futures sizing",
+        )
+
+    contracts = _futures_size_contracts(size_usd, mark_price)
+    if contracts <= 0:
+        return ExecutionResult(
+            status="skipped",
+            mode=mode,  # type: ignore[arg-type]
+            symbol=features.symbol, action=ensemble.action,
+            requested_size_usd=0.0,
+        )
+
+    # SELL is exit-only on futures. Clamp the contract count to the open
+    # long quantity; refuse the order when no long exists.
+    reduce_only = False
+    if ensemble.action == "SELL":
+        if open_long_qty <= 1e-9:
+            return _build_blocked(
+                mode=mode, features=features, ensemble=ensemble,
+                reason="SELL without open long (futures engine refuses to open shorts)",
+            )
+        contracts = min(contracts, round(open_long_qty, 4))
+        reduce_only = True
+
+    cli_ord_id = new_id("fut")
+
+    if mode == "dry_run":
+        return ExecutionResult(
+            status="dry_run_logged",
+            mode="dry_run",
+            order_id=cli_ord_id,
+            symbol=features.symbol, action=ensemble.action,
+            requested_size_usd=size_usd, filled_size_usd=size_usd,
+            fill_price=mark_price, volume=contracts,
+            raw={
+                "engine": "futures",
+                "mode": "futures_perp_1x",
+                "futures_symbol": futures_symbol,
+                "cli_ord_id": cli_ord_id,
+                "mark_price": mark_price,
+                "notional_usd": size_usd,
+                "reduce_only": reduce_only,
+                "leverage": 1.0,
+                "note": "dry_run — no order leaves the process",
+            },
+        )
+
+    if mode == "paper":
+        result = futures_kraken_cli.place_paper_order(
+            side=ensemble.action,  # type: ignore[arg-type]
+            symbol=futures_symbol, size=contracts,
+            order_type="market", leverage=1.0,
+            reduce_only=reduce_only, client_order_id=cli_ord_id,
+        )
+        if not result.ok:
+            return ExecutionResult(
+                status="futures_failed",
+                mode="paper",
+                symbol=features.symbol, action=ensemble.action,
+                requested_size_usd=size_usd,
+                error=f"kraken futures paper {ensemble.action.lower()} failed: {result.stderr[:200]}",
+                raw={
+                    "engine": "futures",
+                    "mode": "futures_perp_1x",
+                    "futures_symbol": futures_symbol,
+                    "cli_ord_id": cli_ord_id,
+                    "mark_price": mark_price,
+                    "leverage": 1.0,
+                    "cli": result.__dict__,
+                },
+            )
+        payload = result.stdout_json if isinstance(result.stdout_json, dict) else {}
+        return ExecutionResult(
+            status="futures_paper_filled",
+            mode="paper",
+            order_id=str(payload.get("order_id") or cli_ord_id),
+            symbol=features.symbol, action=ensemble.action,
+            requested_size_usd=size_usd,
+            filled_size_usd=safe_float(payload.get("cost"), size_usd),
+            fill_price=safe_float(payload.get("price"), mark_price),
+            volume=safe_float(payload.get("size") or payload.get("volume"), contracts),
+            fee=safe_float(payload.get("fee"), 0.0),
+            raw={
+                "engine": "futures",
+                "mode": "futures_perp_1x",
+                "futures_symbol": futures_symbol,
+                "cli_ord_id": cli_ord_id,
+                "mark_price": mark_price,
+                "leverage": 1.0,
+                "reduce_only": reduce_only,
+                "payload": payload,
+            },
+        )
+
+    # mode == "live"
+    s = get_settings()
+    if not s.all_live_flags_on():
+        return _build_blocked(
+            mode="live", features=features, ensemble=ensemble,
+            reason="live trading not enabled (triple opt-in missing)",
+        )
+
+    # Validate-only first — kraken futures order has no native --validate,
+    # so we use the paper engine as a structural sanity check. The risk
+    # gate has already approved the trade, and the paper run uses real
+    # market data so any market-side rejection (post-only, suspended,
+    # tick mismatch) surfaces here without risking mainnet collateral.
+    exec_cfg = s.config.execution
+    if exec_cfg.require_validate_first:
+        v = futures_kraken_cli.validate_via_paper(
+            side=ensemble.action,  # type: ignore[arg-type]
+            symbol=futures_symbol, size=max(contracts, 0.0001),
+            client_order_id=f"{cli_ord_id}-v",
+        )
+        if not v.ok:
+            return ExecutionResult(
+                status="futures_failed",
+                mode="live",
+                symbol=features.symbol, action=ensemble.action,
+                requested_size_usd=size_usd,
+                error=f"futures validate (via paper) failed: {v.stderr[:200]}",
+                raw={
+                    "engine": "futures",
+                    "mode": "futures_perp_1x",
+                    "futures_symbol": futures_symbol,
+                    "cli_ord_id": cli_ord_id,
+                    "validate": v.__dict__,
+                },
+            )
+
+    result = futures_kraken_cli.place_live_order(
+        side=ensemble.action,  # type: ignore[arg-type]
+        symbol=futures_symbol, size=contracts,
+        order_type="market", reduce_only=reduce_only,
+        client_order_id=cli_ord_id,
+    )
+    if not result.ok:
+        return ExecutionResult(
+            status="futures_failed",
+            mode="live",
+            symbol=features.symbol, action=ensemble.action,
+            requested_size_usd=size_usd,
+            error=f"futures live order failed: {result.stderr[:200]}",
+            raw={
+                "engine": "futures",
+                "mode": "futures_perp_1x",
+                "futures_symbol": futures_symbol,
+                "cli_ord_id": cli_ord_id,
+                "mark_price": mark_price,
+                "leverage": 1.0,
+                "reduce_only": reduce_only,
+                "cli": result.__dict__,
+            },
+        )
+    payload = result.stdout_json if isinstance(result.stdout_json, dict) else {}
+    logger.info(
+        "futures_perp_1x %s %s contracts=%.4f notional=%.2fUSD mark=%.4f cli_ord_id=%s",
+        ensemble.action, futures_symbol, contracts, size_usd, mark_price, cli_ord_id,
+    )
+    return ExecutionResult(
+        status="futures_live_filled",
+        mode="live",
+        order_id=str(payload.get("order_id") or cli_ord_id),
+        symbol=features.symbol, action=ensemble.action,
+        requested_size_usd=size_usd,
+        filled_size_usd=safe_float(payload.get("cost"), size_usd),
+        fill_price=safe_float(payload.get("price"), mark_price),
+        volume=safe_float(payload.get("size") or payload.get("volume"), contracts),
+        fee=safe_float(payload.get("fee"), 0.0),
+        raw={
+            "engine": "futures",
+            "mode": "futures_perp_1x",
+            "futures_symbol": futures_symbol,
+            "cli_ord_id": cli_ord_id,
+            "mark_price": mark_price,
+            "leverage": 1.0,
+            "reduce_only": reduce_only,
+            "payload": payload,
+        },
+    )
+
+
 def execute(
     *,
     features: Features,
@@ -112,6 +340,7 @@ def execute(
     s = get_settings()
     mode = (s.env.trading_mode or "dry_run").lower()
     exec_cfg = s.config.execution
+    engine = (exec_cfg.engine or "spot").lower()
 
     if not risk.approved:
         return _build_blocked(
@@ -132,6 +361,25 @@ def execute(
 
     # Final size after the risk manager has clamped it.
     size_usd = max(risk.adjusted_size_usd or ensemble.suggested_size_usd, 0.0)
+
+    # ----- Futures engine branch ------------------------------------------
+    if engine == "futures":
+        # Resolve current open long for the symbol so SELL can be clamped
+        # to a reduce-only fill (never opens a short, per intransigeant
+        # safeguards).
+        try:
+            snapshot = portfolio.get_snapshot()
+            open_pos = portfolio.get_position(features.symbol, snapshot=snapshot)
+            open_long_qty = float(open_pos.quantity) if (open_pos and open_pos.quantity > 0) else 0.0
+        except Exception:  # noqa: BLE001
+            open_long_qty = 0.0
+        return _execute_futures(
+            mode=mode,
+            features=features,
+            ensemble=ensemble,
+            size_usd=size_usd,
+            open_long_qty=open_long_qty,
+        )
 
     if mode == "dry_run":
         return ExecutionResult(

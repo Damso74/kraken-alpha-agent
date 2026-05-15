@@ -83,6 +83,112 @@ python scripts/export_audit_bundle.py
 uvicorn src.dashboard.app:app --reload
 ```
 
+## Live execution — Perpetual Futures pivot
+
+> **Context.** EU / PEDSL-CY accounts (the user's jurisdiction) cannot trade
+> the spot xStocks orderbook on Kraken Spot at the time of submission.
+> Hackathon ranking is computed from live PnL, so the project pivoted the
+> live execution path to **Kraken Futures Perpetual xStocks**, which the
+> same jurisdiction is authorised to trade. The override of the original
+> "no futures, no leverage" rule is **explicit and conscious** and is
+> paired with intransigeant safeguards centralised in the risk gate.
+
+### Why this is still "spot-equivalent"
+
+| Concern (futures vs spot) | Mitigation in this agent |
+|---|---|
+| Margin call surface | `risk.HARDCODED_MAX_LEVERAGE = 1.0` — leverage > 1x is **refused** by `evaluate_risk` regardless of source (config, env, caller override). Wrapper `futures_kraken_cli._build_order_args` also raises if asked for >1x. Effective leverage = 1.0 = spot equivalent. |
+| Funding rate drag | `risk.evaluate_risk` blocks BUY when `features.funding_rate_pct_per_hour > futures.max_funding_rate_pct_per_hour` (default 0.5%/h). Threshold is per-symbol because Kraken publishes 24 funding periods/day (= hourly funding for the xStocks Perps). |
+| Overnight risk | The existing `flatten_before_close_exit` rule fires 15 minutes before US_CORE close (16:00 ET = 20:00 UTC during DST). No position survives the close → no overnight funding accrual. Friday end-of-day rule (21:45 CEST stop new BUYs, flatten before 21:55, hard stop 22:00) is unchanged. |
+| Short opening | SELL is exit-only on the futures engine: `execution._execute_futures` refuses any SELL without an open long and forces `--reduce-only` on the wire. |
+| Withdrawals | The agent never calls `kraken futures transfer` or `wallet-transfer`. The user's Futures API key SHOULD have the withdrawal permission disabled. |
+
+### Architecture
+
+```
+config.execution.engine
+        |
+        +---- "spot"  (default) -> src/kraken_cli.place_order      (legacy spot xStocks path)
+        |
+        +---- "futures"          -> src/futures_kraken_cli.place_*  (Kraken Futures Perpetual venue)
+```
+
+- **`config.execution.engine`** — `spot` for the active competition profile
+  (`aggressive_competition`); `futures` for `micro_live_100eur`.
+- **`config.futures.max_leverage`** — read by the risk gate; capped at
+  `HARDCODED_MAX_LEVERAGE = 1.0`.
+- **`config.futures.max_funding_rate_pct_per_hour`** — funding cap
+  (default 0.5%/h).
+- **`src/futures_kraken_cli.py`** — single chokepoint for every `kraken
+  futures …` invocation. Owns the spot↔futures symbol mapping.
+- **`src/risk.py`** — exposes two new gates (`max_leverage`,
+  `max_funding_rate`) and the public `HARDCODED_MAX_LEVERAGE` constant.
+- **`scripts/validate_live_xstocks_perps.py`** — validate-only check via
+  the futures **paper** engine because `kraken futures order buy` does
+  not expose `--validate` on `kraken 0.3.2`.
+
+### xStocks spot ↔ Futures mapping (discovered 2026-05-15 via `kraken futures instruments -o json`)
+
+| Spot symbol  | Kraken Futures symbol | Type              | Tick   | Funding (periods/day) |
+|--------------|-----------------------|-------------------|--------|----------------------|
+| AAPLx/USD    | PF_AAPLXUSD           | flexible_futures  | 0.01   | 24                   |
+| NVDAx/USD    | PF_NVDAXUSD           | flexible_futures  | 0.01   | 24                   |
+| TSLAx/USD    | PF_TSLAXUSD           | flexible_futures  | 0.01   | 24                   |
+| GOOGLx/USD   | PF_GOOGLXUSD          | flexible_futures  | 0.01   | 24                   |
+| SPYx/USD     | PF_SPYXUSD            | flexible_futures  | 0.10   | 24                   |
+| QQQx/USD     | PF_QQQXUSD            | flexible_futures  | 0.10   | 24                   |
+| MSTRx/USD    | PF_MSTRXUSD           | flexible_futures  | 0.01   | 24                   |
+| CRCLx/USD    | PF_CRCLXUSD           | flexible_futures  | 0.01   | 24                   |
+| HOODx/USD    | PF_HOODXUSD           | flexible_futures  | 0.01   | 24                   |
+| GLDx/USD     | PF_GLDXUSD            | flexible_futures  | 0.10   | 24                   |
+
+MSFTx, AMZNx and METAx are spot-only on Kraken and have **no** futures
+counterpart — the futures engine blocks orders on those symbols with a
+clean `no futures listing` error.
+
+### Validate-only on futures
+
+`kraken futures order buy <SYMBOL> <SIZE> --type market` has **no
+`--validate` flag** on `kraken 0.3.2` (confirmed 2026-05-15). The validate
+fallback used by `scripts/validate_live_xstocks_perps.py` is therefore
+`kraken futures paper buy <SYMBOL> <SIZE> --type market --leverage 1
+--yes`. The paper engine is auth-gated, uses real market data and never
+touches mainnet collateral, so a successful paper fill is the closest
+thing to a structural sanity check for the live order path.
+
+### Triple opt-in unchanged
+
+The futures pivot does **not** relax any safeguard. `TRADING_MODE=live`,
+`LIVE_TRADING=true`, `ALLOW_LIVE_ORDERS=true` must all be set
+simultaneously, and the live preflight (`scripts/live_preflight.py`)
+additionally checks `futures_keys_present`, `futures_engine_active`,
+`max_leverage_eq_1`, `funding_rate_threshold_set` and
+`validate_perps_latest_has_ok_symbol` before authorising the flip.
+
+## Track positioning
+
+- **xStocks is the primary target** of this submission (AI Agent Olympics —
+  Kraken Trading Performance). The deterministic engine, ranking, and
+  audit log all assume `tokenized_asset` first; crypto pairs are NOT the
+  primary track and are not configured in the active universe.
+- **Kraken CLI paper engine xStocks limitation**: `paper buy/sell` rejects
+  `--asset-class tokenized_asset` (see AGENTS.md). The execution layer
+  detects this and falls back to a deterministic local simulation so
+  paper-mode runs never crash on xStocks.
+- **Live execution only after validate-only OK.**
+  `scripts/validate_live_xstocks.py` is the gatekeeper: it never sends
+  a real order (it ONLY calls `kraken order ... --validate`) and writes
+  `data/validate_live_xstocks_latest.json`. `scripts/live_preflight.py`
+  refuses to pass if that file is missing or empty. Live execution
+  additionally requires the triple opt-in (see below).
+- **Micro-live profile (`micro_live_100eur`)** caps exposure at
+  **30 USD total** (`max_total_exposure_usd: 30`) and **10 USD per
+  position** (`max_position_notional_usd: 10`). The profile is not
+  active by default — `KRAKEN_ALPHA_PROFILE=micro_live_100eur` must be
+  set explicitly. Shorting stays disabled regardless.
+- **Every decision is logged and auditable.** SQLite + JSONL + the
+  audit-bundle exporter remain the single source of truth.
+
 ## Safety notes
 
 - **Triple opt-in for live orders.** `TRADING_MODE=live`, `LIVE_TRADING=true`

@@ -47,6 +47,14 @@ class Features(BaseModel):
     volume_1h: float = 0.0
     source: str = "kraken_cli"
     as_of: str = Field(default_factory=utc_now_iso)
+    # Optional futures-engine enrichments. ``mark_price`` mirrors the
+    # Kraken Futures mark used to size and PnL the position, and
+    # ``funding_rate_pct_per_hour`` is the per-hour funding rate used by
+    # the risk gate's funding cap (``risk.evaluate_risk``). Both stay
+    # ``None`` for spot-engine cycles so legacy code paths see exactly
+    # what they used to.
+    mark_price: Optional[float] = None
+    funding_rate_pct_per_hour: Optional[float] = None
 
 
 class StrategyVote(BaseModel):
@@ -90,6 +98,9 @@ class ExecutionResult(BaseModel):
         "live_validated",
         "live_filled",
         "live_failed",
+        "futures_paper_filled",
+        "futures_live_filled",
+        "futures_failed",
         "blocked",
         "blocked_paper_not_initialized",
         "skipped",
@@ -116,6 +127,11 @@ class Position(BaseModel):
     notional_usd: float
     unrealized_pnl_usd: float = 0.0
     realized_pnl_usd: float = 0.0
+    # ISO-8601 UTC timestamp of the BUY that opened the current long.
+    # Optional for backwards compatibility with older positions persisted
+    # before the exit_rules patch; time_exit and flatten_before_close
+    # silently skip when it's missing.
+    opened_at: Optional[str] = None
 
 
 class PortfolioSnapshot(BaseModel):

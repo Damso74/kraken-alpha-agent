@@ -3,11 +3,18 @@
 from __future__ import annotations
 
 import time
-from typing import Iterable
+from typing import Iterable, Optional
 
 from .config import Settings, get_settings
 from .schemas import EnsembleResult, Features, PortfolioSnapshot, RiskCheck, RiskResult
 from .universe import is_in_allowlist
+
+
+# Intransigeant ceiling for the futures pivot. The risk gate refuses any
+# value strictly above this no matter where it came from (config, env,
+# caller override). The wrapper in :mod:`src.futures_kraken_cli` enforces
+# the same ceiling as a belt-and-suspenders barrier.
+HARDCODED_MAX_LEVERAGE: float = 1.0
 
 
 _LAST_TRADE_TS: dict[str, float] = {}
@@ -46,13 +53,29 @@ def evaluate_risk(
     portfolio: PortfolioSnapshot,
     settings: Settings | None = None,
     intended_mode: str | None = None,
+    is_exit_action: bool = False,
+    intended_leverage: Optional[float] = None,
 ) -> RiskResult:
+    """Evaluate the risk gates for an upcoming order.
+
+    ``is_exit_action=True`` softens the entry-time gates (min confidence,
+    regime guard, cooldown) for a SELL that is the result of an
+    exit-rule firing. The triple opt-in for live, allowlist, drawdown
+    circuit-breaker and spread guard remain enforced regardless.
+
+    ``intended_leverage`` is the leverage the caller wants to apply on the
+    futures engine. When ``None`` it defaults to ``futures.max_leverage``
+    (currently always 1.0). The gate **refuses** any value strictly above
+    ``HARDCODED_MAX_LEVERAGE`` regardless of how the caller produced it.
+    """
     settings = settings or get_settings()
     cfg = settings.config.risk
     strat = settings.config.strategy
     exec_cfg = settings.config.execution
+    futures_cfg = settings.config.futures
     env = settings.env
     mode = (intended_mode or env.trading_mode or "dry_run").lower()
+    engine = (exec_cfg.engine or "spot").lower()
 
     checks: list[RiskCheck] = []
     reasons: list[str] = []
@@ -69,12 +92,15 @@ def evaluate_risk(
     if not is_actionable:
         reasons.append("ensemble action is HOLD")
 
-    # 3) Minimum confidence.
+    # 3) Minimum confidence (entry-time gate — softened for exit actions).
     min_conf = strat.min_confidence_to_trade
     conf_ok = ensemble.confidence >= min_conf
-    checks.append(_check("min_confidence", conf_ok, f"conf={ensemble.confidence:.2f} min={min_conf}"))
-    if not conf_ok:
-        reasons.append(f"confidence {ensemble.confidence:.2f} below threshold {min_conf}")
+    if is_exit_action:
+        checks.append(_check("min_confidence", True, "bypassed (exit_rule SELL)"))
+    else:
+        checks.append(_check("min_confidence", conf_ok, f"conf={ensemble.confidence:.2f} min={min_conf}"))
+        if not conf_ok:
+            reasons.append(f"confidence {ensemble.confidence:.2f} below threshold {min_conf}")
 
     # 4) Spread guard.
     spread_ok = features.spread_bps <= cfg.max_spread_bps
@@ -84,31 +110,38 @@ def evaluate_risk(
     if not spread_ok:
         reasons.append(f"spread {features.spread_bps:.1f}bps above {cfg.max_spread_bps}bps")
 
-    # 5) Regime guard.
+    # 5) Regime guard (entry-time gate — bypassed for exit-rule SELL so an
+    # exit can fire even on LOW_LIQUIDITY books).
     regime_blocked = ensemble.regime in cfg.block_if_regime
-    checks.append(
-        _check("regime", not regime_blocked, f"regime={ensemble.regime} blocked={cfg.block_if_regime}")
-    )
-    if regime_blocked:
-        reasons.append(f"regime {ensemble.regime} blocked by config")
+    if is_exit_action:
+        checks.append(_check("regime", True, f"regime={ensemble.regime} bypassed (exit_rule SELL)"))
+    else:
+        checks.append(
+            _check("regime", not regime_blocked, f"regime={ensemble.regime} blocked={cfg.block_if_regime}")
+        )
+        if regime_blocked:
+            reasons.append(f"regime {ensemble.regime} blocked by config")
 
-    # 6) Cooldown.
+    # 6) Cooldown (entry-time gate — bypassed for exits).
     last = _LAST_TRADE_TS.get(features.symbol)
     cooldown_ok = True
     if last is not None:
         elapsed = time.time() - last
         cooldown_ok = elapsed >= cfg.cooldown_seconds_per_symbol
-        checks.append(
-            _check(
-                "cooldown",
-                cooldown_ok,
-                f"elapsed={elapsed:.0f}s required={cfg.cooldown_seconds_per_symbol}s",
+        if is_exit_action:
+            checks.append(_check("cooldown", True, f"elapsed={elapsed:.0f}s bypassed (exit_rule SELL)"))
+        else:
+            checks.append(
+                _check(
+                    "cooldown",
+                    cooldown_ok,
+                    f"elapsed={elapsed:.0f}s required={cfg.cooldown_seconds_per_symbol}s",
+                )
             )
-        )
-        if not cooldown_ok:
-            reasons.append(
-                f"cooldown active for {features.symbol} ({elapsed:.0f}s/{cfg.cooldown_seconds_per_symbol}s)"
-            )
+            if not cooldown_ok:
+                reasons.append(
+                    f"cooldown active for {features.symbol} ({elapsed:.0f}s/{cfg.cooldown_seconds_per_symbol}s)"
+                )
     else:
         checks.append(_check("cooldown", True, "no previous trade"))
 
@@ -177,7 +210,77 @@ def evaluate_risk(
                 f"trade rate {recent}/h exceeds profile cap of {max_trades_hour}/h"
             )
 
-    # 11) Live-trading triple opt-in.
+    # 11) Leverage cap — intransigeant. The futures pivot keeps the bot at
+    # 1x effective leverage (= spot equivalent). Any caller asking for
+    # leverage > 1.0 is refused, regardless of the config/env source.
+    cfg_max_lev = float(getattr(futures_cfg, "max_leverage", HARDCODED_MAX_LEVERAGE))
+    effective_max_lev = min(cfg_max_lev, HARDCODED_MAX_LEVERAGE)
+    requested_lev = (
+        float(intended_leverage)
+        if intended_leverage is not None
+        else effective_max_lev
+    )
+    leverage_ok = requested_lev <= HARDCODED_MAX_LEVERAGE + 1e-9 and cfg_max_lev <= HARDCODED_MAX_LEVERAGE + 1e-9
+    checks.append(
+        _check(
+            "max_leverage",
+            leverage_ok,
+            (
+                f"requested={requested_lev:.3f}x config_max={cfg_max_lev:.3f}x "
+                f"hard_cap={HARDCODED_MAX_LEVERAGE:.3f}x"
+            ),
+        )
+    )
+    if not leverage_ok:
+        reasons.append(
+            f"leverage {requested_lev:.3f}x exceeds hardcoded cap "
+            f"{HARDCODED_MAX_LEVERAGE:.1f}x (config_max={cfg_max_lev:.3f}x)"
+        )
+
+    # 12) Funding-rate gate — only enforced on futures BUYs. The cap is the
+    # ``futures.max_funding_rate_pct_per_hour`` config knob (default 0.5%/h).
+    # SELL exits and HOLDs are exempt: we want to be able to flatten a
+    # position even when the funding rate spiked.
+    funding_threshold = float(
+        getattr(futures_cfg, "max_funding_rate_pct_per_hour", 0.5)
+    )
+    funding_rate = getattr(features, "funding_rate_pct_per_hour", None)
+    funding_blocks_buy = (
+        engine == "futures"
+        and ensemble.action == "BUY"
+        and funding_rate is not None
+        and float(funding_rate) > funding_threshold
+    )
+    if engine == "futures" and ensemble.action == "BUY" and funding_rate is not None:
+        funding_ok = not funding_blocks_buy
+        checks.append(
+            _check(
+                "max_funding_rate",
+                funding_ok,
+                (
+                    f"funding={float(funding_rate):+.3f}%/h "
+                    f"cap={funding_threshold:.3f}%/h"
+                ),
+            )
+        )
+        if funding_blocks_buy:
+            reasons.append(
+                f"funding rate {float(funding_rate):+.3f}%/h above "
+                f"{funding_threshold:.3f}%/h cap on futures engine"
+            )
+    else:
+        checks.append(
+            _check(
+                "max_funding_rate",
+                True,
+                (
+                    f"engine={engine} action={ensemble.action} "
+                    f"funding={funding_rate} (gate inactive)"
+                ),
+            )
+        )
+
+    # 13) Live-trading triple opt-in.
     blocked_for_live_flags = False
     if mode == "live":
         live_flags_ok = settings.all_live_flags_on()

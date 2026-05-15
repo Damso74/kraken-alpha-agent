@@ -18,6 +18,17 @@ trading:
   no_trade_if_negative_opportunity: true
   liquidity_size_dampener: 0.5
   liquidity_size_factor: 0.5
+  allowed_entry_sessions: ["US_CORE"]
+
+# Deterministic exit-rules engine (src/exit_rules.py). Profile-level
+# risk.stop_loss_pct / risk.take_profit_pct take precedence when set.
+exit:
+  stop_loss_pct: 1.5
+  take_profit_pct: 2.0
+  momentum_exit_score: -0.03
+  max_hold_minutes: 90
+  stale_position_min_pnl_pct: 0.3
+  flatten_before_close_minutes: 15
 
 universe:
   mode: static
@@ -76,6 +87,22 @@ execution:
   live_size_usd: 100.0
   require_validate_first: true
   dead_mans_switch_seconds: 120
+  # spot keeps the legacy xStocks Spot routing. Switch to "futures" only
+  # in profiles that explicitly require the Kraken Futures Perpetual venue
+  # (see micro_live_100eur below). The futures engine is hardcoded at 1x
+  # leverage by both the risk gate and the wrapper.
+  engine: spot
+
+# Kraken Futures Perpetual xStocks pivot. The block is read by
+# src/risk.py (max_leverage + funding gate) and src/futures_kraken_cli.py
+# (symbol mapping override). max_leverage is INTRANSIGEANT — the risk
+# gate refuses anything > 1.0 regardless of where the value came from.
+futures:
+  enabled: false
+  max_leverage: 1.0
+  max_funding_rate_pct_per_hour: 0.5
+  dry_run_mode_uses_paper_engine: true
+  symbol_mapping: {}
 
 llm:
   enabled: false
@@ -162,3 +189,40 @@ profiles:
       stop_loss_pct: 1.0
       take_profit_pct: 1.8
       max_trades_per_hour: 6
+
+  micro_live_100eur:
+    description: "Live micro-account ceiling (100€ wallet, 30€ exposure cap, Kraken Futures Perpetual xStocks @ 1x)."
+    trading:
+      shorting_enabled: false
+      min_opportunity_score_buy: 0.08
+      min_opportunity_score_sell: 0.06
+    strategy:
+      thresholds: { buy: 0.08, sell: -0.06 }
+      min_confidence_to_trade: 0.25
+    risk:
+      max_open_positions: 3
+      max_position_notional_usd: 10.0
+      max_total_exposure_usd: 30.0
+      max_daily_drawdown_pct: 3.0
+      max_spread_bps: 80
+      cooldown_seconds_per_symbol: 120
+      stop_loss_pct: 1.5
+      take_profit_pct: 2.0
+      max_trades_per_hour: 6
+    execution:
+      dry_run_size_usd: 10.0
+      paper_size_usd: 10.0
+      live_size_usd: 10.0
+      require_validate_first: true
+      dead_mans_switch_seconds: 60
+      # Pivot the live engine to Kraken Futures Perpetual xStocks. The spot
+      # xStocks orderbook is blocked for EU/PEDSL-CY accounts, so we route
+      # the same alpha through the perpetual venue, capped at 1x leverage
+      # (= spot equivalent, no margin call surface).
+      engine: futures
+    futures:
+      enabled: true
+      max_leverage: 1.0
+      max_funding_rate_pct_per_hour: 0.5
+      dry_run_mode_uses_paper_engine: true
+      symbol_mapping: {}

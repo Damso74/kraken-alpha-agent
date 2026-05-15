@@ -45,6 +45,12 @@ def load_local_snapshot() -> PortfolioSnapshot:
         avg = safe_float(row["avg_entry_price"])
         notional = quantity * market
         unrealized = (market - avg) * quantity
+        # ``opened_at`` is a recent addition; legacy rows may not expose it.
+        opened_at = None
+        try:
+            opened_at = row["opened_at"]
+        except (KeyError, IndexError):
+            opened_at = None
         positions.append(
             Position(
                 symbol=row["symbol"],
@@ -54,6 +60,7 @@ def load_local_snapshot() -> PortfolioSnapshot:
                 notional_usd=notional,
                 unrealized_pnl_usd=unrealized,
                 realized_pnl_usd=safe_float(row["realized_pnl_usd"]),
+                opened_at=opened_at if isinstance(opened_at, str) and opened_at else None,
             )
         )
     cash = cfg.competition.starting_equity_usd - sum(p.quantity * p.avg_entry_price for p in positions)
@@ -129,7 +136,13 @@ def get_position(symbol: str, snapshot: PortfolioSnapshot | None = None) -> Posi
 
 def record_fill(result: ExecutionResult) -> None:
     """Apply an execution result to the local portfolio (cash + positions)."""
-    if result.status not in ("paper_filled", "live_filled", "dry_run_logged"):
+    if result.status not in (
+        "paper_filled",
+        "live_filled",
+        "futures_paper_filled",
+        "futures_live_filled",
+        "dry_run_logged",
+    ):
         return
     if result.action not in ("BUY", "SELL"):
         return
@@ -138,20 +151,36 @@ def record_fill(result: ExecutionResult) -> None:
     if not result.symbol or not result.fill_price or not result.volume:
         return
 
+    def _row_opened_at(r) -> str | None:
+        if not r:
+            return None
+        try:
+            val = r["opened_at"]
+        except (KeyError, IndexError):
+            return None
+        return val if isinstance(val, str) and val else None
+
     rows = {row["symbol"]: row for row in storage.fetch_positions()}
     existing = rows.get(result.symbol)
     quantity = safe_float(existing["quantity"]) if existing else 0.0
     avg = safe_float(existing["avg_entry_price"]) if existing else 0.0
     realized = safe_float(existing["realized_pnl_usd"]) if existing else 0.0
+    prev_opened_at = _row_opened_at(existing)
 
     side_qty = result.volume if result.action == "BUY" else -result.volume
     new_qty = quantity + side_qty
     new_avg = avg
+    new_opened_at: str | None = prev_opened_at
     if result.action == "BUY":
         if new_qty > 0:
             new_avg = (avg * quantity + result.fill_price * result.volume) / new_qty
+        # New position opened: stamp opened_at if we did not already track one.
+        if quantity <= 1e-9 and not prev_opened_at:
+            new_opened_at = result.at or utc_now_iso()
     elif result.action == "SELL" and quantity > 0:
         realized += (result.fill_price - avg) * min(result.volume, quantity)
+        if new_qty <= 1e-9:
+            new_opened_at = None
 
     positions: list[Position] = []
     if abs(new_qty) > 1e-9:
@@ -164,6 +193,7 @@ def record_fill(result: ExecutionResult) -> None:
                 notional_usd=new_qty * result.fill_price,
                 unrealized_pnl_usd=0.0,
                 realized_pnl_usd=realized,
+                opened_at=new_opened_at,
             )
         )
     for sym, row in rows.items():
@@ -178,6 +208,7 @@ def record_fill(result: ExecutionResult) -> None:
                 notional_usd=safe_float(row["notional_usd"]),
                 unrealized_pnl_usd=safe_float(row["unrealized_pnl_usd"]),
                 realized_pnl_usd=safe_float(row["realized_pnl_usd"]),
+                opened_at=_row_opened_at(row),
             )
         )
     snapshot = PortfolioSnapshot(
