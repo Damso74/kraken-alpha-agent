@@ -34,15 +34,10 @@ import statistics
 from collections import Counter
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from enum import Enum
 from typing import Any, Iterable, Mapping, Optional, Sequence
 
-try:
-    from zoneinfo import ZoneInfo
-except ImportError:  # pragma: no cover — Python <3.9
-    ZoneInfo = None  # type: ignore[assignment]
-
 from . import actionability as actionability_mod
+from . import exit_rules as exit_rules_mod
 from . import features as features_mod
 from . import risk as risk_mod
 from .config import Settings, YAMLConfig, get_settings
@@ -54,6 +49,12 @@ from .schemas import (
     Position,
     StrategyVote,
 )
+from .sessions import (
+    MarketSession,
+    NY_TZ,
+    _parse_iso_to_utc,
+    classify_market_session,
+)
 from .strategies import breakout_score, combine, mean_reversion_score, momentum_score
 from .utils import safe_float, utc_now_iso
 
@@ -62,10 +63,6 @@ MARKET_HOURS_REPORT_KIND = "market_hours"
 MIN_WARMUP_CANDLES = 4
 _LIQUIDITY_VOLUME_TARGET = 5_000.0
 _LIQUIDITY_BLOCK_THRESHOLD = 0.05
-
-# America/New_York is the canonical equity-market timezone — DST
-# transitions are handled automatically by zoneinfo / tzdata.
-NY_TZ = ZoneInfo("America/New_York") if ZoneInfo is not None else None
 
 
 # ---------------------------------------------------------------------------
@@ -561,6 +558,7 @@ class _SimState:
     realized_pnl: float = 0.0
     peak_equity: float = 0.0
     max_drawdown_pct: float = 0.0
+    opened_at: Optional[str] = None
 
     @property
     def quantity(self) -> float:
@@ -591,12 +589,16 @@ class _SimState:
             if dd > self.max_drawdown_pct:
                 self.max_drawdown_pct = dd
 
-    def buy(self, *, qty: float, price: float) -> None:
+    def buy(self, *, qty: float, price: float, timestamp_utc: Optional[str] = None) -> None:
         if qty <= 0 or price <= 0:
             return
+        was_flat = self.quantity <= 1e-9
         cost = qty * price
         self.cash -= cost
         self.lots.append(_Lot(qty=qty, price=price))
+        if was_flat and timestamp_utc:
+            # Open the timing window for exit_rules (time_exit needs this).
+            self.opened_at = timestamp_utc
 
     def sell_fifo(self, *, qty: float, price: float) -> tuple[float, float]:
         """Sell ``qty`` (clamped to open quantity) using FIFO. Returns
@@ -616,6 +618,8 @@ class _SimState:
                 self.lots.pop(0)
         self.realized_pnl += pnl_trade
         self.cash += filled * price
+        if self.quantity <= 1e-9:
+            self.opened_at = None
         return filled, pnl_trade
 
 
@@ -658,6 +662,7 @@ def _build_simulated_snapshot(symbol: str, state: _SimState, mark: float) -> Por
         notional_usd=state.notional(mark),
         unrealized_pnl_usd=state.unrealized(mark),
         realized_pnl_usd=state.realized_pnl,
+        opened_at=state.opened_at,
     )
     return PortfolioSnapshot(
         cash_usd=state.cash,
@@ -813,6 +818,45 @@ def simulate_symbol(
         )
         result.actionability_reasons[actionability.reason or "n/a"] += 1
 
+        # Exit-rules engine: convert HOLD/BUY to SELL when a rule fires
+        # against the current open long. The simulator mirrors the live
+        # loop (see src/main.py::_apply_exit_rules_and_session_guard) so
+        # backtest BUY/SELL counts now reflect the deployed gates.
+        if open_position is not None and state.quantity > 1e-9:
+            try:
+                now_dt = _parse_iso_to_utc(current.timestamp_utc)
+            except ValueError:
+                now_dt = None
+            exit_decision = exit_rules_mod.evaluate_exit_rules(
+                position=open_position,
+                current_price=float(current.close),
+                opportunity_score=float(ensemble.final_score),
+                now=now_dt,
+                config=s.config,
+            )
+            if exit_decision.should_exit and exit_decision.rule:
+                max_notional = state.quantity * max(current.close, 0.01)
+                ensemble = ensemble.model_copy(
+                    update={
+                        "action": "SELL",
+                        "suggested_size_usd": max_notional,
+                        "rationale": (
+                            f"{ensemble.rationale} | exit_rule={exit_decision.rule}: "
+                            f"{exit_decision.reason}"
+                        ).strip(" |"),
+                    }
+                )
+                actionability = actionability.model_copy(
+                    update={
+                        "buy_eligible": False,
+                        "sell_eligible": True,
+                        "reason": f"exit_rule_{exit_decision.rule}",
+                    }
+                )
+                result.actionability_reasons[
+                    f"exit_rule_{exit_decision.rule}"
+                ] += 1
+
         # Simulation-only liquidity guard. We never mutate config.yaml; this
         # mirrors a hypothetical risk gate the user might enable.
         if (
@@ -834,12 +878,18 @@ def simulate_symbol(
             )
             continue
 
+        is_exit_action = bool(
+            ensemble.action == "SELL"
+            and isinstance(actionability.reason, str)
+            and actionability.reason.startswith("exit_rule_")
+        )
         risk_result = risk_mod.evaluate_risk(
             ensemble=ensemble,
             features=feats,
             portfolio=snapshot,
             settings=s,
             intended_mode="dry_run",
+            is_exit_action=is_exit_action,
         )
         for r in risk_result.reasons:
             result.risk_reasons[r] += 1
@@ -878,7 +928,7 @@ def simulate_symbol(
                     liquidity_score=liquidity_score,
                 )
                 continue
-            state.buy(qty=qty, price=price)
+            state.buy(qty=qty, price=price, timestamp_utc=current.timestamp_utc)
             risk_mod.mark_traded(symbol)
             result.buy_count += 1
             result.trades.append(
@@ -1258,72 +1308,12 @@ def run_grid_search(
 
 # ---------------------------------------------------------------------------
 # Market sessions — strictly read-only, used by --market-hours-report
+#
+# ``MarketSession`` / ``classify_market_session`` / ``NY_TZ`` /
+# ``_parse_iso_to_utc`` are re-exported from :mod:`src.sessions` so the
+# agent loop, the backtester, and the live preflight all agree on one
+# canonical session classifier.
 # ---------------------------------------------------------------------------
-
-
-class MarketSession(str, Enum):
-    """Coarse US-equity session bucket for a UTC timestamp.
-
-    All boundaries are interpreted in ``America/New_York`` so daylight
-    savings is handled by ``zoneinfo``. The left boundary is inclusive
-    and the right boundary is exclusive — for example 09:30:00 ET is
-    inside ``US_CORE`` and 16:00:00 ET is outside ``US_CORE``.
-    """
-
-    US_CORE = "US_CORE"
-    US_PREMARKET = "US_PREMARKET"
-    US_AFTERHOURS = "US_AFTERHOURS"
-    OVERNIGHT = "OVERNIGHT"
-    WEEKEND = "WEEKEND"
-
-
-def _parse_iso_to_utc(ts: str) -> datetime:
-    """Parse an ISO 8601 string into an aware UTC datetime.
-
-    ``Z`` suffix is normalised to ``+00:00`` for ``fromisoformat``.
-    """
-    if not ts:
-        raise ValueError("empty timestamp")
-    s = ts.strip()
-    if s.endswith("Z"):
-        s = s[:-1] + "+00:00"
-    parsed = datetime.fromisoformat(s)
-    if parsed.tzinfo is None:
-        raise ValueError("ISO timestamp without timezone is rejected")
-    return parsed.astimezone(timezone.utc)
-
-
-def classify_market_session(ts_utc: datetime) -> MarketSession:
-    """Classify a UTC timestamp into a US trading session.
-
-    Boundaries (America/New_York):
-    - WEEKEND: Saturday and Sunday (any time of day)
-    - US_PREMARKET: weekday 04:00:00–09:30:00
-    - US_CORE: weekday 09:30:00–16:00:00
-    - US_AFTERHOURS: weekday 16:00:00–20:00:00
-    - OVERNIGHT: weekday 00:00:00–04:00:00 and 20:00:00–24:00:00
-
-    Raises ``ValueError`` when the input is timezone-naive — we never
-    silently assume a timezone.
-    """
-    if not isinstance(ts_utc, datetime):
-        raise ValueError("classify_market_session expects a datetime")
-    if ts_utc.tzinfo is None:
-        raise ValueError("naive datetime rejected; supply an aware UTC datetime")
-    if NY_TZ is None:  # pragma: no cover — zoneinfo always available on CPython 3.11+
-        raise RuntimeError("zoneinfo unavailable; install tzdata")
-    local = ts_utc.astimezone(NY_TZ)
-    weekday = local.weekday()  # 0=Mon .. 6=Sun
-    if weekday >= 5:
-        return MarketSession.WEEKEND
-    minutes = local.hour * 60 + local.minute + local.second / 60.0
-    if 4 * 60 <= minutes < 9 * 60 + 30:
-        return MarketSession.US_PREMARKET
-    if 9 * 60 + 30 <= minutes < 16 * 60:
-        return MarketSession.US_CORE
-    if 16 * 60 <= minutes < 20 * 60:
-        return MarketSession.US_AFTERHOURS
-    return MarketSession.OVERNIGHT
 
 
 def tag_candles_with_session(

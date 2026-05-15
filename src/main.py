@@ -13,6 +13,7 @@ from typing import Iterable
 from . import (
     actionability as actionability_mod,
     execution as execution_mod,
+    exit_rules as exit_rules_mod,
     features as features_mod,
     llm_explainer,
     market_data,
@@ -24,7 +25,8 @@ from . import (
 )
 from .config import get_settings
 from .logger import get_logger
-from .schemas import Decision
+from .schemas import Actionability, Decision
+from .sessions import is_entry_allowed
 from .strategies import breakout_score, combine, mean_reversion_score, momentum_score
 from .universe import build_dynamic_universe, get_universe
 from .utils import new_id, utc_now_iso, utc_now_ms
@@ -38,6 +40,78 @@ def _vote_for(features) -> list:
         breakout_score(features),
         mean_reversion_score(features),
     ]
+
+
+def _apply_exit_rules_and_session_guard(
+    *,
+    ensemble,
+    actionability: Actionability,
+    feats,
+    open_position,
+    settings,
+):
+    """Convert intent to SELL when an exit rule fires; block BUY outside sessions.
+
+    Returns the possibly-rewritten ``(ensemble, actionability)`` tuple. The
+    triple opt-in for live, the no-short rule, and the LOW_LIQUIDITY runtime
+    gate are all untouched — this helper only reshapes the *intent*.
+    """
+    # 1) Exit rules: fire only when we hold a long position. SELL size is
+    # clamped to the open quantity so we never accidentally open a short.
+    if open_position is not None and float(open_position.quantity or 0.0) > 1e-9:
+        exit_decision = exit_rules_mod.evaluate_exit_rules(
+            position=open_position,
+            current_price=float(feats.last_price),
+            opportunity_score=float(ensemble.final_score),
+            now=None,
+            config=settings.config,
+        )
+        if exit_decision.should_exit and exit_decision.rule:
+            max_notional = float(open_position.quantity) * max(float(feats.last_price), 0.01)
+            new_rationale = (
+                f"{ensemble.rationale} | exit_rule={exit_decision.rule}: {exit_decision.reason}"
+            ).strip(" |")
+            ensemble = ensemble.model_copy(
+                update={
+                    "action": "SELL",
+                    "suggested_size_usd": max_notional,
+                    "rationale": new_rationale,
+                }
+            )
+            actionability = actionability.model_copy(
+                update={
+                    "buy_eligible": False,
+                    "sell_eligible": True,
+                    "reason": f"exit_rule_{exit_decision.rule}",
+                }
+            )
+
+    # 2) Session guard: BUY only during allowed entry sessions; SELL exits
+    # and HOLDs are unrestricted. Empty list disables the guard.
+    if ensemble.action == "BUY":
+        allowed = list(getattr(settings.config.trading, "allowed_entry_sessions", []) or [])
+        ok, session = is_entry_allowed(allowed, now=None)
+        if not ok:
+            session_reason = (
+                f"buy_blocked_outside_session(session={session.value},"
+                f"allowed={','.join(allowed) if allowed else 'any'})"
+            )
+            ensemble = ensemble.model_copy(
+                update={
+                    "action": "HOLD",
+                    "rationale": (
+                        f"{ensemble.rationale} | actionability={session_reason}"
+                    ).strip(" |"),
+                }
+            )
+            actionability = actionability.model_copy(
+                update={
+                    "buy_eligible": False,
+                    "reason": session_reason,
+                }
+            )
+
+    return ensemble, actionability
 
 
 def _build_decision(
@@ -61,11 +135,24 @@ def _build_decision(
         liquidity_score=float(liquidity_score or 0.0),
         settings=settings,
     )
+    ensemble, actionability = _apply_exit_rules_and_session_guard(
+        ensemble=ensemble,
+        actionability=actionability,
+        feats=feats,
+        open_position=open_position,
+        settings=settings,
+    )
+    is_exit_action = bool(
+        ensemble.action == "SELL"
+        and isinstance(actionability.reason, str)
+        and actionability.reason.startswith("exit_rule_")
+    )
     risk = risk_mod.evaluate_risk(
         ensemble=ensemble,
         features=feats,
         portfolio=snapshot,
         settings=settings,
+        is_exit_action=is_exit_action,
     )
     execution_result = execution_mod.execute(
         features=feats,

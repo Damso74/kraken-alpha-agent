@@ -77,7 +77,8 @@ CREATE TABLE IF NOT EXISTS positions (
     notional_usd      REAL NOT NULL,
     unrealized_pnl_usd REAL NOT NULL,
     realized_pnl_usd  REAL NOT NULL,
-    updated_at        TEXT NOT NULL
+    updated_at        TEXT NOT NULL,
+    opened_at         TEXT
 );
 
 CREATE TABLE IF NOT EXISTS pnl_snapshots (
@@ -130,9 +131,29 @@ def _connect() -> sqlite3.Connection:
     return conn
 
 
+def _ensure_position_columns(conn: sqlite3.Connection) -> None:
+    """Idempotent migration: add ``opened_at`` to legacy ``positions`` tables.
+
+    Sqlite's ``CREATE TABLE IF NOT EXISTS`` is a no-op when the table already
+    exists with the old shape, so we need an explicit ``ALTER TABLE``. The
+    statement is wrapped in a try/except because ``ADD COLUMN`` raises on
+    duplicate columns and there is no portable ``IF NOT EXISTS`` for it.
+    """
+    try:
+        cols = {row["name"] for row in conn.execute("PRAGMA table_info(positions)")}
+    except sqlite3.DatabaseError:
+        return
+    if cols and "opened_at" not in cols:
+        try:
+            conn.execute("ALTER TABLE positions ADD COLUMN opened_at TEXT")
+        except sqlite3.OperationalError:
+            pass
+
+
 def init_db() -> None:
     with _LOCK, _connect() as conn:
         conn.executescript(SCHEMA_SQL)
+        _ensure_position_columns(conn)
         conn.commit()
 
 
@@ -217,8 +238,8 @@ def upsert_portfolio(snapshot: PortfolioSnapshot) -> None:
                 """
                 INSERT INTO positions
                 (symbol, quantity, avg_entry_price, market_price, notional_usd,
-                 unrealized_pnl_usd, realized_pnl_usd, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                 unrealized_pnl_usd, realized_pnl_usd, updated_at, opened_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     pos.symbol,
@@ -229,6 +250,7 @@ def upsert_portfolio(snapshot: PortfolioSnapshot) -> None:
                     pos.unrealized_pnl_usd,
                     pos.realized_pnl_usd,
                     snapshot.as_of,
+                    pos.opened_at,
                 ),
             )
         conn.commit()
