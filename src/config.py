@@ -176,6 +176,43 @@ class ExitRulesConfig(BaseModel):
     momentum_exit_enabled: bool = True
 
 
+class ExternalSignalsConfig(BaseModel):
+    """Optional gates driven by external market-context signals.
+
+    Every field defaults to "disabled" so existing profiles are
+    unaffected. The gates are evaluated in
+    :func:`src.actionability.apply_actionability_gates` and only act on
+    BUY actions — SELL exits and HOLDs always bypass them. The
+    walk-forward driver (``scripts/walk_forward_crypto_with_signals.py``)
+    sweeps these knobs alongside the directional grid; live profiles
+    that want to opt in should list their own values in ``config.yaml``
+    under ``external_signals:``.
+
+    The gate values are intentionally optional (rather than "0
+    disables") so a typo in the YAML is impossible to mistake for an
+    active configuration.
+    """
+
+    # Fear & Greed gates: block BUY when the index lies outside the
+    # configured band. Both bounds are optional and inclusive on the
+    # disabling side: ``block_buy_if_fear_greed_lt: 25`` blocks BUYs
+    # when ``fg < 25`` (i.e. extreme fear).
+    block_buy_if_fear_greed_lt: Optional[int] = None
+    block_buy_if_fear_greed_gt: Optional[int] = None
+
+    # BTC dominance gate: block BUY on **alt** symbols (everything
+    # except BTC) when the 24 h dominance delta exceeds the threshold
+    # in percentage points (``+1.0`` = BTC dominance gained 1 pp in
+    # the last 24 h, i.e. capital rotating out of alts → block alt
+    # BUYs). BTC itself is exempt.
+    block_alt_if_btc_dominance_rising_24h_pct: Optional[float] = None
+
+    # Realized-volatility regime filter: only allow BUY when the local
+    # rolling-vol regime is in this list (``"low"`` / ``"normal"`` /
+    # ``"high"``). Empty list = filter disabled.
+    vol_regime_filter: list[str] = Field(default_factory=list)
+
+
 class LLMConfig(BaseModel):
     enabled: bool = False
     base_url: str = "https://api.featherless.ai/v1"
@@ -206,6 +243,9 @@ class YAMLConfig(BaseModel):
     execution: ExecutionConfig = Field(default_factory=ExecutionConfig)
     futures: FuturesConfig = Field(default_factory=FuturesConfig)
     exit: ExitRulesConfig = Field(default_factory=ExitRulesConfig)
+    external_signals: ExternalSignalsConfig = Field(
+        default_factory=ExternalSignalsConfig
+    )
     llm: LLMConfig = Field(default_factory=LLMConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     dashboard: DashboardConfig = Field(default_factory=DashboardConfig)
@@ -427,6 +467,7 @@ __all__ = [
     "Settings",
     "EnvSettings",
     "YAMLConfig",
+    "ExternalSignalsConfig",
     "get_settings",
     "reload_settings",
     "safe_env_snapshot",

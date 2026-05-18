@@ -19,9 +19,10 @@ together with the :class:`Actionability` record explaining the decision.
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
 from .config import Settings, get_settings
+from .external_signals import ExternalSnapshot, apply_external_gates
 from .schemas import Actionability, EnsembleResult, Features, Position
 
 
@@ -46,10 +47,24 @@ def apply_actionability_gates(
     position: Optional[Position],
     liquidity_score: float,
     settings: Optional[Settings] = None,
+    external_snapshot: Optional[ExternalSnapshot] = None,
 ) -> tuple[EnsembleResult, Actionability]:
     """Return ``(possibly_downgraded_ensemble, actionability)``.
 
     The returned ensemble is a fresh instance; the input is not mutated.
+
+    Optional external gates
+    -----------------------
+    When ``external_snapshot`` is provided the function evaluates the
+    gates declared in ``settings.config.external_signals`` *before*
+    the existing buy-threshold check. A blocking external gate
+    downgrades a BUY to HOLD with a structured ``reason`` string
+    (``external_gate=<name>(<details>)``). When ``external_snapshot``
+    is ``None`` (live default — no signals fetched) every gate is
+    bypassed and behaviour is identical to the pre-existing
+    implementation. SELL and HOLD actions always bypass the external
+    gates, so exits are never blocked by a missing or contrary
+    macro signal.
     """
     s = settings or get_settings()
     t = s.config.trading
@@ -68,6 +83,20 @@ def apply_actionability_gates(
         suggested_size = suggested_size * factor
         size_dampened = True
 
+    # External-signal gates (BUY-only). Evaluated before the legacy
+    # buy/sell threshold checks so a macro block produces a clear
+    # ``external_gate=...`` reason rather than masquerading as a
+    # below-threshold rejection.
+    external_block: Optional[str] = None
+    gates_cfg = getattr(s.config, "external_signals", None)
+    if action == "BUY" and gates_cfg is not None and external_snapshot is not None:
+        external_block = apply_external_gates(
+            action=action,
+            symbol=str(features.symbol or ""),
+            snapshot=external_snapshot,
+            gates=gates_cfg,
+        )
+
     reason = ""
     new_action = action
     rationale_extra: list[str] = []
@@ -80,7 +109,10 @@ def apply_actionability_gates(
     sell_eligible = False
 
     if action == "BUY":
-        if score < buy_min:
+        if external_block is not None:
+            new_action = "HOLD"
+            reason = f"external_gate={external_block}"
+        elif score < buy_min:
             new_action = "HOLD"
             reason = f"below_buy_threshold(score={score:+.3f}<{buy_min:+.3f})"
         elif t.no_trade_if_negative_opportunity and score < 0:
