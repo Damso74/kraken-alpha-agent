@@ -1,0 +1,15 @@
+# Force LF line endings for shell scripts so they execute correctly on
+# the Linux VPS. This avoids the recurring CRLF/bash friction documented
+# in AGENTS.md (Windows checkouts producing scripts that break bash on
+# the VPS unless ``tr -d '\r'`` is applied).
+*.sh           text eol=lf
+*.bash         text eol=lf
+
+# Keep Python and YAML deterministic across platforms as well.
+*.py           text eol=lf
+*.yaml         text eol=lf
+*.yml          text eol=lf
+
+# PowerShell scripts intentionally keep CRLF since they only run on
+# Windows.
+*.ps1          text eol=crlf
