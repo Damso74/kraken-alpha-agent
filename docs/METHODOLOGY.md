@@ -253,8 +253,58 @@ Trois raisons :
 - `docs/SUBMISSION.md` → section "Backtest evidence" : numéros
   finaux conservés (snapshot principal +33.56 USD / 53.0 % WR /
   1.68 % MDD), avec lien explicite vers ce document.
-- `tests/test_walk_forward.py` : 13 tests qui verrouillent la
+- `tests/test_walk_forward.py` : tests qui verrouillent la
   logique de split, d'expansion de grille, de score, et le contrat
   du driver `run_walk_forward`.
-- `data/walk_forward_results.json` : sortie brute (48 candidats,
-  métriques train + test, score, drapeau survivor).
+- `data/walk_forward_results.json` : sortie brute xStocks 240-min
+  (48 candidats, métriques train + test, score, drapeau survivor).
+
+## Extension multi-résolution sur la couche crypto Perps
+
+Le walk-forward xStocks a un pendant strict sur la couche crypto via
+`scripts/walk_forward_crypto.py` (data via le REST public Kraken,
+pas de CLI mutant). Trois presets coordonnés couvrent trois échelles
+temporelles complémentaires sur le même univers (`BTC, ETH, SOL,
+AVAX, LTC`) :
+
+| Preset    | Resolution | Window      | Train / Test | OOS filter (PnL ≥ 0 ET WR ET trades) |
+|-----------|------------|-------------|--------------|---------------------------------------|
+| `default` | 240-min    | ~90 jours   | ~60d / ~30d  | WR ≥ 0.50 ET trades ≥ 30              |
+| `60min`   | 60-min     | ~30 jours   | ~20d / ~10d  | WR ≥ 0.50 ET trades ≥ 30              |
+| `15min`   | 15-min     | ~7.5 jours  | ~5d  / ~2.5d | WR ≥ 0.48 ET trades ≥ 60              |
+
+Le 15-min relâche très légèrement la barre WR (0.48 au lieu de 0.50)
+parce que le scalping intra-day est dominé par la mean-reversion sur
+des micro-ranges et qu'un edge net 50/50 sur du 15-min est rare ; le
+plancher trades est en revanche relevé à 60 pour conserver la
+significativité statistique au taux de fill plus élevé de cette
+résolution.
+
+Choix méthodologique sur l'axe d'exit : `time_stop_minutes` est
+l'alias canonique de `max_hold_minutes` côté `src.exit_rules` (et
+prend précédence quand les deux sont set). Pour ne pas double-compter
+la même dimension, chaque preset n'utilise **qu'un seul** axe de
+rotation d'exit (cf. la docstring du driver). Concrètement le preset
+`default` garde `max_hold_minutes` (compatibilité avec la sortie
+xStocks préexistante) ; les presets `60min` et `15min` utilisent
+`time_stop_minutes` (le knob crypto-rapid-rotation).
+
+**Résultat à `HEAD` (2026-05-18)** : **0 survivor sur les trois
+presets** :
+
+| Preset    | Survivors | Best test PnL | Best test WR | Test trades range |
+|-----------|-----------|---------------|--------------|-------------------|
+| `default` | 0 / 48    | −0.09$        | 40.50 %      | 299 - 300         |
+| `60min`   | 0 / 48    | −0.21$        | 42.99 %      | 242 - 247         |
+| `15min`   | 0 / 48    | −0.02$        | 51.85 %†     | 187 - 240         |
+
+†Le seul candidat 15-min à WR ≥ 48 % (51.85 %) a un test PnL négatif
+(−0.04$) et est rejeté par le filtre PnL ; le best test PnL (−0.02$,
+presque flat mais négatif) a un WR de 34.88 %.
+
+Le pattern est consistant sur les trois échelles : 144/144 combos
+échouent le filtre OOS (PnL négatif dans tous les cas, WR < 50 % dans
+142/144 cas, et le seul WR ≥ 50 % a un PnL négatif). Conséquence
+directe : **aucun profil `live_crypto_*_capped` n'a été créé dans
+`config.yaml`**. Voir `docs/OPTION_D_ACTIVATION.md` pour le détail
+du verdict EV-négatif et la checklist binaire d'activation.

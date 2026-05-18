@@ -1,15 +1,28 @@
 # Option D — Protocole d'activation live crypto Perps
 
-> **STATUT (HEAD `40f211e` + cette branche, 2026-05-18 17:30 CEST) — DÉCONSEILLÉ.**
-> Le walk-forward crypto exécuté ce jour (`data/walk_forward_crypto_results.json`)
-> retourne **0 survivor sur 48 combos** (test PnL ∈ [-0.33$, +0.00$], 0 combo
-> avec PnL OOS positif sur 90 jours, 5 paires). La stratégie déterministe
-> n'a **aucun edge mesurable** sur la couche crypto Perps avec le stack
-> actuel. Option D = **EV-négative** sur cet horizon. Le profil
-> `live_crypto_aggressive_capped` n'a donc **pas** été créé (cf. Phase 3
-> du protocole utilisateur). Le script d'activation refuse de se lancer
-> tant que ce profil n'existe pas dans `config.yaml`. Voir §
-> "Conditions d'activation" en bas pour la checklist binaire.
+> **STATUT (HEAD post-`762f0b1`, 2026-05-18 18:46 CEST) — DÉCONSEILLÉ
+> SUR 3 RÉSOLUTIONS.** L'audit walk-forward crypto a été étendu à
+> trois échelles temporelles complémentaires pour vérifier qu'un edge
+> intra-day ou de scalping n'avait pas été masqué par la résolution
+> 240-min initiale. **Toutes les trois retournent 0 survivor sur des
+> filtres OOS strictes** :
+>
+> | Résolution | Fenêtre   | Split        | Combos | Survivors | Best test PnL | Best test WR | Source                                          |
+> |------------|-----------|--------------|--------|-----------|---------------|--------------|-------------------------------------------------|
+> | 240-min    | ~90 jours | ~60d / ~30d  | 48     | **0**     | −0.09 USD     | 40.50 %      | `data/walk_forward_crypto_results.json`         |
+> | 60-min     | ~30 jours | ~20d / ~10d  | 48     | **0**     | −0.21 USD     | 42.99 %      | `data/walk_forward_crypto_60min_results.json`   |
+> | 15-min     | ~7.5 jours| ~5d  / ~2.5d | 48     | **0**     | −0.02 USD     | 51.85 %†     | `data/walk_forward_crypto_15min_results.json`   |
+>
+> †Le best test WR du 15-min passe la barre 48 % (51.85 %), mais ce
+> candidat a un test PnL négatif (−0.04 USD) — le filtre PnL le rejette.
+> Le best test PnL (−0.02 USD ; presque flat mais négatif) a un WR de
+> 34.88 % et est rejeté par le filtre WR. Aucune calibration ne franchit
+> simultanément les trois critères (PnL ≥ 0, WR ≥ 0.48, trades ≥ 60).
+>
+> Conséquence : **aucun profil `live_crypto_*_capped` n'a été créé**
+> dans `config.yaml`. Le script d'activation refuse de se lancer tant
+> qu'aucun profil futures-engine n'existe — cf. § "Conditions
+> d'activation" pour la checklist binaire.
 
 Cette doc reste publiée parce que l'infrastructure (kill switch +
 monitoring + procédure) est entièrement câblée et **réutilisable**
@@ -37,11 +50,14 @@ l'activer.
 6. Surveiller le journal `data/killswitch.log` ; stopper par `Ctrl+C`
    ou laisser le kill switch agir (auto-flatten dans tous les cas).
 
-## Pourquoi le verdict actuel est EV-négatif
+## Pourquoi le verdict actuel reste EV-négatif sur 3 résolutions
 
-Sortie brute du walk-forward (`scripts/walk_forward_crypto.py`) sur
-240-min × 90 jours, 5 paires (BTC, ETH, SOL, AVAX, LTC), profil
-`micro_live_100eur_crypto`, 48 combinaisons :
+Trois sweeps walk-forward indépendants couvrent maintenant trois
+échelles temporelles complémentaires, tous sur les 5 mêmes paires
+(`BTC, ETH, SOL, AVAX, LTC`), profil `micro_live_100eur_crypto`,
+48 combinaisons par sweep :
+
+### 240-min × ~90 jours (~60d/30d split, source `walk_forward_crypto_results.json`)
 
 | Métrique test set | min     | médiane | max     |
 |-------------------|---------|---------|---------|
@@ -50,21 +66,57 @@ Sortie brute du walk-forward (`scripts/walk_forward_crypto.py`) sur
 | `max_drawdown_pct`| 0.02 %  | 0.02 %  | 0.03 %  |
 | `trades_count`    | 299     | 300     | 300     |
 
-Le pattern est sans ambiguïté : la stratégie **génère beaucoup de fills**
-(≈300 trades sur 30 jours OOS par configuration) mais le **win-rate
-reste sous 50 %** dans toutes les combinaisons train et test, et le
-PnL OOS est négatif dans 48/48 cas. Il n'existe pas de calibration
-dans la grille qui transforme cet edge négatif en edge positif.
+### 60-min × ~30 jours (~20d/10d split, source `walk_forward_crypto_60min_results.json`)
 
-La conséquence directe est que sur les 24-30 h restantes avant la
+| Métrique test set | min     | médiane | max     |
+|-------------------|---------|---------|---------|
+| `net_pnl_usd`     | −0.90$  | −0.39$  | −0.21$  |
+| `win_rate`        | 32.99 % | 40.95 % | 42.99 % |
+| `max_drawdown_pct`| 1.08 %  | 1.66 %  | 3.03 %  |
+| `trades_count`    | 242     | 247     | 247     |
+
+Le 60-min **dégrade** la situation par rapport au 240-min : le best
+test PnL passe de −0.09$ à −0.21$ et le best test WR plafonne à
+42.99 % (toujours <50 %). La conclusion est plus marquée encore :
+plus on raccourcit l'horizon, plus l'edge négatif est visible.
+
+### 15-min × ~7.5 jours (~5d/2.5d split, source `walk_forward_crypto_15min_results.json`)
+
+| Métrique test set | min     | médiane | max     |
+|-------------------|---------|---------|---------|
+| `net_pnl_usd`     | −0.36$  | −0.05$  | −0.02$  |
+| `win_rate`        | 26.15 % | 37.88 % | 51.85 % |
+| `max_drawdown_pct`| 0.12 %  | 0.24 %  | 1.80 %  |
+| `trades_count`    | 187     | 237     | 240     |
+
+Le 15-min est la résolution la plus permissive du brief (`WR ≥ 0.48`,
+`trades ≥ 60`) parce que le scalping intra-day génère mécaniquement
+plus de fills sur des micro-ranges. Malgré cette relaxation **0
+configuration ne survit** : le best test PnL est −0.018$ (presque
+flat mais toujours négatif) avec un WR de 34.88 % ; et le seul
+candidat dont le WR dépasse 48 % (51.85 %) a un PnL négatif (−0.04$).
+Aucune calibration ne franchit simultanément les trois barres.
+
+### Synthèse multi-résolution
+
+Le pattern est sans ambiguïté sur les **trois** résolutions testées :
+la stratégie **génère beaucoup de fills** (≈190-300 trades sur la
+fenêtre OOS par configuration selon la résolution) mais le **win-rate
+reste presque toujours sous 50 %** dans les combinaisons train et
+test, et le PnL OOS est **strictement négatif dans 144/144 cas**
+(48 combos × 3 résolutions). Il n'existe pas de calibration dans la
+grille — sur trois échelles temporelles indépendantes — qui transforme
+cet edge négatif en edge positif.
+
+La conséquence directe est que sur les heures restantes avant la
 deadline lablab, **toute activation live de l'option D a une espérance
 de gain négative bornée à -$5** :
 
 - **Best case** : `+0.00$` (rare ; nécessite que l'OOS performance
-  inverse soudainement).
+  inverse soudainement, scénario non observé sur aucun horizon).
 - **Expected case** : `−2.00 à −5.00$` (extrapolation de la PnL OOS
-  médiane sur 24 h ramenée à l'envelope $30 → ~−$0.40/h → kill switch
-  atteint entre +6 h et +12 h).
+  médiane sur 24 h ramenée à l'envelope $30 → ~−$0.40 à −$0.50/h →
+  kill switch atteint entre +5 h et +12 h).
 - **Worst case** : `−5.00$` (kill switch, garanti par construction du
   superviseur).
 
@@ -256,9 +308,14 @@ lancer la commande. Un seul non-coché → **NO-GO**.
 - `src/live_killswitch.py` — orchestrateur pur testé (11 tests).
 - `scripts/live_crypto_with_killswitch.py` — câblage production.
 - `scripts/monitor_live_session.py` — read-only dashboard.
-- `scripts/walk_forward_crypto.py` — driver walk-forward crypto.
+- `scripts/walk_forward_crypto.py` — driver walk-forward crypto avec
+  presets `default` (240-min × 90d), `60min` (60-min × 30d) et
+  `15min` (15-min × 7.5d). Voir `--grid-preset --help` pour les détails.
 - `src/crypto_ohlc_rest.py` — fetcher REST crypto (no CLI dependency).
-- `data/walk_forward_crypto_results.json` — sortie brute du
-  walk-forward (gitignored — artefact dérivé local).
+- `data/walk_forward_crypto_results.json` — sortie 240-min (gitignored).
+- `data/walk_forward_crypto_60min_results.json` — sortie 60-min
+  (gitignored ; 0/48 survivors, voir verdict ci-dessus).
+- `data/walk_forward_crypto_15min_results.json` — sortie 15-min
+  (gitignored ; 0/48 survivors, voir verdict ci-dessus).
 - `AGENTS.md` — règles de safety et override "futures + leverage"
   (intransigeant 1x, exit-only SELL, no `Withdrawal` key, etc.).
