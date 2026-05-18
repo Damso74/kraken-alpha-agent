@@ -1,17 +1,25 @@
 # Option D — Protocole d'activation live crypto Perps
 
-> **STATUT (HEAD post-`762f0b1`, 2026-05-18 18:46 CEST) — DÉCONSEILLÉ
-> SUR 3 RÉSOLUTIONS.** L'audit walk-forward crypto a été étendu à
-> trois échelles temporelles complémentaires pour vérifier qu'un edge
-> intra-day ou de scalping n'avait pas été masqué par la résolution
-> 240-min initiale. **Toutes les trois retournent 0 survivor sur des
-> filtres OOS strictes** :
+> **STATUT (Phase 2 update, 2026-05-18 19:55 CEST) — DÉCONSEILLÉ
+> DÉFINITIF SUR 5 VARIANTES.** L'audit a été étendu à une **deuxième
+> couche de recherche** (Bayesian Optuna + signaux externes) pour
+> vérifier qu'un coin de l'espace param non-couvert par la grille
+> déterministe ne renfermait pas un edge masqué. **Toutes les 5
+> variantes retournent 0 survivor sur le filtre OOS strict** :
 >
-> | Résolution | Fenêtre   | Split        | Combos | Survivors | Best test PnL | Best test WR | Source                                          |
-> |------------|-----------|--------------|--------|-----------|---------------|--------------|-------------------------------------------------|
-> | 240-min    | ~90 jours | ~60d / ~30d  | 48     | **0**     | −0.09 USD     | 40.50 %      | `data/walk_forward_crypto_results.json`         |
-> | 60-min     | ~30 jours | ~20d / ~10d  | 48     | **0**     | −0.21 USD     | 42.99 %      | `data/walk_forward_crypto_60min_results.json`   |
-> | 15-min     | ~7.5 jours| ~5d  / ~2.5d | 48     | **0**     | −0.02 USD     | 51.85 %†     | `data/walk_forward_crypto_15min_results.json`   |
+> | Variante                                  | Combos | Survivors | Best OOS PnL | Best OOS WR | Source |
+> |-------------------------------------------|--------|-----------|--------------|-------------|--------|
+> | Walk-forward 240-min déterministe         | 48     | **0**     | −0.09 USD    | 40.50 %     | `data/walk_forward_crypto_results.json`         |
+> | Walk-forward 60-min déterministe          | 48     | **0**     | −0.21 USD    | 42.99 %     | `data/walk_forward_crypto_60min_results.json`   |
+> | Walk-forward 15-min déterministe          | 48     | **0**     | −0.02 USD    | 51.85 %†    | `data/walk_forward_crypto_15min_results.json`   |
+> | **Optuna 500 trials Bayesian (Phase 2a)** | 500    | **0**     | +0.251 USD‡  | 43.0 %      | `data/optuna_crypto_results.json`               |
+> | **Walk-forward + signaux externes (Phase 2b)** | 180 | **0**     | +0.266 USD‡  | 42.7 %      | `data/walk_forward_with_signals_results.json`   |
+>
+> ‡ Phase 2 atteint un PnL OOS positif sur certaines configurations
+> mais **butte systématiquement sur la barre WR ≥ 50 %**. Voir
+> [`docs/STRATEGY_DISCOVERY_REPORT.md`](STRATEGY_DISCOVERY_REPORT.md)
+> pour le détail (saturation de `min_confidence_to_trade` à 0.40,
+> caveat BTC dominance historique manquante, p-hacking risk).
 >
 > †Le best test WR du 15-min passe la barre 48 % (51.85 %), mais ce
 > candidat a un test PnL négatif (−0.04 USD) — le filtre PnL le rejette.
@@ -19,10 +27,15 @@
 > 34.88 % et est rejeté par le filtre WR. Aucune calibration ne franchit
 > simultanément les trois critères (PnL ≥ 0, WR ≥ 0.48, trades ≥ 60).
 >
-> Conséquence : **aucun profil `live_crypto_*_capped` n'a été créé**
-> dans `config.yaml`. Le script d'activation refuse de se lancer tant
-> qu'aucun profil futures-engine n'existe — cf. § "Conditions
-> d'activation" pour la checklist binaire.
+> Conséquence : **aucun profil `live_crypto_*_capped` ni
+> `live_crypto_with_signals_capped` n'a été créé** dans `config.yaml`.
+> Le script d'activation refuse de se lancer tant qu'aucun profil
+> futures-engine survivor n'existe — cf. § "Conditions d'activation"
+> pour la checklist binaire. Voir
+> [`docs/STRATEGY_DISCOVERY_REPORT.md`](STRATEGY_DISCOVERY_REPORT.md)
+> pour la procédure complète Phase 2 (Bayesian + signaux externes) et
+> les caveats méthodologiques exhaustifs (p-hacking, fenêtre courte,
+> BTC dom historique).
 
 Cette doc reste publiée parce que l'infrastructure (kill switch +
 monitoring + procédure) est entièrement câblée et **réutilisable**

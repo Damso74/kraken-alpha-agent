@@ -308,3 +308,66 @@ Le pattern est consistant sur les trois échelles : 144/144 combos
 directe : **aucun profil `live_crypto_*_capped` n'a été créé dans
 `config.yaml`**. Voir `docs/OPTION_D_ACTIVATION.md` pour le détail
 du verdict EV-négatif et la checklist binaire d'activation.
+
+## Strategy Discovery Phase 2 — Bayesian + External Signals
+
+> **Verdict.** **0 / 680** candidats survivors stricts (500 trials
+> Optuna + 180 cellules walk-forward avec gates externes). Aucun edge
+> mesurable n'apparaît malgré l'élargissement substantiel de l'espace
+> de recherche et l'ajout de trois signaux externes (Fear & Greed,
+> BTC dominance, realized vol regime).
+
+Pour adresser les caveats `Petite grille / pas d'optim Bayésienne /
+pas de signaux externes` listés plus haut, la procédure a été étendue
+en Phase 2. Le détail complet vit dans
+[`docs/STRATEGY_DISCOVERY_REPORT.md`](STRATEGY_DISCOVERY_REPORT.md) ;
+synthèse :
+
+| Sous-phase | Composant | Survivors | Best OOS PnL | Best OOS WR | Best OOS trades |
+|------------|-----------|-----------|--------------|-------------|-----------------|
+| Phase 2a — Optuna 500 trials | `scripts/optuna_crypto_search.py` | 0 / 500 | +0.251$ | 43.0 % | 167 |
+| Phase 2b — Walk-forward + 36 gate permutations sur top-4 Optuna + baseline | `scripts/walk_forward_crypto_with_signals.py` | 0 / 180 | +0.266$ | 42.7 % | 165 |
+
+**Espace Optuna** : `min_confidence_to_trade ∈ [0.05, 0.40]`,
+`min_opportunity_score_buy ∈ [0.01, 0.10]`, `time_stop_minutes ∈
+[10, 240]`, `weight_{momentum,breakout,mean_reversion} ∈ [0, 1]` (avec
+renormalisation), `stop_loss_pct ∈ [0.5, 2.5]`, `take_profit_pct ∈
+[0.4, 2.0]`. Sampler TPE, MedianPruner, seed `20260518`.
+
+**Trois signaux externes** (`src/external_signals.py`, 19 tests
+`tests/test_external_signals.py`) :
+
+- **Fear & Greed Index** — daily, 31 entries cache sur la fenêtre
+  2026-04-18 → 2026-05-18. Le gate `block_buy_if_fear_greed_lt=30`
+  apporte un lift modeste (+0.015$ à +0.020$) mais insuffisant pour
+  passer la barre WR 50 %.
+- **BTC dominance** — limitation API : CoinGecko free `/global` ne
+  donne que la valeur courante. Cache utile sur 1 entry uniquement →
+  le gate `block_alt_if_btc_dominance_rising_24h_pct` est inactif sur
+  la quasi-totalité des candles (caveat documenté dans
+  `data/walk_forward_with_signals_results.json` et
+  `STRATEGY_DISCOVERY_REPORT.md`).
+- **Realized volatility regime** — computé localement, quantiles 25/75
+  sur le rolling std des log-returns. Le gate
+  `vol_regime_filter=["normal", "high"]` réduit le `trades_count`
+  sans améliorer le WR.
+
+**Lecture méthodologique principale** : les 4 trials Optuna les mieux
+classés saturent la borne haute de `min_confidence_to_trade`
+(`≈ 0.399 / 0.400` ; max permis = 0.40). Optuna **veut** une stratégie
+plus conservatrice que ce que l'espace autorise. Élargir la borne à
+0.60 ferait probablement converger vers `1.0` (= ne jamais trader = 0
+trade = disqualifié). C'est l'indication la plus claire qu'**il
+n'existe pas, sur ce dataset, de coin de l'espace param accessible
+avec un trade-rate non-trivial ET un WR OOS ≥ 50 %**.
+
+**Conséquence directe** : aucun profil
+`live_crypto_with_signals_capped` n'a été créé dans `config.yaml`. Le
+verdict EV-négatif d'option D est **renforcé** par cette deuxième
+phase, pas atténué.
+
+Voir [`docs/STRATEGY_DISCOVERY_REPORT.md`](STRATEGY_DISCOVERY_REPORT.md)
+pour : configurations explorées en détail, distribution des
+near-survivors, table complète des best per-base-config, et caveats
+exhaustifs (p-hacking, BTC dom historique, slippage non modélisé,
+fenêtre temporelle courte, pas de tuning per-symbol).

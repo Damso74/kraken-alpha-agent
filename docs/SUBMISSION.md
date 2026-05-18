@@ -572,6 +572,34 @@ point to inflate the headline number. See
 `docs/METHODOLOGY.md` for the per-combo numbers and the explicit
 limitations of the sweep.
 
+### Strategy Exploration Attempts (chronological)
+
+The crypto fallback path triggered 5 successive strategy discovery
+attempts to verify whether *any* tunable subset of the engine could
+deliver a positive OOS edge meeting a strict `pnl ≥ $0.20 ∧ wr ≥ 50 % ∧
+trades ≥ 30` filter. All 5 attempts return **zero survivors**:
+
+| # | Attempt | Combos | Survivors | Best OOS PnL | Best OOS WR | Source |
+|---|---------|--------|-----------|--------------|-------------|--------|
+| 1 | Walk-forward 240-min deterministic | 48 | 0 | −0.09 USD | 40.50 % | `data/walk_forward_crypto_results.json` |
+| 2 | Walk-forward 60-min deterministic | 48 | 0 | −0.21 USD | 42.99 % | `data/walk_forward_crypto_60min_results.json` |
+| 3 | Walk-forward 15-min deterministic | 48 | 0 | −0.02 USD | 51.85 % (PnL−) | `data/walk_forward_crypto_15min_results.json` |
+| 4 | **Optuna Bayesian 500 trials (Phase 2a)** | 500 | 0 | +0.251 USD | 43.0 % | `data/optuna_crypto_results.json` |
+| 5 | **Walk-forward + 3 external signals (Phase 2b)** | 180 | 0 | +0.266 USD | 42.7 % | `data/walk_forward_with_signals_results.json` |
+
+**Verdict total** : 0 / 824 configurations across 5 independent
+discovery methodologies (deterministic grid × 3 resolutions, Bayesian
+Optuna, walk-forward with Fear & Greed + BTC dominance + realized
+volatility regime gates). Aucun profil
+`live_crypto_*_capped` (incluant `live_crypto_with_signals_capped`)
+n'a été créé. Le verdict EV-négatif sur option D est strictement
+renforcé. Voir
+[`docs/STRATEGY_DISCOVERY_REPORT.md`](STRATEGY_DISCOVERY_REPORT.md)
+pour la méthodologie complète Phase 2 (espace de recherche, pruning,
+BTC dominance caveat, p-hacking risk) et
+[`docs/OPTION_D_ACTIVATION.md`](OPTION_D_ACTIVATION.md) pour la
+checklist d'activation (qui reste à 0 cases cochées).
+
 ### Audit bundle for the jury
 
 The jury can reproduce the full per-decision audit trail with one
