@@ -518,7 +518,15 @@ def _build_settings_override(
     - ``min_confidence_to_trade`` → ``settings.config.strategy.*``
       (walk-forward grid knob)
     - ``max_hold_minutes`` → ``settings.config.exit.max_hold_minutes``
-      (walk-forward grid knob — controls the time-stop exit rule)
+      (walk-forward grid knob — controls the time-stop exit rule).
+      Also clears ``exit.time_stop_minutes`` so the grid value is the
+      one the exit-rules engine reads (``time_stop_minutes`` is the
+      crypto-profile alias that takes precedence in
+      :func:`src.exit_rules._resolve_params` when set).
+    - ``time_stop_minutes`` → ``settings.config.exit.time_stop_minutes``
+      (crypto-profile alias of ``max_hold_minutes`` — gridding this
+      key directly is more explicit than relying on the implicit
+      override above).
     - ``stop_loss_pct`` / ``take_profit_pct`` →
       ``settings.config.risk.*`` (profile overrides win in
       :mod:`src.exit_rules` so this is the correct injection point)
@@ -541,6 +549,13 @@ def _build_settings_override(
         strategy_cfg.min_confidence_to_trade = float(overrides["min_confidence_to_trade"])
     if "max_hold_minutes" in overrides:
         exit_cfg.max_hold_minutes = float(overrides["max_hold_minutes"])
+        # ``time_stop_minutes`` takes precedence over ``max_hold_minutes``
+        # in :func:`src.exit_rules._resolve_params` when set, so clearing
+        # it here ensures the grid value is the one the exit engine
+        # actually reads (crypto-profile shadowing safety).
+        exit_cfg.time_stop_minutes = None
+    if "time_stop_minutes" in overrides:
+        exit_cfg.time_stop_minutes = float(overrides["time_stop_minutes"])
     if "stop_loss_pct" in overrides:
         risk_cfg.stop_loss_pct = float(overrides["stop_loss_pct"])
     if "take_profit_pct" in overrides:

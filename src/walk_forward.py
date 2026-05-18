@@ -172,6 +172,7 @@ class WalkForwardResult:
     grid_size: int
     filter_min_test_pnl_usd: float
     filter_min_test_win_rate: float
+    filter_min_test_trades_count: int = 1
     evaluated: list[WalkForwardCandidate] = field(default_factory=list)
     survivors: list[WalkForwardCandidate] = field(default_factory=list)
     winner: Optional[WalkForwardCandidate] = None
@@ -199,6 +200,7 @@ class WalkForwardResult:
             "filter": {
                 "min_test_pnl_usd": float(self.filter_min_test_pnl_usd),
                 "min_test_win_rate": float(self.filter_min_test_win_rate),
+                "min_test_trades_count": int(self.filter_min_test_trades_count),
             },
             "evaluated_count": len(self.evaluated),
             "evaluated": [c.to_dict() for c in self.evaluated],
@@ -367,11 +369,22 @@ def _passes_filter(
     *,
     min_test_pnl_usd: float,
     min_test_win_rate: float,
+    min_test_trades_count: int = 1,
 ) -> bool:
+    """Survivor predicate.
+
+    A candidate survives only if its OOS metrics clear every barrier:
+
+    - ``net_pnl_usd >= min_test_pnl_usd`` (positive PnL by default)
+    - ``win_rate >= min_test_win_rate`` (majority of trades win)
+    - ``trades_count >= min_test_trades_count`` (enough fills for the
+      result to be statistically meaningful — the default of ``1``
+      preserves the legacy "at least one fill" behaviour for xStocks)
+    """
     return (
         metrics.net_pnl_usd >= float(min_test_pnl_usd)
         and metrics.win_rate >= float(min_test_win_rate)
-        and metrics.trades_count > 0
+        and metrics.trades_count >= int(min_test_trades_count)
     )
 
 
@@ -416,6 +429,7 @@ def run_walk_forward(
     interval_minutes: int = 240,
     min_test_pnl_usd: float = 0.0,
     min_test_win_rate: float = 0.50,
+    min_test_trades_count: int = 1,
     settings: Optional[Settings] = None,
     disable_realtime_cooldown: bool = True,
 ) -> WalkForwardResult:
@@ -489,6 +503,7 @@ def run_walk_forward(
             test_metrics,
             min_test_pnl_usd=min_test_pnl_usd,
             min_test_win_rate=min_test_win_rate,
+            min_test_trades_count=min_test_trades_count,
         )
         candidate = WalkForwardCandidate(
             params=dict(overrides),
@@ -517,6 +532,7 @@ def run_walk_forward(
         grid_size=grid_size,
         filter_min_test_pnl_usd=float(min_test_pnl_usd),
         filter_min_test_win_rate=float(min_test_win_rate),
+        filter_min_test_trades_count=int(min_test_trades_count),
         evaluated=evaluated,
         survivors=survivors,
         winner=winner,
