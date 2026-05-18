@@ -107,6 +107,41 @@ Kraken Pro UI **before** generating the key.
    - `export/<timestamp>/` — secret-redacted audit bundles produced by
      `python scripts/export_audit_bundle.py`.
 
+   The audit bundle is generated on demand (the `export/` folder is
+   `.gitignore`'d). To produce a fresh dump:
+
+   ```powershell
+   .\.venv\Scripts\Activate.ps1
+   python scripts/export_audit_bundle.py
+   ```
+
+   Each invocation creates `export/<UTC-timestamp>/` with the
+   following layout (the bundle itself ships a `README.md` that
+   restates this manifest):
+
+   ```
+   export/<ts>/
+   ├── README.md                       # generated manifest + counts
+   ├── config.json                     # active config + safe env snapshot
+   ├── decisions.json / .csv           # 6× SQLite tables, JSON + CSV
+   ├── orders.json / .csv
+   ├── positions.json
+   ├── pnl.json / .csv
+   ├── cycles.json
+   ├── errors.json
+   ├── trades_jsonl_mirror.jsonl       # 3× JSONL ledger mirrors
+   ├── decisions_jsonl_mirror.jsonl
+   └── pnl_jsonl_mirror.jsonl
+   ```
+
+   Every string field is passed through `src.logger.mask_secrets`
+   before being written and credentials are reported as `*_set`
+   booleans in `config.json` (presence-only, never plaintext).
+   The operator ships the bundle to the jury through the same
+   out-of-band channel used for the read-only API key handover
+   (lablab DM today; a 1Password share or `age`-encrypted file
+   if the jury requires stricter handling).
+
 ### What the jury should expect to see (this submission)
 
 Because the user's account is on **PEDSL-CY (Cyprus EU)** and both the

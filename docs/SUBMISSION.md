@@ -31,6 +31,7 @@
 | Live dashboard (Vercel) | <https://kraken-alpha-agent-damso74s-projects.vercel.app> |
 | Source code (GitHub, public) | <https://github.com/Damso74/kraken-alpha-agent> |
 | Submission narrative (this file) | [`docs/SUBMISSION.md`](SUBMISSION.md) |
+| Methodology — walk-forward & honnêteté statistique | [`docs/METHODOLOGY.md`](METHODOLOGY.md) |
 | Discord context | [`docs/HACKATHON_DISCORD_CONTEXT.md`](HACKATHON_DISCORD_CONTEXT.md) |
 | Demo video script | [`docs/DEMO_VIDEO_SCRIPT.md`](DEMO_VIDEO_SCRIPT.md) |
 | Jury read-only access protocol | [`docs/JURY_ACCESS_TEMPLATE.md`](JURY_ACCESS_TEMPLATE.md) |
@@ -550,6 +551,62 @@ real cooldown logic, the actionability layer and the risk gate.
 These snapshots are **not** a substitute for live PnL — they are
 explicit, labelled `backtest_local_estimate` and never mixed with the
 `live` PnL source in the dashboard.
+
+### Walk-forward audit (anti-curve-fitting)
+
+To stress-test the calibration of the `aggressive_competition`
+profile against the risk of in-sample over-fitting, we ran a
+**strict walk-forward parameter sweep** on a longer (240-min × 120
+days) OHLC dataset. The full methodology — train/test split, grid,
+out-of-sample filter, composite robustness score, caveats — lives
+in **[`docs/METHODOLOGY.md`](METHODOLOGY.md)**.
+
+Headline result : **0 / 48 configurations** passed the joint filter
+`test_pnl_usd ≥ 0` AND `test_win_rate ≥ 50 %` on the 30-day
+out-of-sample slice. No tuned profile to promote, no
+`config.yaml` change, and the three snapshots above remain as
+shipped. The non-finding is **itself the deliverable** : it proves
+that the live calibration was not stochastically lucky on the
+30-day window and that we did not retroactively pick the best grid
+point to inflate the headline number. See
+`docs/METHODOLOGY.md` for the per-combo numbers and the explicit
+limitations of the sweep.
+
+### Audit bundle for the jury
+
+The jury can reproduce the full per-decision audit trail with one
+command:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+python scripts/export_audit_bundle.py
+```
+
+The script reads `data/agent.sqlite` (six tables : `decisions`,
+`orders`, `positions`, `pnl_snapshots`, `errors`, `cycles`),
+walks the JSONL ledgers (`data/decisions.jsonl`, `data/trades.jsonl`,
+`data/pnl.jsonl`), and writes a self-contained dump under
+`export/<UTC-timestamp>/` :
+
+```
+export/<ts>/
+├── config.json     # active config + safe env snapshot (no secret values)
+├── decisions.json  # full Pydantic payloads
+├── decisions.csv   # flat spreadsheet view
+├── orders.json     # every ExecutionResult across all modes
+├── orders.csv
+├── pnl.json        # PnL snapshots tagged by source
+├── pnl.csv
+└── errors.json     # structured errors with where_label + stack hash
+```
+
+`export/` is `.gitignore`'d so the bundle is **never committed**;
+the dump is generated on demand and shared with the jury via the
+out-of-band channel described in
+[`docs/JURY_ACCESS_TEMPLATE.md`](JURY_ACCESS_TEMPLATE.md). The
+config block is fed through `safe_env_snapshot()` which masks every
+secret value (only the *presence* of an API key is reported, never
+the key itself).
 
 ## Roadmap — if not blocked
 

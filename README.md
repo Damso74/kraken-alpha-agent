@@ -17,6 +17,7 @@
 |---|---|
 | Live dashboard (Vercel, public) | <https://kraken-alpha-agent-damso74s-projects.vercel.app> |
 | Submission narrative | [`docs/SUBMISSION.md`](./docs/SUBMISSION.md) |
+| Methodology (walk-forward audit) | [`docs/METHODOLOGY.md`](./docs/METHODOLOGY.md) |
 | Demo video script (3-4 min) | [`docs/DEMO_VIDEO_SCRIPT.md`](./docs/DEMO_VIDEO_SCRIPT.md) |
 | Discord context (xStocks blockers, verbatim) | [`docs/HACKATHON_DISCORD_CONTEXT.md`](./docs/HACKATHON_DISCORD_CONTEXT.md) |
 | Read-only API key handover protocol | [`docs/JURY_ACCESS_TEMPLATE.md`](./docs/JURY_ACCESS_TEMPLATE.md) |
