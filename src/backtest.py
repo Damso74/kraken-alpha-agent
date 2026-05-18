@@ -507,15 +507,29 @@ def _build_settings_override(
 ) -> Settings:
     """Return a new ``Settings`` instance with the requested overrides applied.
 
-    Only keys defined in the grid (``min_opportunity_score_buy``,
-    ``min_opportunity_score_sell``, ``max_spread_bps``) actually mutate the
-    YAML configuration. ``top_n`` and ``block_low_liquidity`` are surfaced to
-    the caller via the ``overrides`` dict but consumed elsewhere (universe
-    resolution and the simulator's liquidity gate respectively).
+    Keys recognised by this helper (everything else is silently ignored —
+    callers like the grid search and the walk-forward routine pass
+    keys such as ``top_n`` / ``block_low_liquidity`` that are consumed
+    further down the pipeline):
+
+    - ``min_opportunity_score_buy`` / ``min_opportunity_score_sell``
+      → ``settings.config.trading.*``
+    - ``max_spread_bps`` → ``settings.config.risk.max_spread_bps``
+    - ``min_confidence_to_trade`` → ``settings.config.strategy.*``
+      (walk-forward grid knob)
+    - ``max_hold_minutes`` → ``settings.config.exit.max_hold_minutes``
+      (walk-forward grid knob — controls the time-stop exit rule)
+    - ``stop_loss_pct`` / ``take_profit_pct`` →
+      ``settings.config.risk.*`` (profile overrides win in
+      :mod:`src.exit_rules` so this is the correct injection point)
+    - ``block_low_liquidity=False`` → drops the LOW_LIQUIDITY regime
+      from the risk gate (simulation-only; never mutates config.yaml).
     """
     cfg = base.config
     trading = cfg.trading.model_copy()
     risk_cfg = cfg.risk.model_copy()
+    strategy_cfg = cfg.strategy.model_copy()
+    exit_cfg = cfg.exit.model_copy()
 
     if "min_opportunity_score_buy" in overrides:
         trading.min_opportunity_score_buy = float(overrides["min_opportunity_score_buy"])
@@ -523,6 +537,14 @@ def _build_settings_override(
         trading.min_opportunity_score_sell = float(overrides["min_opportunity_score_sell"])
     if "max_spread_bps" in overrides:
         risk_cfg.max_spread_bps = int(overrides["max_spread_bps"])
+    if "min_confidence_to_trade" in overrides:
+        strategy_cfg.min_confidence_to_trade = float(overrides["min_confidence_to_trade"])
+    if "max_hold_minutes" in overrides:
+        exit_cfg.max_hold_minutes = float(overrides["max_hold_minutes"])
+    if "stop_loss_pct" in overrides:
+        risk_cfg.stop_loss_pct = float(overrides["stop_loss_pct"])
+    if "take_profit_pct" in overrides:
+        risk_cfg.take_profit_pct = float(overrides["take_profit_pct"])
 
     # Simulation-only: when block_low_liquidity is explicitly False we
     # also drop the LOW_LIQUIDITY regime gate so a thin xStocks book
@@ -534,7 +556,12 @@ def _build_settings_override(
             r for r in risk_cfg.block_if_regime if r != "LOW_LIQUIDITY"
         ]
 
-    updated_cfg = cfg.model_copy(update={"trading": trading, "risk": risk_cfg})
+    updated_cfg = cfg.model_copy(update={
+        "trading": trading,
+        "risk": risk_cfg,
+        "strategy": strategy_cfg,
+        "exit": exit_cfg,
+    })
     return base.model_copy(update={"config": updated_cfg})
 
 
