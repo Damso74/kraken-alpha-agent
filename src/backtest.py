@@ -41,6 +41,7 @@ from . import exit_rules as exit_rules_mod
 from . import features as features_mod
 from . import risk as risk_mod
 from .config import Settings, YAMLConfig, get_settings
+from .external_signals import ExternalSnapshot
 from .schemas import (
     Action,
     EnsembleResult,
@@ -547,6 +548,46 @@ def _build_settings_override(
         risk_cfg.max_spread_bps = int(overrides["max_spread_bps"])
     if "min_confidence_to_trade" in overrides:
         strategy_cfg.min_confidence_to_trade = float(overrides["min_confidence_to_trade"])
+    # Optional ensemble-weight overrides (used by ``scripts/optuna_crypto_search.py``).
+    # Three independent knobs map to the three directional strategies; the
+    # auxiliary weights (``liquidity`` / ``volatility_penalty`` / ``spread_penalty``)
+    # are kept at their profile defaults so the optimiser does not rediscover
+    # weights that already exist.  When at least one of the three
+    # directional knobs is supplied we *renormalise* them so they sum to 1
+    # and rebalance the auxiliary weights proportionally to the residual
+    # mass; downstream :func:`src.strategies.ensemble.combine` consumes the
+    # result through ``settings.config.strategy.ensemble_weights``.
+    weight_keys_present = [
+        k for k in ("weight_momentum", "weight_breakout", "weight_mean_reversion")
+        if k in overrides
+    ]
+    if weight_keys_present:
+        weights = dict(strategy_cfg.ensemble_weights)
+        raw = {
+            "momentum": float(overrides.get("weight_momentum", weights.get("momentum", 0.40))),
+            "breakout": float(overrides.get("weight_breakout", weights.get("breakout", 0.25))),
+            "mean_reversion": float(
+                overrides.get("weight_mean_reversion", weights.get("mean_reversion", 0.20))
+            ),
+        }
+        # Defensive: clamp to [0, 1] then renormalise to a 0.85 budget so
+        # the auxiliary weights (liquidity/volatility/spread) keep a fixed
+        # 0.15 footprint regardless of the directional split. This matches
+        # the existing aggressive_competition profile mass split (0.45 +
+        # 0.30 + 0.15 = 0.90 directional, 0.10 liquidity, ~0.12 penalties).
+        clamped = {k: max(0.0, min(1.0, v)) for k, v in raw.items()}
+        total = sum(clamped.values())
+        if total <= 1e-9:
+            # Degenerate case: every directional weight is zero. Fall back
+            # to an equal split rather than producing a flatlined ensemble
+            # (which would emit no signal at all).
+            normalised = {k: 1.0 / 3.0 for k in clamped}
+        else:
+            normalised = {k: v / total * 0.85 for k, v in clamped.items()}
+        weights["momentum"] = normalised["momentum"]
+        weights["breakout"] = normalised["breakout"]
+        weights["mean_reversion"] = normalised["mean_reversion"]
+        strategy_cfg.ensemble_weights = weights
     if "max_hold_minutes" in overrides:
         exit_cfg.max_hold_minutes = float(overrides["max_hold_minutes"])
         # ``time_stop_minutes`` takes precedence over ``max_hold_minutes``
@@ -570,6 +611,30 @@ def _build_settings_override(
         risk_cfg.block_if_regime = [
             r for r in risk_cfg.block_if_regime if r != "LOW_LIQUIDITY"
         ]
+
+    # Optional external-signal gate overrides. These are forwarded to
+    # ``settings.config.external_signals`` so the walk-forward driver
+    # can sweep gate ON/OFF + thresholds via the same override
+    # mechanism it already uses for the directional knobs.
+    external_keys = (
+        "block_buy_if_fear_greed_lt",
+        "block_buy_if_fear_greed_gt",
+        "block_alt_if_btc_dominance_rising_24h_pct",
+        "vol_regime_filter",
+    )
+    if any(k in overrides for k in external_keys):
+        external_cfg = cfg.external_signals.model_copy()
+        for k in external_keys:
+            if k in overrides:
+                setattr(external_cfg, k, overrides[k])
+        updated_cfg = cfg.model_copy(update={
+            "trading": trading,
+            "risk": risk_cfg,
+            "strategy": strategy_cfg,
+            "exit": exit_cfg,
+            "external_signals": external_cfg,
+        })
+        return base.model_copy(update={"config": updated_cfg})
 
     updated_cfg = cfg.model_copy(update={
         "trading": trading,
@@ -725,6 +790,7 @@ def simulate_symbol(
     interval_minutes: int = 60,
     record_decisions: bool = False,
     disable_realtime_cooldown: bool = False,
+    external_snapshots: Optional[Mapping[str, ExternalSnapshot]] = None,
 ) -> SymbolResult:
     """Replay a single symbol through the deterministic decision pipeline.
 
@@ -864,12 +930,22 @@ def simulate_symbol(
 
         snapshot = _build_simulated_snapshot(symbol, state, mark=current.close)
         open_position = snapshot.positions[0] if snapshot.positions else None
+        # Optional: look up the external snapshot for this candle's
+        # timestamp. ``external_snapshots`` is keyed by the same ISO
+        # string the simulator stores in ``current.timestamp_utc`` so
+        # the walk-forward driver can pre-compute one snapshot per
+        # candle once and stream it through the loop without
+        # re-fetching anything per iteration.
+        ext_snap: Optional[ExternalSnapshot] = None
+        if external_snapshots is not None:
+            ext_snap = external_snapshots.get(current.timestamp_utc)
         ensemble, actionability = actionability_mod.apply_actionability_gates(
             ensemble=raw_ensemble,
             features=feats,
             position=open_position,
             liquidity_score=liquidity_score,
             settings=s,
+            external_snapshot=ext_snap,
         )
         result.actionability_reasons[actionability.reason or "n/a"] += 1
 
@@ -1122,6 +1198,9 @@ def simulate_portfolio(
     interval_minutes: int = 60,
     record_decisions: bool = False,
     disable_realtime_cooldown: bool = False,
+    external_snapshots_by_symbol: Optional[
+        Mapping[str, Mapping[str, ExternalSnapshot]]
+    ] = None,
 ) -> PortfolioResult:
     """Run :func:`simulate_symbol` for each symbol and aggregate the results.
 
@@ -1140,6 +1219,9 @@ def simulate_portfolio(
     for sym in symbols:
         rows = ohlc_by_symbol.get(sym) or []
         candles = build_replay_candles(sym, rows)
+        per_symbol_snapshots: Optional[Mapping[str, ExternalSnapshot]] = None
+        if external_snapshots_by_symbol is not None:
+            per_symbol_snapshots = external_snapshots_by_symbol.get(sym)
         result = simulate_symbol(
             sym,
             candles,
@@ -1151,6 +1233,7 @@ def simulate_portfolio(
             interval_minutes=interval_minutes,
             record_decisions=record_decisions,
             disable_realtime_cooldown=disable_realtime_cooldown,
+            external_snapshots=per_symbol_snapshots,
         )
         by_symbol[sym] = result
 

@@ -63,6 +63,7 @@ from .backtest import (
     simulate_portfolio,
 )
 from .config import Settings, get_settings
+from .external_signals import ExternalSnapshot
 
 
 # ---------------------------------------------------------------------------
@@ -402,6 +403,9 @@ def _simulate_window(
     initial_cash: float,
     interval_minutes: int,
     disable_realtime_cooldown: bool,
+    external_snapshots_by_symbol: Optional[
+        Mapping[str, Mapping[str, ExternalSnapshot]]
+    ] = None,
 ) -> WindowMetrics:
     """Run one portfolio simulation on a single window and collect metrics."""
     pf = simulate_portfolio(
@@ -415,6 +419,7 @@ def _simulate_window(
         interval_minutes=interval_minutes,
         record_decisions=False,
         disable_realtime_cooldown=disable_realtime_cooldown,
+        external_snapshots_by_symbol=external_snapshots_by_symbol,
     )
     return _metrics_from_portfolio(pf)
 
@@ -432,6 +437,9 @@ def run_walk_forward(
     min_test_trades_count: int = 1,
     settings: Optional[Settings] = None,
     disable_realtime_cooldown: bool = True,
+    external_snapshots_by_symbol: Optional[
+        Mapping[str, Mapping[str, ExternalSnapshot]]
+    ] = None,
 ) -> WalkForwardResult:
     """End-to-end walk-forward run.
 
@@ -489,6 +497,7 @@ def run_walk_forward(
             initial_cash=initial_cash,
             interval_minutes=interval_minutes,
             disable_realtime_cooldown=disable_realtime_cooldown,
+            external_snapshots_by_symbol=external_snapshots_by_symbol,
         )
         test_metrics = _simulate_window(
             symbols=symbols,
@@ -498,6 +507,7 @@ def run_walk_forward(
             initial_cash=initial_cash,
             interval_minutes=interval_minutes,
             disable_realtime_cooldown=disable_realtime_cooldown,
+            external_snapshots_by_symbol=external_snapshots_by_symbol,
         )
         survives = _passes_filter(
             test_metrics,

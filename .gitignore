@@ -11,6 +11,9 @@ data/*.json
 data/*.csv
 data/*.md
 data/ohlc_cache/
+data/external_cache/
+data/optuna_crypto_results.json
+data/walk_forward_with_signals_results.json
 !data/.gitkeep
 
 # Build artefacts
