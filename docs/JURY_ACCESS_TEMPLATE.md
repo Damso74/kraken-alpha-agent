@@ -20,6 +20,31 @@ email, **NOT** Slack/Discord public channels) contains:
 The bot's live keys (with `Trades` + `Positions` permissions) are
 **never** shared with the jury and are never written to this repository.
 
+### Delivery channel for this submission
+
+The official channel for the **AI Agent Olympics — Kraken Challenge**
+(lablab.ai) is a **direct message on the lablab platform** to the
+designated Kraken jury contact (Steve / Inaam, see Discord). The DM
+contains:
+
+1. The block below (verbatim) with the actual key/secret pairs.
+2. The account public ID last-4 (the only Kraken identifier visible in
+   the demo video).
+3. A pointer to this file
+   (`docs/JURY_ACCESS_TEMPLATE.md`) and to `docs/SUBMISSION.md` for
+   the audit method.
+
+Lablab DM is selected because:
+
+- Steve (lablab moderator) confirmed on Discord (16/05/2026 10:00 CEST)
+  that the read-only key is the official audit mechanism for the
+  Kraken track.
+- The lablab DM is auditable on the platform, scoped to the jury, and
+  not exposed publicly like the Discord `#kraken-challenge` channel.
+- The audit window is finite (30 days from the start date,
+  13/05 → 12/06/2026), so the key is rotated immediately after the
+  jury confirms the audit is complete.
+
 ## Recommended Kraken API key permissions for the jury read-only key
 
 ### Spot read-only
@@ -64,10 +89,14 @@ Kraken Pro UI **before** generating the key.
    ```bash
    kraken balance -o json
    kraken trades-history -o json
+   kraken trades-history -o json --start <start_epoch> --end <end_epoch>
    kraken futures positions -o json
    kraken futures fills -o json
    kraken futures accounts -o json
    ```
+
+   Replace `<start_epoch>` / `<end_epoch>` with the audit window (e.g.
+   `start_epoch` = `2026-05-13T00:00:00Z` epoch, `end_epoch` = `now`).
 
 3. Cross-check timestamps and order IDs against the agent's local audit
    log (also provided out-of-band on request):
@@ -77,6 +106,26 @@ Kraken Pro UI **before** generating the key.
      `positions`, `pnl_snapshots`, `errors`, `cycles` tables.
    - `export/<timestamp>/` — secret-redacted audit bundles produced by
      `python scripts/export_audit_bundle.py`.
+
+### What the jury should expect to see (this submission)
+
+Because the user's account is on **PEDSL-CY (Cyprus EU)** and both the
+spot xStocks orderbook and the xStocks Perps futures are venue-blocked
+at the account-class layer (see `docs/SUBMISSION.md` →
+*"The xStocks block — why our live PnL is small"*), the audit window
+will show:
+
+| Source | Expected content (13/05 → 18/05/2026 window) |
+|---|---|
+| `kraken trades-history` (Spot) | **Zero xStocks fills.** No `AAPLx/USD`, `NVDAx/USD`, etc. ever appears — every attempt was rejected with `EGeneral:Permission denied` at the venue. |
+| `kraken futures fills` | **Zero xStocks Perps fills.** Every `PF_*XUSD` attempt was rejected with `wouldNotReducePosition`. **Crypto perps fills are present**: ~22 fills on `PF_LTCUSD`, `PF_ETHUSD`, `PF_SOLUSD`, `PF_AVAXUSD`, `PF_XBTUSD` (19-minute diagnostic session, ≈ −0.55 USD aggregate PnL). |
+| `kraken balance` | Small residual balance (crypto + the ~−0.55 USD diagnostic). |
+| Local `data/trades.jsonl` | Mirrors the same 22 crypto fills + every rejected xStocks attempt (the rejection is the audit row — see `status` field). |
+
+The mismatch (Spot xStocks attempted in the engine but zero fills in
+the Kraken history) **is itself the proof** of the venue block. Cross-
+referencing the local `errors` table in `data/agent.sqlite` shows the
+exact rejection reason for every attempt.
 
 ## Security guarantees
 

@@ -1,10 +1,65 @@
 # Kraken Alpha Agent · Kraken Sentinel
 
-> Autonomous xStocks trading agent built on the
+> Autonomous, fully audited xStocks trading agent built on the
 > [Kraken CLI](https://www.kraken.com/kraken-cli) for the
-> **AI Agent Olympics — Kraken Trading Performance** track.
+> **AI Agent Olympics — Kraken Challenge (Kraken Trading
+> Performance)** track. Deterministic engine, three modes (`dry_run` /
+> `paper` / `live`) with a live triple opt-in, full audit trail in
+> SQLite + JSONL, and a public Vercel dashboard for the jury.
 
 **Public alias:** `Kraken Sentinel` · **Codename:** `Kraken Alpha Agent`
+
+---
+
+## For hackathon judges — start here
+
+| Asset | Link |
+|---|---|
+| Live dashboard (Vercel, public) | <https://kraken-alpha-agent-damso74s-projects.vercel.app> |
+| Submission narrative | [`docs/SUBMISSION.md`](./docs/SUBMISSION.md) |
+| Demo video script (3-4 min) | [`docs/DEMO_VIDEO_SCRIPT.md`](./docs/DEMO_VIDEO_SCRIPT.md) |
+| Discord context (xStocks blockers, verbatim) | [`docs/HACKATHON_DISCORD_CONTEXT.md`](./docs/HACKATHON_DISCORD_CONTEXT.md) |
+| Read-only API key handover protocol | [`docs/JURY_ACCESS_TEMPLATE.md`](./docs/JURY_ACCESS_TEMPLATE.md) |
+| lablab submission form (copy-paste-ready) | [`docs/LABLAB_SUBMISSION_FORM.md`](./docs/LABLAB_SUBMISSION_FORM.md) |
+| VPS runbook | [`docs/VPS_RUNBOOK.md`](./docs/VPS_RUNBOOK.md) |
+
+### Honest one-liner
+
+The user's Kraken account is on **PEDSL-CY (Cyprus EU)**, so **both
+the spot xStocks orderbook and the xStocks Perpetual Futures are
+venue-blocked at the account-class layer**. The engine is correct end
+to end (a BTC Perp control on the same key fills cleanly; 232 / 232
+tests green), **other lablab participants have publicly reported the
+same xStocks errors** (see `docs/HACKATHON_DISCORD_CONTEXT.md`), and
+the audit-ready PnL is documented honestly in `docs/SUBMISSION.md`
+*"The xStocks block — why our live PnL is small"*.
+
+### Quick-start — read-only inspection mode (no trading, no Kraken account)
+
+```powershell
+git clone https://github.com/Damso74/kraken-alpha-agent.git
+cd kraken-alpha-agent
+python -m venv .venv
+.venv\Scripts\Activate.ps1                    # source .venv/bin/activate on macOS/Linux
+pip install -r requirements.txt
+copy .env.example .env                        # cp .env.example .env
+
+# Probe the Kraken CLI (works without an API key, falls back to deterministic mock)
+python scripts/check_kraken_cli.py
+
+# Full deterministic test suite (~5 s)
+pytest                                        # expected: 232 passed
+
+# One full agent cycle, no order placed (uses the mock transport if no CLI is installed)
+python scripts/dry_run_once.py
+
+# Local FastAPI dashboard (http://127.0.0.1:8000)
+uvicorn src.dashboard.app:app --reload
+```
+
+No Kraken account, no API key, no WSL install required for the dry-run
+path — the CLI wrapper falls back to a deterministic mock so judges
+can audit the agent's decision pipeline end-to-end on a fresh machine.
 
 ---
 
@@ -17,14 +72,15 @@ opt-in. See [`DISCLAIMER.md`](./DISCLAIMER.md) for the full text.
 
 ---
 
-## Quickstart for judges
+## Quickstart for judges (full path)
 
 ```powershell
-git clone <this-repo> && cd kraken-alpha-agent
+git clone https://github.com/Damso74/kraken-alpha-agent.git
+cd kraken-alpha-agent
 python -m venv .venv && .venv\Scripts\Activate.ps1   # source .venv/bin/activate on macOS/Linux
 pip install -r requirements.txt
 copy .env.example .env                               # cp .env.example .env
-pytest                                               # 96 tests, ~2s
+pytest                                               # 232 tests, ~5s
 python scripts/dry_run_once.py                       # one full cycle, no orders
 uvicorn src.dashboard.app:app --reload               # http://127.0.0.1:8000
 ```

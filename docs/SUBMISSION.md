@@ -1,9 +1,77 @@
 # Kraken Alpha Agent — Submission packet
 
-> Companion document for the **AI Agent Olympics — Kraken Trading
-> Performance** submission. Everything here is summarised from the codebase
-> as it exists at the freeze commit; consult the linked files for source
-> of truth.
+> Companion document for the **AI Agent Olympics — Kraken Challenge
+> (Kraken Trading Performance)** submission, lablab.ai. Deadline:
+> **20 May 2026**. Everything here is summarised from the codebase as it
+> exists at the freeze commit; consult the linked files for source of
+> truth.
+
+## Executive summary
+
+- **Built**: deterministic, fully audited xStocks trading agent on the
+  Kraken CLI (232/232 tests green). Live dashboard:
+  <https://kraken-alpha-agent-damso74s-projects.vercel.app>. Code:
+  <https://github.com/Damso74/kraken-alpha-agent>.
+- **Blocked at the venue layer**: the user's Kraken account is on
+  **PEDSL-CY (Cyprus EU)** — both the **xStocks spot orderbook** and the
+  **xStocks Perpetual Futures** are venue-blocked at the account-class
+  layer (reproduced from two distinct IPs; control BTC Perp fills
+  cleanly on the same key). This blocker is **not specific to us** —
+  other lablab participants have reported the same family of errors on
+  Discord (see [`HACKATHON_DISCORD_CONTEXT.md`](HACKATHON_DISCORD_CONTEXT.md)).
+- **Submitted**: 30-day backtest evidence (30d / 60m, 15d / 30m, 7d /
+  15m), full audit logs, read-only API key handover protocol, and a
+  19-minute crypto-perps diagnostic (−0.55 USD) proving every component
+  of the engine works against a live Kraken Futures venue.
+
+## What we built
+
+| Asset | Link |
+|---|---|
+| Live dashboard (Vercel) | <https://kraken-alpha-agent-damso74s-projects.vercel.app> |
+| Source code (GitHub, public) | <https://github.com/Damso74/kraken-alpha-agent> |
+| Submission narrative (this file) | [`docs/SUBMISSION.md`](SUBMISSION.md) |
+| Discord context | [`docs/HACKATHON_DISCORD_CONTEXT.md`](HACKATHON_DISCORD_CONTEXT.md) |
+| Demo video script | [`docs/DEMO_VIDEO_SCRIPT.md`](DEMO_VIDEO_SCRIPT.md) |
+| Jury read-only access protocol | [`docs/JURY_ACCESS_TEMPLATE.md`](JURY_ACCESS_TEMPLATE.md) |
+| lablab submission form | [`docs/LABLAB_SUBMISSION_FORM.md`](LABLAB_SUBMISSION_FORM.md) |
+| 30-day backtest snapshot (60m) | [`web/public/data/backtest_xstocks_30d.json`](../web/public/data/backtest_xstocks_30d.json) |
+| 15-day backtest snapshot (30m) | [`web/public/data/backtest_xstocks_30m.json`](../web/public/data/backtest_xstocks_30m.json) |
+| 7-day backtest snapshot (15m) | [`web/public/data/backtest_xstocks_15m.json`](../web/public/data/backtest_xstocks_15m.json) |
+
+Key features (all live in `master`):
+
+- **Ranked universe** — `scripts/rank_xstocks.py` scores the 13 ranked
+  xStocks by momentum × liquidity × spread × trade count; the dynamic
+  universe picks the top-N every cycle.
+- **Ensemble strategies** — momentum, breakout, mean-reversion blended
+  via a weighted ensemble (`src/strategies/ensemble.py`) with
+  liquidity-aware confidence dampening.
+- **Risk gates** — drawdown / exposure / cooldown / hourly trade
+  caps, **live triple opt-in** (`TRADING_MODE=live` +
+  `LIVE_TRADING=true` + `ALLOW_LIVE_ORDERS=true`), per-symbol allowlist,
+  spread / regime guards, `HARDCODED_MAX_LEVERAGE=1.0` (defense in
+  depth), funding-rate gate (futures), and the regression-tested
+  exit-action carve-out so SELL exits are never blocked by an
+  exposure-saturated book.
+- **Exit engine** — `flatten_before_close_exit` flattens 15 min before
+  the US_CORE close (no overnight funding accrual); Friday end-of-day
+  rule freezes new BUYs at 21:45 CEST and hard-stops the loop at 22:00.
+- **Futures support** — `src/futures_kraken_cli.py` is the single
+  chokepoint for `kraken futures …`, with the spot↔perpetual symbol
+  mapping (`TICKERx/USD → PF_TICKERXUSD`), strict success-status
+  whitelist that downgrades `wouldNotReducePosition` / `invalidSize` /
+  `marketSuspended` to `ok=False`, and SELL-as-exit-only semantics
+  with `--reduce-only` forced on the wire.
+- **Audit logs** — every decision, every order, every PnL snapshot,
+  every error is persisted to SQLite (`data/agent.sqlite`, 6 tables)
+  and mirrored to JSONL files (`data/decisions.jsonl`,
+  `data/trades.jsonl`, `data/pnl.jsonl`). Secret-redacted bundles via
+  `scripts/export_audit_bundle.py`.
+- **Dashboard** — FastAPI + Jinja2 in `src/dashboard/` (operator
+  view), and a **Next.js submission landing page** in `web/` deployed
+  on Vercel for the jury (cards, ranking, backtest charts at multiple
+  timeframes, system architecture SVG).
 
 ## Title
 
@@ -82,6 +150,74 @@ python scripts/export_audit_bundle.py
 # Dashboard
 uvicorn src.dashboard.app:app --reload
 ```
+
+## The xStocks block — why our live PnL is small
+
+> **TL;DR.** Both the spot xStocks orderbook *and* the xStocks Perps
+> futures venue are blocked at the account-class layer on this Kraken
+> account (PEDSL-CY, Cyprus EU). The bot itself is API-correct end to end
+> — a BTC Perp control on the same key/IP fills cleanly — but the
+> hackathon-eligible xStocks track is structurally inaccessible from this
+> jurisdiction. **Final xStocks live PnL: 0.00 USD, 0 fill, 0 open
+> position at session end.** Total live account PnL (crypto diagnostic
+> included) is approximately **−0.55 USD**.
+
+### This is not specific to us — Discord evidence
+
+The full audit trail of public Discord messages from other lablab
+participants and from the moderators (Steve, Inaam) is collected
+verbatim in [`docs/HACKATHON_DISCORD_CONTEXT.md`](HACKATHON_DISCORD_CONTEXT.md).
+Highlights:
+
+| Participant | Date (CEST) | Quote (verbatim) |
+|---|---|---|
+| `thisisaman408` | 14/05 20:47 | "We'd have to buy kraken api and it's **not available in all the countries**, hah" |
+| `djkorou360` | 16/05 17:20 | "is it not possible to short anything ? Is it designed as a spot market my shorting function is running into errors and the **TSLAx/USD is also returning kraken cli errors**" |
+| `djkorou360` | 16/05 21:29 | `kraken ticker AAPLx/USD` → `Error: EQuery:Unknown asset pair` |
+| `djkorou360` | 16/05 21:29 | `kraken paper sell ETH/USD 100 --yes` → `Insufficient ETH balance. Available: 0.00000000` (short blocked) |
+| `Ammar Khalid` | 17/05 15:20 | "do we need the real money to deposit on kraken xstocks or we can do paper trading?" — **no official answer** |
+| `Jennycruzy` | 18/05 03:21 | "Does Kraken CLI support xStocks for paper trading ?" — **no official answer** |
+
+In other words: **xStocks ↔ Kraken CLI ↔ paper engine ↔ EU/EEA
+availability are open issues across the whole `#kraken-challenge`
+Discord channel.** Our PEDSL-CY block (spot `EGeneral:Permission
+denied` + futures `wouldNotReducePosition`) is the EU-account variant
+of the same structural problem.
+
+### Crypto fallback — diagnostic only (outside xStocks track)
+
+We took the only path left to validate the rest of the engine against
+a real Kraken venue: a 19-minute **crypto Perps** live session with the
+same 1x-leverage / no-shorting / triple-opt-in safeguards. Outcome:
+
+- **22 real fills** on LTC / ETH / SOL / AVAX / BTC.
+- **PnL ≈ −0.55 USD** (essentially taker-fee burn + drift on a strategy
+  not tuned for crypto micro-structure — the thresholds are
+  xStocks-calibrated).
+- **Fee burn rate ≈ −1.5 USD/h** at the current strategy maturity on
+  crypto perps.
+- Stopped automatically by the volume watchdog at **500 USD cumulative
+  turnover** (LTC over-rotation detected) — exactly the throttle path
+  designed for runaway loops.
+
+### Why we stopped live trading
+
+With **2 days left to the deadline** and the xStocks venue confirmed
+blocked, continuing live trading would have meant:
+
+- Burning **≈ 72 USD of taker fees** over 48h on a strategy that
+  **does not contribute to the xStocks scoring track**.
+- Adding noise to the read-only audit window without any chance of
+  improving the xStocks PnL line.
+- Risking a runaway loop while the user was offline (the watchdog
+  caught it once at +500 USD turnover; we did not want to retest the
+  failure mode in production).
+
+**Decision (option A): stop live trading, finalise the submission with
+the existing −0.55 USD line.** The crypto diagnostic stays in the
+account history exactly because the jury's read-only key will see it
+— and the SQLite + JSONL audit log makes it trivial to cross-check
+every fill, every cancel, every watchdog trigger.
 
 ## Live result on this account (PEDSL-CY block)
 
@@ -372,8 +508,89 @@ kraken-alpha-agent/
 │   ├── universe.py
 │   └── utils.py
 ├── tests/  (29 files, 232 tests)
+├── web/    (Next.js submission landing page, deployed on Vercel)
 └── data/.gitkeep
 ```
+
+## Backtest evidence (deterministic, reproducible)
+
+Because live execution is venue-blocked on this account, we attach
+**three deterministic backtest snapshots** generated from the same
+ensemble engine the live agent uses. They are committed at
+`web/public/data/backtest_xstocks_*.json` and rendered on the public
+Vercel dashboard for the jury.
+
+| Snapshot | Window | Bar size | Trades | Net PnL | Net PnL % | Best symbol | Worst symbol |
+|---|---|---|---|---|---|---|---|
+| **30d / 60m** (primary) | 16/04 → 15/05/2026 | 60 min | **138** | **+33.56 USD** | **+0.34 %** | `CRCLx` (+17.60 USD) | `TSLAx` |
+| 15d / 30m (mid-frequency) | 01/05 → 15/05/2026 | 30 min | 12 | −7.20 USD | −0.07 % | `TSLAx` | `CRCLx` |
+| 7d / 15m (intraday) | 10/05 → 14/05/2026 | 15 min | 12 | +4.38 USD | +0.04 % | `TSLAx` | `MSTRx` |
+
+Starting capital is **10 000 USD** for all three snapshots. The 30-day
+60-min snapshot covers **6 480 candles** across 9 ranked xStocks
+(`NVDAx`, `CRCLx`, `HOODx`, `AAPLx`, `AMZNx`, `QQQx`, `TSLAx`,
+`MSTRx`, `GOOGLx`) and walks the engine cycle-by-cycle including the
+real cooldown logic, the actionability layer and the risk gate.
+
+**What this proves:**
+
+- The engine produces actionable signals at multiple timeframes
+  (60-min: 138 trades, win rate 53.0 %; 15-min: 12 trades, win rate
+  33.3 %).
+- Performance scales with the ranking pass: `CRCLx` and `HOODx`
+  dominate the 30-day window (matching their leading position in
+  `data/xstocks_rank_latest.json`).
+- Max drawdown stays bounded at **1.68 %** over 30 days — consistent
+  with the per-position cap (`max_position_notional_usd`) and the
+  exposure cap (`max_total_exposure_usd`) defined in
+  `aggressive_competition`.
+- The same backtest harness is wired into the Vercel landing page so
+  the jury can inspect every per-symbol row without cloning the repo.
+
+These snapshots are **not** a substitute for live PnL — they are
+explicit, labelled `backtest_local_estimate` and never mixed with the
+`live` PnL source in the dashboard.
+
+## Roadmap — if not blocked
+
+Given **one unrestricted week of live xStocks trading** on a non-EU
+Kraken account, the immediate next steps would be:
+
+1. **Day 1 — Re-validate the live path** with `kraken order …
+   --validate` against the spot xStocks orderbook (already wired in
+   `scripts/validate_live_xstocks.py`), then `kraken futures order …
+   --validate`-equivalent through the futures **paper** engine for the
+   Perps fallback. Both already pass on a clean key — the only missing
+   piece is the venue permission.
+2. **Days 2-3 — 20-minute shadow run** then a 24-hour `paper` loop
+   with the dynamic universe (top-8 ranked xStocks). Audit log
+   recompares predicted vs. realised fills via
+   `scripts/analyze_paper_run.py --since 24`.
+3. **Day 4 — Micro-live activation** with
+   `KRAKEN_ALPHA_PROFILE=micro_live_100eur` (caps: 30 USD total
+   exposure, 10 USD per position, `engine: spot`). Triple opt-in +
+   `kraken order cancel-after 60` dead-man switch. Watchdogs from the
+   crypto diagnostic stay armed: volume cap, exit-action carve-out,
+   `flatten_before_close_exit` at 15 min before US close.
+4. **Days 5-6 — Scale-up** to the full `aggressive_competition` profile
+   (1500 USD max position, 25 % max exposure) only if the micro-live
+   day shows a positive Sharpe and zero stuck positions.
+5. **Day 7 — Demo recording + jury handover**. The read-only key is
+   rotated *after* the audit window closes, the write key is rotated
+   immediately post-hackathon (recorded as a post-conditions checklist
+   in `AGENTS.md`).
+
+**Engine-level work that is already done but un-tested in production**
+(would benefit most from one week of live data):
+
+- Calibrating the **funding-rate gate** threshold on real xStocks
+  Perps order books (currently 0.5 %/h, conservative).
+- Tightening the **liquidity dampener** (`liquidity_size_dampener`)
+  with empirical xStocks spread distributions — today it is
+  hand-picked from the 30-day backtest.
+- Replacing the rule-based regime classifier with the calibrated
+  logistic regression already prototyped in `notebooks/` (not
+  committed — out of scope for the freeze).
 
 ## Acceptance criteria (condensed)
 
@@ -394,31 +611,46 @@ kraken-alpha-agent/
 11. **232/232 tests green** (parser whitelist, risk gates, futures
     execution, exit rules, futures CLI mapping, exit-action exposure
     carve-out, etc.); CI-friendly mock transport.
-12. Submission docs (README, DISCLAIMER, PLAN, DEMO_SCRIPT, SUBMISSION,
-    CLI_VALIDATION, VPS_RUNBOOK, JURY_ACCESS_TEMPLATE).
+12. Submission docs (README, DISCLAIMER, PLAN, DEMO_SCRIPT,
+    DEMO_VIDEO_SCRIPT, SUBMISSION, CLI_VALIDATION, VPS_RUNBOOK,
+    JURY_ACCESS_TEMPLATE, LABLAB_SUBMISSION_FORM,
+    HACKATHON_DISCORD_CONTEXT).
 
 ## Submission checklist
 
-- [x] Secret audit clean — no credentials in tracked files.
+- [x] Secret audit clean — no credentials in tracked files
+      (`.env`, `data/`, `export/` all `.gitignore`'d).
 - [x] README judge-ready (Quickstart, Architecture, Modes, Calibration,
-      Safety, Submission).
-- [x] `docs/DEMO_SCRIPT.md` finalised.
+      Safety, Submission), with explicit links to all submission docs.
+- [x] `docs/DEMO_SCRIPT.md` (90-second narration) finalised.
+- [x] `docs/DEMO_VIDEO_SCRIPT.md` (3-4 minute storyboard with the
+      "honesty moment" PEDSL-CY scene) finalised.
 - [x] `docs/SUBMISSION.md` finalised (this file).
+- [x] `docs/HACKATHON_DISCORD_CONTEXT.md` (verbatim public Discord
+      messages on xStocks blockers) finalised.
 - [x] `docs/JURY_ACCESS_TEMPLATE.md` finalised (read-only audit
       protocol, no live keys committed).
-- [x] `pytest` is green (232/232 as of submission freeze).
+- [x] `docs/LABLAB_SUBMISSION_FORM.md` finalised (copy-paste-ready
+      form fields).
+- [x] `pytest` is green (**232 / 232** as of submission freeze).
 - [x] `python scripts/dry_run_once.py` runs end-to-end.
-- [x] Dashboard probed on `/`, `/ranking`, `/actionability`, `/health`.
+- [x] Dashboard probed on `/`, `/ranking`, `/actionability`, `/health`
+      (FastAPI) and on the public Vercel landing page.
 - [x] `python scripts/export_audit_bundle.py` writes an `export/<ts>/`
       bundle on demand.
 - [x] Live xStocks execution attempted and documented (PEDSL-CY block
       reproduced — see "Live result on this account" section).
 - [x] Crypto fallback diagnostic recorded (22 fills, PnL ≈ −0.55 USD,
       technical-only — outside xStocks track).
-- [ ] Kraken paper account initialised by the user (one-time, manual:
-      `wsl -- bash -lc "kraken paper init --balance 10000 --currency USD --yes"`).
-- [ ] GitHub public push of the final submission branch performed by
-      the user.
-- [ ] 90-second demo video recorded against `docs/DEMO_SCRIPT.md`.
-- [ ] Jury-readable summary (this file) cross-linked from the lablab
-      submission form.
+- [x] Backtest evidence committed (30d / 60m + 15d / 30m + 7d / 15m
+      snapshots in `web/public/data/`).
+- [ ] **Manual — User** : record the 3-4 min demo video against
+      `docs/DEMO_VIDEO_SCRIPT.md`.
+- [ ] **Manual — User** : fill the lablab submission form using
+      `docs/LABLAB_SUBMISSION_FORM.md`.
+- [ ] **Manual — User** : send the **read-only Kraken API key** (Spot
+      + Futures, scope per `docs/JURY_ACCESS_TEMPLATE.md`) to the jury
+      via lablab DM (NEVER commit the key text).
+- [ ] **Manual — User** : Kraken paper account initialised
+      (`wsl -- bash -lc "kraken paper init --balance 10000 --currency USD --yes"`)
+      — required only if the jury wants to reproduce paper-mode locally.
