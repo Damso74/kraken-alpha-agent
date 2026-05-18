@@ -46,6 +46,46 @@ def reset_paper_init_cache() -> None:
     _PAPER_INIT_CACHE["initialised"] = None
 
 
+# ---------------------------------------------------------------------------
+# Defense-in-depth: dry_run mutation tripwire
+# ---------------------------------------------------------------------------
+#
+# ``execute()`` already short-circuits to a ``dry_run_logged`` ExecutionResult
+# the moment ``mode == "dry_run"`` is detected, so the mutating CLI calls
+# (``kraken_cli.place_order`` / ``kraken_cli.validate_live_order`` /
+# ``futures_kraken_cli.place_paper_order`` / ``futures_kraken_cli.place_live_order``)
+# are unreachable from the dry_run path. This helper is the **second
+# barrier**: it raises if a future refactor accidentally lets a dry-run
+# request fall through to a wire-level call. The shadow xStocks dry-run
+# session relies on this invariant — the assertion must be cheap, hard to
+# bypass, and trip the entire process if violated.
+
+
+class DryRunMutationError(AssertionError):
+    """Raised when a mutating CLI call is attempted while ``mode == 'dry_run'``."""
+
+
+def _assert_not_dry_run(mode: str, call_site: str) -> None:
+    """Defense-in-depth tripwire. Raise if a mutating call is reached in dry_run.
+
+    Parameters
+    ----------
+    mode:
+        The trading mode the execution layer believes it is operating in.
+    call_site:
+        Short identifier of the about-to-fire mutating call (used in the
+        error message so the audit trail tells the operator exactly which
+        wrapper was called).
+    """
+
+    if (mode or "").lower() == "dry_run":
+        raise DryRunMutationError(
+            f"dry_run safety violation: attempted {call_site} while mode='dry_run'. "
+            "execute() must short-circuit BEFORE any mutating CLI call when "
+            "mode == 'dry_run'. This tripwire blocks the wire-level call."
+        )
+
+
 def _paper_initialised_cached() -> bool:
     now = time.time()
     last = float(_PAPER_INIT_CACHE.get("checked_at") or 0.0)
@@ -216,6 +256,7 @@ def _execute_futures(
         )
 
     if mode == "paper":
+        _assert_not_dry_run(mode, "futures_kraken_cli.place_paper_order")
         result = futures_kraken_cli.place_paper_order(
             side=ensemble.action,  # type: ignore[arg-type]
             symbol=futures_symbol, size=contracts,
@@ -277,6 +318,7 @@ def _execute_futures(
     # tick mismatch) surfaces here without risking mainnet collateral.
     exec_cfg = s.config.execution
     if exec_cfg.require_validate_first:
+        _assert_not_dry_run(mode, "futures_kraken_cli.validate_via_paper")
         v = futures_kraken_cli.validate_via_paper(
             side=ensemble.action,  # type: ignore[arg-type]
             symbol=futures_symbol, size=max(contracts, 0.0001),
@@ -298,6 +340,7 @@ def _execute_futures(
                 },
             )
 
+    _assert_not_dry_run(mode, "futures_kraken_cli.place_live_order")
     result = futures_kraken_cli.place_live_order(
         side=ensemble.action,  # type: ignore[arg-type]
         symbol=futures_symbol, size=contracts,
@@ -442,6 +485,7 @@ def execute(
                     "or `python scripts/paper_smoke_test.py --init`"
                 ),
             )
+        _assert_not_dry_run(mode, "kraken_cli.place_order(paper)")
         cli_result = kraken_cli.place_order(
             mode="paper",
             symbol_pair=sym.pair_slash,
@@ -484,6 +528,7 @@ def execute(
         volume = size_usd / max(features.last_price, 0.01)
         # Optional pre-flight validation against the live endpoint.
         if exec_cfg.require_validate_first:
+            _assert_not_dry_run(mode, "kraken_cli.validate_live_order")
             v = kraken_cli.validate_live_order(
                 symbol_pair=sym.pair_slash,
                 action=ensemble.action,
@@ -499,6 +544,7 @@ def execute(
                     error=f"live validate failed: {v.stderr[:200]}",
                     raw={"validate": v.__dict__},
                 )
+        _assert_not_dry_run(mode, "kraken_cli.place_order(live)")
         cli_result = kraken_cli.place_order(
             mode="live",
             symbol_pair=sym.pair_slash,
@@ -542,4 +588,10 @@ def apply_to_portfolio(decision: Decision) -> None:
     portfolio.record_fill(decision.execution)
 
 
-__all__ = ["execute", "apply_to_portfolio", "reset_paper_init_cache"]
+__all__ = [
+    "execute",
+    "apply_to_portfolio",
+    "reset_paper_init_cache",
+    "DryRunMutationError",
+    "_assert_not_dry_run",
+]
