@@ -309,7 +309,13 @@ profiles:
       stop_loss_pct: 1.2
       take_profit_pct: 2.0
       max_trades_per_hour: 40
-      block_if_regime: ["LOW_LIQUIDITY", "HIGH_VOLATILITY"]
+      # NB: LOW_LIQUIDITY removed because xStocks are structurally lower-
+      # volume than legacy equities, so the regime detector flags them as
+      # LOW_LIQUIDITY by default. Keeping HIGH_VOLATILITY as the only safety
+      # gate (e.g. earnings spikes). Risk caps remain strict ($25 notional /
+      # $100 total) so the dry_run shadow stream still mirrors a realistic
+      # tiny-account behaviour.
+      block_if_regime: ["HIGH_VOLATILITY"]
     execution:
       default_order_type: market
       dry_run_size_usd: 25.0
