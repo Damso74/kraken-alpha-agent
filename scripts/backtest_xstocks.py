@@ -40,8 +40,13 @@ from src import backtest  # noqa: E402
 from src import market_data  # noqa: E402
 from src.backtest import SOURCE_LABEL  # noqa: E402
 from src.config import get_settings, reload_settings  # noqa: E402
+from src.kraken_ohlc_paginated import (  # noqa: E402
+    KRAKEN_OHLC_CAP_PER_CALL,
+    OHLCFetchError,
+    fetch_ohlc_paginated,
+)
 from src.logger import get_logger  # noqa: E402
-from src.universe import get_universe_tickers  # noqa: E402
+from src.universe import get_universe_tickers, pair_format  # noqa: E402
 from src.utils import utc_now_iso  # noqa: E402
 
 logger = get_logger("backtest_xstocks")
@@ -76,6 +81,19 @@ def _parse_args() -> argparse.Namespace:
     p.add_argument("--interval", type=int, default=60, help="candle interval in minutes (default 60)")
     p.add_argument("--initial-cash", type=float, default=10_000.0, help="starting USD capital")
     p.add_argument("--hours", type=int, default=None, help="optional cap on candle depth (last N hours)")
+    p.add_argument(
+        "--target-candles",
+        type=int,
+        default=None,
+        help=(
+            "optional explicit target number of candles per symbol. When > 720 "
+            "(Kraken's per-call cap), the backtest uses the paginated OHLC "
+            "fetcher (src.kraken_ohlc_paginated) which advances --since "
+            "between calls. Note that Kraken does not expose history older "
+            "than ~720 candles per interval, so requesting more than the "
+            "natural depth simply yields the natural depth."
+        ),
+    )
     p.add_argument(
         "--include-low-liquidity",
         action="store_true",
@@ -157,24 +175,65 @@ def _resolve_symbols(args: argparse.Namespace) -> list[str]:
 
 
 def _fetch_ohlc_for_symbols(
-    symbols: Sequence[str], *, interval_minutes: int, hours: int | None
+    symbols: Sequence[str],
+    *,
+    interval_minutes: int,
+    hours: int | None,
+    target_candles: int | None = None,
 ) -> tuple[dict[str, list[dict[str, float]]], dict[str, int]]:
+    """Fetch OHLC candles per symbol.
+
+    When ``target_candles`` is set and exceeds Kraken's per-call cap
+    (:data:`KRAKEN_OHLC_CAP_PER_CALL` = 720), we route through
+    :func:`src.kraken_ohlc_paginated.fetch_ohlc_paginated` which advances
+    ``--since`` across multiple calls. Otherwise we keep the original
+    single-call path through :mod:`src.market_data`.
+    """
     quote = get_settings().config.universe.quote
     out: dict[str, list[dict[str, float]]] = {}
     counts: dict[str, int] = {}
     # Default to a generous count so we get the full depth Kraken returns.
-    cap = max(24, int((hours * 60) // max(1, interval_minutes))) if hours else 720
+    cap_from_hours = (
+        max(24, int((hours * 60) // max(1, interval_minutes))) if hours else 720
+    )
+    cap = max(cap_from_hours, int(target_candles or 0)) if target_candles else cap_from_hours
+
+    use_pagination = bool(target_candles and target_candles > KRAKEN_OHLC_CAP_PER_CALL)
+
     for sym in symbols:
-        rows = market_data.get_ohlc(
-            sym, quote, interval_minutes=interval_minutes, count=cap
-        )
+        rows: list[dict[str, float]] = []
+        if use_pagination:
+            try:
+                paginated_rows = fetch_ohlc_paginated(
+                    pair_format(sym, quote),
+                    interval_min=interval_minutes,
+                    target_candles=int(target_candles),
+                    asset_class="tokenized_asset",
+                )
+                rows = [r.as_market_data_dict() for r in paginated_rows]
+            except OHLCFetchError as exc:
+                logger.warning(
+                    "paginated OHLC failed for %s, falling back to single-call: %s",
+                    sym, exc,
+                )
+                rows = market_data.get_ohlc(
+                    sym, quote, interval_minutes=interval_minutes,
+                    count=KRAKEN_OHLC_CAP_PER_CALL,
+                )
+        else:
+            rows = market_data.get_ohlc(
+                sym, quote, interval_minutes=interval_minutes, count=cap
+            )
         if not isinstance(rows, list):
             rows = []
         if hours:
-            rows = rows[-cap:]
+            rows = rows[-cap_from_hours:]
         out[sym] = rows
         counts[sym] = len(rows)
-        logger.info("ohlc %s: %d candles (interval=%dm)", sym, len(rows), interval_minutes)
+        logger.info(
+            "ohlc %s: %d candles (interval=%dm, paginated=%s)",
+            sym, len(rows), interval_minutes, use_pagination,
+        )
     return out, counts
 
 
@@ -680,7 +739,10 @@ def main() -> int:
 
     started = time.time()
     ohlc_by_symbol, candle_counts = _fetch_ohlc_for_symbols(
-        symbols, interval_minutes=args.interval, hours=args.hours
+        symbols,
+        interval_minutes=args.interval,
+        hours=args.hours,
+        target_candles=args.target_candles,
     )
 
     overrides: dict[str, Any] = {}

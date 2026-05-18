@@ -66,6 +66,25 @@ def _parse_args() -> argparse.Namespace:
         default=2.47,
         help="pytest duration in seconds",
     )
+    p.add_argument(
+        "--note",
+        action="append",
+        default=None,
+        help=(
+            "extra note string to prepend to summary.notes. Can be passed "
+            "multiple times to add several notes."
+        ),
+    )
+    p.add_argument(
+        "--snapshot-label",
+        type=str,
+        default=None,
+        help=(
+            "optional label exposed under summary.snapshot_label "
+            "(e.g. 'micro_15m', 'standard_30d', 'long_term'). "
+            "Purely informational; does not change any metric."
+        ),
+    )
     return p.parse_args()
 
 
@@ -204,6 +223,8 @@ def _build_payload(
     tests_passed: int,
     tests_failed: int,
     tests_duration: float,
+    extra_notes: list[str] | None = None,
+    snapshot_label: str | None = None,
 ) -> dict[str, Any]:
     portfolio = src.get("portfolio") or {}
     by_symbol = portfolio.get("by_symbol") or {}
@@ -334,6 +355,10 @@ def _build_payload(
         },
         "notes": _build_notes(src=src, interval_minutes=interval_minutes),
     }
+    if extra_notes:
+        payload["notes"] = list(extra_notes) + payload["notes"]
+    if snapshot_label:
+        payload["summary"]["snapshot_label"] = snapshot_label
     return payload
 
 
@@ -390,6 +415,8 @@ def main() -> int:
         tests_passed=args.tests_passed,
         tests_failed=args.tests_failed,
         tests_duration=args.tests_duration,
+        extra_notes=args.note,
+        snapshot_label=args.snapshot_label,
     )
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
