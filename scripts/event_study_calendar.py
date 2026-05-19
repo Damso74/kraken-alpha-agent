@@ -55,6 +55,7 @@ from src.research.tradeability import (
     build_leaderboard_economic_overlay,
 )
 from src.signals.calendar_effects import (
+    CALENDAR_EFFECT_DAILY_ALIASES,
     PRE_REGISTERED_CALENDAR_EFFECTS,
     build_asia_session_open_events,
     build_calendar_boundary_events,
@@ -62,6 +63,8 @@ from src.signals.calendar_effects import (
     build_us_core_session_open_events,
     build_weekend_end_events,
     build_weekend_start_events,
+    calendar_effects_for_event_study,
+    is_calendar_effect_alias,
     placebo_timezone_for_effect,
     random_same_weekday_placebo_events,
 )
@@ -433,11 +436,26 @@ def run_micro_baselines(
     ticker: str,
     window_days: int,
 ) -> dict[str, Any]:
-    """Run all five pre-registered calendar micro-baselines."""
+    """Run distinct pre-registered calendar micro-baselines (aliases skipped)."""
     effects: list[dict[str, Any]] = []
     summary: dict[str, str] = {}
+    alias_records: list[dict[str, Any]] = []
 
-    for idx, effect_id in enumerate(PRE_REGISTERED_CALENDAR_EFFECTS):
+    runnable = calendar_effects_for_event_study()
+    for alias_id, canonical in CALENDAR_EFFECT_DAILY_ALIASES.items():
+        canonical_events = build_pre_registered_calendar_events(candles, canonical)
+        alias_events = build_pre_registered_calendar_events(candles, alias_id)
+        alias_records.append(
+            {
+                "alias_effect_id": alias_id,
+                "canonical_effect_id": canonical,
+                "skipped": True,
+                "timestamps_identical": canonical_events == alias_events,
+            }
+        )
+        summary[alias_id] = f"alias_of:{canonical}"
+
+    for idx, effect_id in enumerate(runnable):
         effect_seed = int(seed) + idx * 10_000
         report = run_single_micro_baseline(
             effect_id=effect_id,
@@ -448,14 +466,18 @@ def run_micro_baselines(
             ticker=ticker,
             window_days=window_days,
         )
+        if is_calendar_effect_alias(effect_id):
+            report["alias_skipped"] = True
         effects.append(report)
         summary[effect_id] = report["verdict"]
         print(f"[{TAG}] {effect_id}: {report['events_count']} events -> {report['verdict']}")
 
     return {
-        "phase": 11,
+        "phase": 12,
         "suite": "calendar_micro_baselines",
         "pre_registered_effects": list(PRE_REGISTERED_CALENDAR_EFFECTS),
+        "effects_run": list(runnable),
+        "daily_aliases": alias_records,
         "ticker": ticker,
         "window_days": window_days,
         "n_placebos": n_placebos,

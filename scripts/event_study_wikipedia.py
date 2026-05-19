@@ -34,11 +34,14 @@ from _event_study_common import (  # noqa: E402
     REPO_ROOT,
     add_common_event_study_args,
     align_events_to_daily_candles,
+    attach_holdout_to_report,
+    attach_provenance,
     fetch_daily_ohlc_from_args,
     run_event_study_pipeline,
     window_iso_range,
     write_json_report,
 )
+from src.data.collectors.binance_public import default_ohlc_daily_cache_path  # noqa: E402
 from src.crypto_ohlc_rest import CryptoOHLCFetchError
 from src.data.collectors._common import CollectorError
 from src.data.collectors.wikimedia import (
@@ -379,6 +382,25 @@ def _run_basket_threshold_block(
     }
     report["primary_metrics"] = list(PHASE11_PRIMARY_METRICS)
     report["ticker"] = args.ticker
+
+    if getattr(args, "enable_holdout", False):
+        report = attach_holdout_to_report(
+            report,
+            candles=candles,
+            events=aligned,
+            metrics=PHASE11_METRICS,
+            windows=PHASE11_WINDOWS,
+            holdout_fraction=float(getattr(args, "holdout_fraction", 0.30)),
+            n_placebos=args.n_placebos,
+            seed=args.seed,
+            alpha=args.alpha,
+            reference_metric="realized_vol",
+            reference_window="post_3",
+        )
+        if not report.get("holdout", {}).get("oos_survives", False):
+            verdict = PHASE11_VERDICT_WEAK
+            report["phase11_verdict"] = verdict
+
     return report
 
 
@@ -484,8 +506,10 @@ def _run_basket_layout(args: argparse.Namespace) -> int:
         )
         final_verdict = block["phase11_verdict"]
 
+    ohlc_path = args.ohlc_cache_path or default_ohlc_daily_cache_path(args.ticker)
     combined: dict[str, Any] = {
         "layout": "basket",
+        "phase": 12,
         "hypothesis_family": (
             "Wikipedia crypto attention basket → BTC vol/volume "
             "(pre-registered z, not optimized)"
@@ -504,6 +528,22 @@ def _run_basket_layout(args: argparse.Namespace) -> int:
             "profitable, or live-ready."
         ),
     }
+
+    combined = attach_provenance(
+        combined,
+        ohlc_cache_path=ohlc_path,
+        signal_cache_path=args.cache_path,
+        ohlc_source=str(getattr(args, "ohlc_source", "cache")),
+    )
+    if getattr(args, "enable_holdout", False):
+        surviving = [
+            b.get("phase11_verdict")
+            for b in threshold_reports.values()
+            if b.get("holdout", {}).get("oos_survives")
+        ]
+        if not surviving:
+            final_verdict = PHASE11_VERDICT_WEAK
+            combined["phase11_final_verdict"] = final_verdict
 
     out_path = args.output_json
     if out_path is None:

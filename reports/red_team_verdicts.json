@@ -1,0 +1,87 @@
+{
+  "schema_version": "phase12-v1",
+  "generated_at": "2026-05-19",
+  "source_doc": "reports/RED_TEAM_PHASE11.md",
+  "blocks_oos_statuses": ["fail", "revoked", "révoqué", "révoque"],
+  "verdicts": [
+    {
+      "signal_pattern": "calendar_us_market_open_window",
+      "hypothesis_id": "P9-CA-032",
+      "sprint": "calendar",
+      "status": "warning",
+      "promote_oos": false,
+      "reason": "BH on volume_ratio only; return placebos pass; net negative post costs"
+    },
+    {
+      "signal_pattern": "calendar_sunday_us_evening",
+      "hypothesis_id": "P9-CAL-SUN-US",
+      "sprint": "calendar",
+      "status": "fail",
+      "promote_oos": false,
+      "reason": "Canonical daily effect; monday_asia_open is alias on daily OHLC"
+    },
+    {
+      "signal_pattern": "calendar_monday_asia_open",
+      "hypothesis_id": "P9-CAL-MON-ASIA",
+      "sprint": "calendar",
+      "status": "fail",
+      "promote_oos": false,
+      "reason": "Alias duplicate of sunday_us_evening on daily UTC candles"
+    },
+    {
+      "signal_pattern": "calendar_third_friday",
+      "hypothesis_id": "P9-CA-037",
+      "sprint": "calendar",
+      "status": "fail",
+      "promote_oos": false,
+      "reason": "n<30; BH 0/8; economically rejected"
+    },
+    {
+      "signal_pattern": "calendar_month_end",
+      "hypothesis_id": "P9-CAL-MONTH-END",
+      "sprint": "calendar",
+      "status": "fail",
+      "promote_oos": false,
+      "reason": "n<30; negative return post_7; BH 0/8"
+    },
+    {
+      "signal_pattern": "stablecoin_*",
+      "hypothesis_id": "P9-SC-001-PR",
+      "sprint": "stablecoins",
+      "status": "fail",
+      "promote_oos": false,
+      "reason": "placebo_pass false on shift/lag; threshold lowered vs Phase 6"
+    },
+    {
+      "signal_pattern": "volume_shock_*",
+      "hypothesis_id": "P9-MS-023",
+      "sprint": "volume_shock",
+      "status": "fail",
+      "promote_oos": false,
+      "reason": "placebos must align to BH window post_7; n<40"
+    },
+    {
+      "signal_pattern": "wikipedia_*",
+      "hypothesis_id": "P9-AT-012",
+      "sprint": "wikipedia",
+      "status": "revoked",
+      "promote_oos": false,
+      "reason": "No hold-out; heuristic placebos; concentration; revoke candidate OOS label"
+    },
+    {
+      "signal_pattern": "exchange_status_*",
+      "hypothesis_id": "P9-ES-PH11",
+      "sprint": "exchange_status",
+      "status": "fail",
+      "promote_oos": false,
+      "reason": "random_timestamps placebo was invalid; primary BH 0"
+    }
+  ],
+  "sprint_summary": {
+    "calendar": "fail",
+    "stablecoins": "fail",
+    "volume_shock": "fail",
+    "wikipedia": "fail",
+    "exchange_status": "fail"
+  }
+}

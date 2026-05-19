@@ -53,7 +53,9 @@ from src.signals.volume_shock import (
 TAG = "volume_shock"
 SHIFT_DELTA_SECONDS = 86_400 * 30
 PHASE11_METRICS = ("return", "realized_vol", "max_drawdown")
-PRIMARY_WINDOW = EventStudyWindow("post_3", 1, 3)
+# Placebos align to BH-primary window (post_7 per red team Phase 11/12).
+PRIMARY_WINDOW = EventStudyWindow("post_7", 1, 7)
+BH_REFERENCE_METRIC = "return"
 
 
 def parse_args() -> argparse.Namespace:
@@ -199,8 +201,8 @@ def run_variant_study(
     alpha: float,
 ) -> dict[str, Any]:
     hypothesis = (
-        f"{variant} on {ticker} daily OHLC → forward return / vol / max DD "
-        f"(z≥2.0 pre-registered; NOT tradeable)"
+        f"{variant} on {ticker} daily OHLC -> forward return / vol / max DD "
+        f"(z>=2.0 pre-registered; NOT tradeable)"
     )
     raw_events = build_volume_shock_events(candles, variant=variant)
     events = align_events_to_daily_candles(raw_events, candles)
@@ -219,27 +221,52 @@ def run_variant_study(
     )
 
     primary_row = None
-    for cell in report.get("cells", []):
-        if cell.get("metric") == "return" and cell.get("window") == PRIMARY_WINDOW.label:
+    rejected_mask = report.get("bh_rejected_mask") or []
+    cells = report.get("cells") or []
+    for idx, cell in enumerate(cells):
+        is_bh = (
+            bool(rejected_mask[idx])
+            if idx < len(rejected_mask)
+            else False
+        )
+        if is_bh and cell.get("metric") == BH_REFERENCE_METRIC:
             primary_row = cell
             break
+    if primary_row is None:
+        for cell in cells:
+            if (
+                cell.get("metric") == BH_REFERENCE_METRIC
+                and cell.get("window") == PRIMARY_WINDOW.label
+            ):
+                primary_row = cell
+                break
 
     shift_p = shuffle_p = None
+    placebo_window = PRIMARY_WINDOW
+    placebo_metric = BH_REFERENCE_METRIC
+    if primary_row:
+        placebo_metric = str(primary_row.get("metric", BH_REFERENCE_METRIC))
+        wlabel = str(primary_row.get("window", PRIMARY_WINDOW.label))
+        for w in DEFAULT_WINDOWS:
+            if w.label == wlabel:
+                placebo_window = w
+                break
+
     if primary_row and events:
         obs_mean = float(primary_row["mean"])
         shift_p = _placebo_shift_p_value(
             candles,
             events,
             observed_mean=obs_mean,
-            metric_name="return",
-            window=PRIMARY_WINDOW,
+            metric_name=placebo_metric,
+            window=placebo_window,
         )
         shuffle_p = _placebo_shuffle_p_value(
             candles,
             events,
             observed_mean=obs_mean,
-            metric_name="return",
-            window=PRIMARY_WINDOW,
+            metric_name=placebo_metric,
+            window=placebo_window,
             n_placebos=n_placebos,
             seed=seed,
         )
@@ -266,6 +293,10 @@ def run_variant_study(
     report["placebos"] = {
         "random_dates_bootstrap_n": n_placebos,
         "shift_plus_30d_seconds": SHIFT_DELTA_SECONDS,
+        "aligned_metric": placebo_metric,
+        "aligned_window": placebo_window.label,
+        "shift_return_post_7_p": shift_p,
+        "shuffle_labels_return_post_7_p": shuffle_p,
         "shift_return_post_3_p": shift_p,
         "shuffle_labels_return_post_3_p": shuffle_p,
     }

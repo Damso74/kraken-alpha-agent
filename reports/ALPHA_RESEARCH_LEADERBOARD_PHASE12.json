@@ -1,0 +1,152 @@
+{
+  "generated_by": "reports/_build_leaderboard.py",
+  "phase": "Phase 12",
+  "tradable_count": 0,
+  "oos_candidate_count": 0,
+  "red_team_source": "reports\\red_team_verdicts.json",
+  "allowed_verdicts": [
+    "blocked",
+    "candidate for further OOS testing",
+    "kill",
+    "not supported",
+    "retry with fixed data",
+    "weak evidence"
+  ],
+  "cost_assumptions": {
+    "venue": "kraken_spot_small_account",
+    "research_only": true,
+    "never_live_ready": true,
+    "fees": {
+      "maker_pct": 0.0025,
+      "taker_pct": 0.004,
+      "round_trip_taker_taker_pct": 0.008
+    },
+    "spread_slippage_bands_pct": {
+      "majors": [
+        0.0005,
+        0.002
+      ],
+      "alts": [
+        0.002,
+        0.006
+      ]
+    },
+    "suspect_gross_return_threshold_pct": 0.005,
+    "default_execution_style": "taker_taker",
+    "example_round_trip_total_pct": {
+      "major_pessimistic": 0.01,
+      "major_optimistic_spread": 0.0085,
+      "alt_pessimistic": 0.014,
+      "alt_optimistic_spread": 0.01
+    }
+  },
+  "rows": [
+    {
+      "signal": "volume_shock_vol_z20_high",
+      "hypothesis_id": "P9-MS-023",
+      "dataset": "BTC OHLC journalier (cache) \u2014 choc volume z pr\u00e9-enregistr\u00e9",
+      "events": 18,
+      "bh_rejected": 3,
+      "bh_cells_total": 8,
+      "placebo": "bootstrap 200 ; shift +30j post_7 p=1 ; shuffle labels post_7 p=1",
+      "cost_verdict": "\u00e9chec (seuil brut suspect)",
+      "regime_verdict": "non \u00e9valu\u00e9",
+      "concentration_verdict": "not_assessed",
+      "red_team_status": "fail",
+      "final_verdict": "weak evidence",
+      "next_action": "Traiter comme artefact de calendrier/timing ; ne pas promouvoir sans batterie placebo compl\u00e8te.",
+      "artifact": "reports/research_runs_phase12/volume_shock_all_365d.json#vol_z20_high",
+      "rejection_reason": "gross mean -4.3467% below suspect threshold 0.5000% per trade; placebos shift/shuffle non pass\u00e9s"
+    },
+    {
+      "signal": "volume_shock_vol_z60_high",
+      "hypothesis_id": "P9-MS-023",
+      "dataset": "BTC OHLC journalier (cache) \u2014 choc volume z pr\u00e9-enregistr\u00e9",
+      "events": 16,
+      "bh_rejected": 5,
+      "bh_cells_total": 8,
+      "placebo": "bootstrap 200 ; shift +30j post_7 p=1 ; shuffle labels post_7 p=1",
+      "cost_verdict": "\u00e9chec (seuil brut suspect)",
+      "regime_verdict": "non \u00e9valu\u00e9",
+      "concentration_verdict": "not_assessed",
+      "red_team_status": "fail",
+      "final_verdict": "weak evidence",
+      "next_action": "Traiter comme artefact de calendrier/timing ; ne pas promouvoir sans batterie placebo compl\u00e8te.",
+      "artifact": "reports/research_runs_phase12/volume_shock_all_365d.json#vol_z60_high",
+      "rejection_reason": "gross mean -4.3486% below suspect threshold 0.5000% per trade; placebos shift/shuffle non pass\u00e9s"
+    },
+    {
+      "signal": "volume_shock_vol_z20_range_compression",
+      "hypothesis_id": "P9-MS-023",
+      "dataset": "BTC OHLC journalier (cache) \u2014 choc volume z pr\u00e9-enregistr\u00e9",
+      "events": 0,
+      "bh_rejected": 0,
+      "bh_cells_total": 0,
+      "placebo": "bootstrap 200 ; shift +30j post_7 p=\u2014 ; shuffle labels post_7 p=\u2014",
+      "cost_verdict": "non \u00e9valu\u00e9",
+      "regime_verdict": "non \u00e9valu\u00e9",
+      "concentration_verdict": "not_assessed",
+      "red_team_status": "fail",
+      "final_verdict": "blocked",
+      "next_action": "Revoir seuils pr\u00e9-enregistr\u00e9s ou fen\u00eatre ; pas de promotion sans \u00e9v\u00e9nements align\u00e9s.",
+      "artifact": "reports/research_runs_phase12/volume_shock_all_365d.json#vol_z20_range_compression",
+      "rejection_reason": null
+    },
+    {
+      "signal": "volume_shock_vol_z20_low_abs_return",
+      "hypothesis_id": "P9-MS-023",
+      "dataset": "BTC OHLC journalier (cache) \u2014 choc volume z pr\u00e9-enregistr\u00e9",
+      "events": 0,
+      "bh_rejected": 0,
+      "bh_cells_total": 0,
+      "placebo": "bootstrap 200 ; shift +30j post_7 p=\u2014 ; shuffle labels post_7 p=\u2014",
+      "cost_verdict": "non \u00e9valu\u00e9",
+      "regime_verdict": "non \u00e9valu\u00e9",
+      "concentration_verdict": "not_assessed",
+      "red_team_status": "fail",
+      "final_verdict": "blocked",
+      "next_action": "D\u00e9bloquer source/cache (voir RUN_LOG_PHASE11) puis relancer le harness.",
+      "artifact": "reports/research_runs_phase12/volume_shock_all_365d.json#vol_z20_low_abs_return",
+      "rejection_reason": null
+    },
+    {
+      "signal": "wikipedia_crypto_basket_z1.5",
+      "hypothesis_id": "P9-AT-012",
+      "dataset": "Wikimedia pageviews (panier 8 pages crypto) + BTC OHLC cache 365j",
+      "events": 29,
+      "bh_rejected": 3,
+      "bh_cells_total": 8,
+      "placebo": "bootstrap 200 ; shift +30j vol sig=False ; placebo non-crypto vol sig=False",
+      "cost_verdict": "H1 vol/volume (retour secondaire) ; overlay retour=economically impossible",
+      "regime_verdict": "non \u00e9valu\u00e9",
+      "concentration_verdict": "not_assessed",
+      "red_team_status": "revoked",
+      "final_verdict": "weak evidence",
+      "next_action": "Archiver toute promotion OOS ; aligner sur RED_TEAM_PHASE11.md ; hold-out explicite requis avant toute re-\u00e9valuation.",
+      "artifact": "reports/research_runs_phase12/wikipedia_basket_365d.json#z1.5",
+      "rejection_reason": "gross mean -0.5319% below suspect threshold 0.5000% per trade; revoked_by_red_team (RED_TEAM_PHASE11.md)"
+    },
+    {
+      "signal": "wikipedia_crypto_basket_z2.0",
+      "hypothesis_id": "P9-AT-012",
+      "dataset": "Wikimedia pageviews (panier 8 pages crypto) + BTC OHLC cache 365j",
+      "events": 18,
+      "bh_rejected": 5,
+      "bh_cells_total": 8,
+      "placebo": "bootstrap 200 ; shift +30j vol sig=False ; placebo non-crypto vol sig=False",
+      "cost_verdict": "H1 vol/volume (retour secondaire) ; overlay retour=economically impossible",
+      "regime_verdict": "non \u00e9valu\u00e9",
+      "concentration_verdict": "not_assessed",
+      "red_team_status": "revoked",
+      "final_verdict": "weak evidence",
+      "next_action": "Archiver toute promotion OOS ; aligner sur RED_TEAM_PHASE11.md ; hold-out explicite requis avant toute re-\u00e9valuation.",
+      "artifact": "reports/research_runs_phase12/wikipedia_basket_365d.json#z2.0",
+      "rejection_reason": "gross mean -0.6803% below suspect threshold 0.5000% per trade; revoked_by_red_team (RED_TEAM_PHASE11.md)"
+    }
+  ],
+  "top_actions": [
+    "**P9-MS-023** (`volume_shock_vol_z20_range_compression`) : Revoir seuils pr\u00e9-enregistr\u00e9s ou fen\u00eatre ; pas de promotion sans \u00e9v\u00e9nements align\u00e9s.",
+    "**P9-MS-023** (`volume_shock_vol_z20_low_abs_return`) : D\u00e9bloquer source/cache (voir RUN_LOG_PHASE11) puis relancer le harness.",
+    "**P9-AT-012** (`wikipedia_crypto_basket_z1.5`) : Archiver toute promotion OOS ; aligner sur RED_TEAM_PHASE11.md ; hold-out explicite requis avant toute re-\u00e9valuation."
+  ]
+}

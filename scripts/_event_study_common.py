@@ -29,6 +29,12 @@ from src.data.collectors.binance_public import (
     fetch_ohlc_daily_with_cache,
 )
 from src.research.event_study import EventStudyWindow, run_event_study
+from src.data.collectors._provenance import (
+    DataProvenance,
+    merge_provenance_into_report,
+    provenance_from_cache_path,
+)
+from src.research.holdout import DEFAULT_HOLDOUT_FRACTION, evaluate_holdout_g4
 from src.research.placebo import (
     benjamini_hochberg,
     empirical_p_value,
@@ -133,6 +139,17 @@ def add_common_event_study_args(
         type=Path,
         default=None,
         help="Optional path to write the full JSON report.",
+    )
+    p.add_argument(
+        "--enable-holdout",
+        action="store_true",
+        help="Run G4 temporal hold-out (last fraction of candles = test).",
+    )
+    p.add_argument(
+        "--holdout-fraction",
+        type=float,
+        default=DEFAULT_HOLDOUT_FRACTION,
+        help=f"Test-window fraction when --enable-holdout (default {DEFAULT_HOLDOUT_FRACTION}).",
     )
 
 
@@ -426,6 +443,77 @@ def run_event_study_pipeline(
     return 0, report
 
 
+def attach_holdout_to_report(
+    report: dict[str, Any],
+    *,
+    candles: list[dict[str, Any]],
+    events: list[int],
+    metrics: Sequence[str] = DEFAULT_METRICS,
+    windows: Sequence[EventStudyWindow] = DEFAULT_WINDOWS,
+    holdout_fraction: float = DEFAULT_HOLDOUT_FRACTION,
+    n_placebos: int = DEFAULT_N_PLACEBOS,
+    seed: int = DEFAULT_SEED,
+    alpha: float = DEFAULT_ALPHA,
+    reference_metric: str = "return",
+    reference_window: str = "post_7",
+) -> dict[str, Any]:
+    """Evaluate G4 hold-out and attach ``holdout`` block; cap OOS labels if fail."""
+    evaluation = evaluate_holdout_g4(
+        candles,
+        events,
+        metrics=metrics,
+        windows=windows,
+        holdout_fraction=holdout_fraction,
+        n_placebos=n_placebos,
+        seed=seed,
+        alpha=alpha,
+        reference_metric=reference_metric,
+        reference_window=reference_window,
+    )
+    report = dict(report)
+    report["holdout"] = evaluation.to_dict()
+    if not evaluation.oos_survives:
+        for key in ("phase11_final_verdict", "phase11_verdict", "research_verdict"):
+            if report.get(key) in (
+                "candidate for further OOS testing",
+                "candidate for OOS",
+                "candidate for OOS retest",
+            ):
+                report[key] = "weak evidence"
+        verdict = report.get("verdict")
+        if verdict in (
+            "candidate for further OOS testing",
+            "candidate for OOS",
+            "candidate for OOS retest",
+            "supported",
+        ):
+            report["verdict"] = "weak evidence"
+        extra = evaluation.failure_reason or "hold-out failed"
+        prev = report.get("rejection_reason")
+        report["rejection_reason"] = f"{prev}; {extra}" if prev else extra
+    return report
+
+
+def attach_provenance(
+    report: dict[str, Any],
+    *,
+    ohlc_cache_path: Path | None = None,
+    signal_cache_path: Path | None = None,
+    ohlc_source: str | None = None,
+) -> dict[str, Any]:
+    ohlc_prov: DataProvenance | None = None
+    if ohlc_cache_path is not None:
+        ohlc_prov = provenance_from_cache_path(
+            ohlc_cache_path, source=ohlc_source or "cache"
+        )
+    signal_prov: DataProvenance | None = None
+    if signal_cache_path is not None:
+        signal_prov = provenance_from_cache_path(signal_cache_path, source="cache")
+    return merge_provenance_into_report(
+        report, ohlc=ohlc_prov, signal=signal_prov
+    )
+
+
 def write_json_report(path: Path, report: dict[str, Any], *, tag: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(report, indent=2, default=str), encoding="utf-8")
@@ -454,6 +542,8 @@ __all__ = [
     "align_events_to_daily_candles",
     "compute_verdict",
     "run_event_study_pipeline",
+    "attach_holdout_to_report",
+    "attach_provenance",
     "write_json_report",
     "window_iso_range",
 ]

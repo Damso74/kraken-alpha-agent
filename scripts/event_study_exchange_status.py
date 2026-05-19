@@ -306,6 +306,46 @@ def compute_phase11_verdict(
     return "kill"
 
 
+def _random_timestamp_bootstrap_p(
+    *,
+    candles: list[dict[str, Any]],
+    events: list[int],
+    metric: str,
+    window: EventStudyWindow,
+    n_placebos: int,
+    seed: int,
+) -> float | None:
+    """Empirical two-sided p from random candle timestamps (Phase 12 fix)."""
+    if not events:
+        return None
+    real = run_event_study(
+        candles,
+        events=events,
+        windows=[window],
+        metrics=[metric],
+        compute_baseline=False,
+    )
+    real_row = real.row(metric, window.label)
+    if real_row is None or real_row.n_events == 0:
+        return None
+    placebo_values: list[float] = []
+    for i in range(n_placebos):
+        val = _placebo_replicate_metric(
+            candles=candles,
+            n_events=real_row.n_events,
+            window=window,
+            metric_name=metric,
+            sub_seed=int(seed) + i,
+        )
+        if val is not None:
+            placebo_values.append(val)
+    if not placebo_values:
+        return None
+    return float(
+        empirical_p_value(observed=real_row.mean, placebo_values=placebo_values).two_sided
+    )
+
+
 def _shift_placebo_p(
     *,
     candles: list[dict[str, Any]],
@@ -412,6 +452,7 @@ def _run_phase11_variant(
     bh_primary = int(report_primary.get("bh_rejected") or 0)
 
     shift_ps: dict[str, float | None] = {}
+    random_ts_ps: dict[str, float | None] = {}
     for window in PHASE11_WINDOWS:
         key = f"realized_vol_{window.label}"
         shift_ps[key] = _shift_placebo_p(
@@ -421,6 +462,14 @@ def _run_phase11_variant(
             window=window,
             n_placebos=n_placebos,
             seed=seed,
+        )
+        random_ts_ps[key] = _random_timestamp_bootstrap_p(
+            candles=candles,
+            events=events,
+            metric="realized_vol",
+            window=window,
+            n_placebos=n_placebos,
+            seed=seed + 20_000,
         )
 
     verdict = compute_phase11_verdict(
@@ -446,8 +495,8 @@ def _run_phase11_variant(
         "placebos": {
             "random_timestamps": {
                 "n_replicates": n_placebos,
-                "bh_rejected_primary": bh_primary,
-                "cells": primary_cells,
+                "method": "random_events_from_candles bootstrap",
+                "two_sided_p": random_ts_ps,
             },
             "shift_plus_14d": {
                 "delta_days": SHIFT_PLACEBO_DAYS,

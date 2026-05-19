@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from src.signals.calendar_effects import (
+    CALENDAR_EFFECT_DAILY_ALIASES,
     PRE_REGISTERED_CALENDAR_EFFECTS,
     build_calendar_boundary_events,
     build_monday_asia_open_events,
@@ -16,6 +17,8 @@ from src.signals.calendar_effects import (
     build_us_core_session_open_events,
     build_us_market_open_window_events,
     build_weekend_start_events,
+    calendar_effects_for_event_study,
+    is_calendar_effect_alias,
     placebo_timezone_for_effect,
     random_same_weekday_placebo_events,
 )
@@ -142,3 +145,18 @@ def test_calendar_boundary_combines_flags() -> None:
 def test_empty_ohlc_returns_empty() -> None:
     assert build_weekend_start_events([]) == []
     assert build_pre_registered_calendar_events([], "month_end") == []
+
+
+def test_monday_asia_is_daily_alias_of_sunday_us() -> None:
+    """On one UTC daily candle per day, Sunday ET ≡ Monday Tokyo (Phase 11 red team)."""
+    start = datetime(2023, 6, 1, tzinfo=timezone.utc)
+    rows = [
+        _ohlc(int((start + timedelta(days=i)).timestamp())) for i in range(400)
+    ]
+    sunday = build_sunday_us_evening_events(rows)
+    monday = build_monday_asia_open_events(rows)
+    assert sunday == monday
+    assert is_calendar_effect_alias("monday_asia_open")
+    assert CALENDAR_EFFECT_DAILY_ALIASES["monday_asia_open"] == "sunday_us_evening"
+    assert "monday_asia_open" not in calendar_effects_for_event_study()
+    assert len(calendar_effects_for_event_study()) == 4

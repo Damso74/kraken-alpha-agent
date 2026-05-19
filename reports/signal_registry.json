@@ -1,0 +1,103 @@
+{
+  "schema_version": "phase12-v1",
+  "phase": 12,
+  "tradable_count": 0,
+  "oos_allowed_count": 0,
+  "policy": "methodology sprint — no new collectors/signals; gates G0–G4 only",
+  "signals": [
+    {
+      "signal_id": "calendar_us_market_open_window",
+      "hypothesis_id": "P9-CA-032",
+      "module": "src.signals.calendar_effects",
+      "status": "research_only",
+      "tradable": false,
+      "oos_allowed": false,
+      "notes": "Red team WARNING; volume_ratio only"
+    },
+    {
+      "signal_id": "calendar_sunday_us_evening",
+      "hypothesis_id": "P9-CAL-SUN-US",
+      "module": "src.signals.calendar_effects",
+      "status": "kill",
+      "tradable": false,
+      "oos_allowed": false,
+      "notes": "Canonical; monday_asia_open is daily alias"
+    },
+    {
+      "signal_id": "calendar_monday_asia_open",
+      "hypothesis_id": "P9-CAL-MON-ASIA",
+      "module": "src.signals.calendar_effects",
+      "status": "alias",
+      "tradable": false,
+      "oos_allowed": false,
+      "notes": "Skipped in Phase 12 runs — duplicate of sunday_us_evening on daily OHLC"
+    },
+    {
+      "signal_id": "calendar_third_friday",
+      "hypothesis_id": "P9-CA-037",
+      "module": "src.signals.calendar_effects",
+      "status": "kill",
+      "tradable": false,
+      "oos_allowed": false
+    },
+    {
+      "signal_id": "calendar_month_end",
+      "hypothesis_id": "P9-CAL-MONTH-END",
+      "module": "src.signals.calendar_effects",
+      "status": "kill",
+      "tradable": false,
+      "oos_allowed": false
+    },
+    {
+      "signal_id": "volume_shock_vol_z20_high",
+      "hypothesis_id": "P9-MS-023",
+      "module": "src.signals.volume_shock",
+      "status": "kill",
+      "tradable": false,
+      "oos_allowed": false,
+      "notes": "Placebos aligned to post_7 in Phase 12"
+    },
+    {
+      "signal_id": "volume_shock_vol_z60_high",
+      "hypothesis_id": "P9-MS-023",
+      "module": "src.signals.volume_shock",
+      "status": "kill",
+      "tradable": false,
+      "oos_allowed": false
+    },
+    {
+      "signal_id": "wikipedia_crypto_basket_z1.5",
+      "hypothesis_id": "P9-AT-012",
+      "module": "src.signals.wiki_attention",
+      "status": "revoked",
+      "tradable": false,
+      "oos_allowed": false,
+      "notes": "Hold-out required; red team revoked OOS"
+    },
+    {
+      "signal_id": "wikipedia_crypto_basket_z2.0",
+      "hypothesis_id": "P9-AT-012",
+      "module": "src.signals.wiki_attention",
+      "status": "revoked",
+      "tradable": false,
+      "oos_allowed": false
+    },
+    {
+      "signal_id": "exchange_status_unscheduled_incidents",
+      "hypothesis_id": "P9-ES-PH11-unscheduled_incidents",
+      "module": "src.signals.exchange_status",
+      "status": "kill",
+      "tradable": false,
+      "oos_allowed": false,
+      "notes": "Real random_timestamps bootstrap in Phase 12"
+    },
+    {
+      "signal_id": "stablecoin_supply_7d_high",
+      "hypothesis_id": "P9-SC-001-PR-7d-high",
+      "module": "src.signals.stablecoin_supply",
+      "status": "kill",
+      "tradable": false,
+      "oos_allowed": false
+    }
+  ]
+}

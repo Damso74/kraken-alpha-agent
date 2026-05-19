@@ -21,10 +21,10 @@ Verdicts autorisés uniquement : `blocked`, `candidate for further OOS testing`,
 | `calendar_monday_asia_open` | `P9-CAL-MON-ASIA` | Kraken/Binance cache BTC OHLC + calendrier dé… | 105 | 2/8 | bootstrap 200 ; same-weekday post_7 p=0.9751 ; shi… | échec (seuil brut suspect) | calendrier fixe (monda | not_assessed | fail | **weak evidence** | Conserver en recherche descriptive ; pas de reve… |
 | `calendar_third_friday` | `P9-CA-037` | Kraken/Binance cache BTC OHLC + calendrier dé… | 25 | 0/8 | bootstrap 200 ; same-weekday post_7 p=0.7662 ; shi… | dominé par coûts | calendrier fixe (third | not_assessed | fail | **weak evidence** | Conserver en recherche descriptive ; pas de reve… |
 | `calendar_month_end` | `P9-CAL-MONTH-END` | Kraken/Binance cache BTC OHLC + calendrier dé… | 24 | 0/8 | bootstrap 200 ; same-weekday post_7 p=0.3483 ; shi… | échec (seuil brut suspect) | calendrier fixe (month | not_assessed | fail | **weak evidence** | Conserver en recherche descriptive ; pas de reve… |
-| `volume_shock_vol_z20_high` | `P9-MS-023` | BTC OHLC journalier (cache) — choc volume z p… | 18 | 3/8 | bootstrap 200 ; shift +30j post_3 p=1 ; shuffle la… | échec (seuil brut suspect) | non évalué | not_assessed | fail | **weak evidence** | Traiter comme artefact de calendrier/timing ; ne… |
-| `volume_shock_vol_z60_high` | `P9-MS-023` | BTC OHLC journalier (cache) — choc volume z p… | 16 | 5/8 | bootstrap 200 ; shift +30j post_3 p=1 ; shuffle la… | échec (seuil brut suspect) | non évalué | not_assessed | fail | **weak evidence** | Traiter comme artefact de calendrier/timing ; ne… |
-| `volume_shock_vol_z20_range_compression` | `P9-MS-023` | BTC OHLC journalier (cache) — choc volume z p… | 0 | 0 | bootstrap 200 ; shift +30j post_3 p=— ; shuffle la… | non évalué | non évalué | not_assessed | fail | **blocked** | Revoir seuils pré-enregistrés ou fenêtre ; pas d… |
-| `volume_shock_vol_z20_low_abs_return` | `P9-MS-023` | BTC OHLC journalier (cache) — choc volume z p… | 0 | 0 | bootstrap 200 ; shift +30j post_3 p=— ; shuffle la… | non évalué | non évalué | not_assessed | fail | **blocked** | Débloquer source/cache (voir RUN_LOG_PHASE11) pu… |
+| `volume_shock_vol_z20_high` | `P9-MS-023` | BTC OHLC journalier (cache) — choc volume z p… | 18 | 3/8 | bootstrap 200 ; shift +30j post_7 p=1 ; shuffle la… | échec (seuil brut suspect) | non évalué | not_assessed | fail | **weak evidence** | Traiter comme artefact de calendrier/timing ; ne… |
+| `volume_shock_vol_z60_high` | `P9-MS-023` | BTC OHLC journalier (cache) — choc volume z p… | 16 | 5/8 | bootstrap 200 ; shift +30j post_7 p=1 ; shuffle la… | échec (seuil brut suspect) | non évalué | not_assessed | fail | **weak evidence** | Traiter comme artefact de calendrier/timing ; ne… |
+| `volume_shock_vol_z20_range_compression` | `P9-MS-023` | BTC OHLC journalier (cache) — choc volume z p… | 0 | 0 | bootstrap 200 ; shift +30j post_7 p=— ; shuffle la… | non évalué | non évalué | not_assessed | fail | **blocked** | Revoir seuils pré-enregistrés ou fenêtre ; pas d… |
+| `volume_shock_vol_z20_low_abs_return` | `P9-MS-023` | BTC OHLC journalier (cache) — choc volume z p… | 0 | 0 | bootstrap 200 ; shift +30j post_7 p=— ; shuffle la… | non évalué | non évalué | not_assessed | fail | **blocked** | Débloquer source/cache (voir RUN_LOG_PHASE11) pu… |
 | `wikipedia_crypto_basket_z1.5` | `P9-AT-012` | Wikimedia pageviews (panier 8 pages crypto) +… | 29 | 3/8 | bootstrap 200 ; shift +30j vol sig=False ; placebo… | H1 vol/volume (retour second | non évalué | not_assessed | revoked | **weak evidence** | Archiver toute promotion OOS ; aligner sur RED_T… |
 | `wikipedia_crypto_basket_z2.0` | `P9-AT-012` | Wikimedia pageviews (panier 8 pages crypto) +… | 18 | 5/8 | bootstrap 200 ; shift +30j vol sig=False ; placebo… | H1 vol/volume (retour second | non évalué | not_assessed | revoked | **weak evidence** | Archiver toute promotion OOS ; aligner sur RED_T… |
 | `exchange_status_unscheduled_incidents` | `P9-ES-PH11-unscheduled_incidents` | Statuspage Kraken/Coinbase + BTC OHLC cache 3… | 29 | 0/3 | timestamps aléatoires n=200 ; shift +14j | échec (seuil brut suspect) | non évalué | not_assessed | fail | **kill** | Clôturer la variante ; documenter dans le backlo… |
@@ -107,7 +107,7 @@ Verdicts autorisés uniquement : `blocked`, `candidate for further OOS testing`,
 
 - **Artifact :** `reports/research_runs_phase11/volume_shock_all_365d.json#vol_z20_high`
 - **Events :** 18 · **BH :** 3/8
-- **Placebos :** bootstrap 200 ; shift +30j post_3 p=1 ; shuffle labels post_3 p=1
+- **Placebos :** bootstrap 200 ; shift +30j post_7 p=1 ; shuffle labels post_7 p=1
 - **Coûts :** échec (seuil brut suspect) · **Régime :** non évalué
 - **Concentration :** not_assessed
 - **Red team :** fail
@@ -119,7 +119,7 @@ Verdicts autorisés uniquement : `blocked`, `candidate for further OOS testing`,
 
 - **Artifact :** `reports/research_runs_phase11/volume_shock_all_365d.json#vol_z60_high`
 - **Events :** 16 · **BH :** 5/8
-- **Placebos :** bootstrap 200 ; shift +30j post_3 p=1 ; shuffle labels post_3 p=1
+- **Placebos :** bootstrap 200 ; shift +30j post_7 p=1 ; shuffle labels post_7 p=1
 - **Coûts :** échec (seuil brut suspect) · **Régime :** non évalué
 - **Concentration :** not_assessed
 - **Red team :** fail
@@ -131,7 +131,7 @@ Verdicts autorisés uniquement : `blocked`, `candidate for further OOS testing`,
 
 - **Artifact :** `reports/research_runs_phase11/volume_shock_all_365d.json#vol_z20_range_compression`
 - **Events :** 0 · **BH :** 0/0
-- **Placebos :** bootstrap 200 ; shift +30j post_3 p=— ; shuffle labels post_3 p=—
+- **Placebos :** bootstrap 200 ; shift +30j post_7 p=— ; shuffle labels post_7 p=—
 - **Coûts :** non évalué · **Régime :** non évalué
 - **Concentration :** not_assessed
 - **Red team :** fail
@@ -142,7 +142,7 @@ Verdicts autorisés uniquement : `blocked`, `candidate for further OOS testing`,
 
 - **Artifact :** `reports/research_runs_phase11/volume_shock_all_365d.json#vol_z20_low_abs_return`
 - **Events :** 0 · **BH :** 0/0
-- **Placebos :** bootstrap 200 ; shift +30j post_3 p=— ; shuffle labels post_3 p=—
+- **Placebos :** bootstrap 200 ; shift +30j post_7 p=— ; shuffle labels post_7 p=—
 - **Coûts :** non évalué · **Régime :** non évalué
 - **Concentration :** not_assessed
 - **Red team :** fail

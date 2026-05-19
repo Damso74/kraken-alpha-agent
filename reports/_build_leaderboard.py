@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import json
 import math
 import sys
@@ -95,9 +96,22 @@ PHASE11_ALLOWED_VERDICTS = frozenset(
 )
 
 PHASE11_RED_TEAM_DOC = REPO_ROOT / "reports" / "RED_TEAM_PHASE11.md"
+RED_TEAM_VERDICTS_JSON = REPO_ROOT / "reports" / "red_team_verdicts.json"
+RED_TEAM_GATING_PHASE12_MD = REPO_ROOT / "reports" / "RED_TEAM_GATING_PHASE12.md"
 
-# Statuts red team qui interdisent toute promotion OOS (règle explicite Phase 11).
+PHASE12 = {
+    "runs_dir": REPO_ROOT / "reports" / "research_runs_phase12",
+    "out_md": REPO_ROOT / "reports" / "ALPHA_RESEARCH_LEADERBOARD_PHASE12.md",
+    "out_json": REPO_ROOT / "reports" / "ALPHA_RESEARCH_LEADERBOARD_PHASE12.json",
+    "title": "Phase 12",
+    "run_log": "reports/research_runs_phase12/RUN_LOG_PHASE12.md",
+    "phase11_json": REPO_ROOT / "reports" / "ALPHA_RESEARCH_LEADERBOARD_PHASE11.json",
+}
+
+# Statuts red team qui interdisent toute promotion OOS (règle explicite Phase 11/12).
 PHASE11_RED_TEAM_BLOCKS_OOS = frozenset({"fail", "revoked", "révoqué", "révoque"})
+
+_red_team_rules_cache: list[dict[str, Any]] | None = None
 
 CALENDAR_HYPOTHESIS_IDS: dict[str, str] = {
     "us_market_open_window": "P9-CA-032",
@@ -619,8 +633,38 @@ def _finalize_phase11_verdict(
     return verdict, reason
 
 
+def load_red_team_verdict_rules() -> list[dict[str, Any]]:
+    """Load ``reports/red_team_verdicts.json`` (data-driven gating)."""
+    global _red_team_rules_cache
+    if _red_team_rules_cache is not None:
+        return _red_team_rules_cache
+    if not RED_TEAM_VERDICTS_JSON.is_file():
+        _red_team_rules_cache = []
+        return _red_team_rules_cache
+    doc = json.loads(RED_TEAM_VERDICTS_JSON.read_text(encoding="utf-8"))
+    _red_team_rules_cache = list(doc.get("verdicts") or [])
+    return _red_team_rules_cache
+
+
+def lookup_red_team_status(signal: str, hypothesis_id: str = "") -> str:
+    """Match signal/hypothesis against red_team_verdicts.json patterns."""
+    for rule in load_red_team_verdict_rules():
+        pattern = str(rule.get("signal_pattern", ""))
+        if pattern and fnmatch.fnmatch(signal, pattern):
+            return str(rule.get("status", "fail"))
+        hypo_pat = rule.get("hypothesis_pattern")
+        if hypo_pat and hypothesis_id and fnmatch.fnmatch(hypothesis_id, str(hypo_pat)):
+            return str(rule.get("status", "fail"))
+    if hypothesis_id.startswith("P9-"):
+        return "fail"
+    return "fail"
+
+
 def lookup_phase11_red_team_status(signal: str, hypothesis_id: str) -> str:
-    """Statut red team par signal (synthèse RED_TEAM_PHASE11.md, 2026-05-19)."""
+    """Backward-compatible alias — prefers JSON rules when present."""
+    rules = load_red_team_verdict_rules()
+    if rules:
+        return lookup_red_team_status(signal, hypothesis_id)
     if signal.startswith("wikipedia_"):
         return "revoked"
     if signal == "calendar_us_market_open_window":
@@ -633,9 +677,12 @@ def lookup_phase11_red_team_status(signal: str, hypothesis_id: str) -> str:
         return "fail"
     if signal.startswith("stablecoin_"):
         return "fail"
-    if hypothesis_id.startswith("P9-"):
-        return "fail"
     return "fail"
+
+
+def apply_phase12_gates(row: Phase11LeaderboardRow) -> Phase11LeaderboardRow:
+    """Stricter Phase 12 cap: red team + hold-out field in artifact if present."""
+    return apply_phase11_red_team_row(row)
 
 
 def apply_red_team_final_cap(
@@ -816,12 +863,17 @@ def _rows_from_volume_shock(path: Path, runs_rel: str) -> list[Phase11Leaderboar
         script_v = str(block.get("research_verdict") or block.get("verdict") or "kill")
         final_v, reason = _finalize_phase11_verdict(script_v, overlay)
         placebos = block.get("placebos") or {}
-        shift_p = placebos.get("shift_return_post_3_p")
-        shuffle_p = placebos.get("shuffle_labels_return_post_3_p")
+        shift_p = placebos.get("shift_return_post_7_p") or placebos.get(
+            "shift_return_post_3_p"
+        )
+        shuffle_p = placebos.get("shuffle_labels_return_post_7_p") or placebos.get(
+            "shuffle_labels_return_post_3_p"
+        )
+        aligned_w = placebos.get("aligned_window", "post_7")
         placebo = (
             f"bootstrap {placebos.get('random_dates_bootstrap_n', 200)} ; "
-            f"shift +30j post_3 p={_fmt_p(shift_p) if shift_p is not None else '—'} ; "
-            f"shuffle labels post_3 p={_fmt_p(shuffle_p) if shuffle_p is not None else '—'}"
+            f"shift +30j {aligned_w} p={_fmt_p(shift_p) if shift_p is not None else '—'} ; "
+            f"shuffle labels {aligned_w} p={_fmt_p(shuffle_p) if shuffle_p is not None else '—'}"
         )
         if shift_p == 1.0 and final_v == "weak evidence":
             extra = "placebos shift/shuffle non passés"
@@ -1011,6 +1063,21 @@ def _rows_from_exchange_deep_dive(path: Path, runs_rel: str) -> list[Phase11Lead
             )
         )
     return rows
+
+
+def build_phase12_rows() -> list[Phase11LeaderboardRow]:
+    """Rebuild leaderboard from Phase 12 re-test artifacts (methodology sprint)."""
+    runs_dir = PHASE12["runs_dir"]
+    runs_rel = str(runs_dir.relative_to(REPO_ROOT)).replace("\\", "/")
+    rows: list[Phase11LeaderboardRow] = []
+    loaders = [
+        (runs_dir / "volume_shock_all_365d.json", _rows_from_volume_shock),
+        (runs_dir / "wikipedia_basket_365d.json", _rows_from_wikipedia),
+    ]
+    for path, loader in loaders:
+        if path.is_file():
+            rows.extend(loader(path, runs_rel))
+    return [apply_phase12_gates(r) for r in rows]
 
 
 def build_phase11_rows() -> list[Phase11LeaderboardRow]:
@@ -1274,6 +1341,38 @@ def render_phase6_vs_phase11_md(
     return "\n".join(lines)
 
 
+def render_phase12_md(rows: list[Phase11LeaderboardRow]) -> str:
+    base = render_phase11_md(rows)
+    return base.replace("Phase 11", "Phase 12").replace("--phase11", "--phase12")
+
+
+def _write_phase12() -> int:
+    rows = build_phase12_rows()
+    out_md: Path = PHASE12["out_md"]
+    out_json: Path = PHASE12["out_json"]
+    out_md.write_text(render_phase12_md(rows), encoding="utf-8")
+    payload = {
+        "generated_by": "reports/_build_leaderboard.py",
+        "phase": PHASE12["title"],
+        "tradable_count": 0,
+        "oos_candidate_count": sum(
+            1 for r in rows if r.final_verdict == "candidate for further OOS testing"
+        ),
+        "red_team_source": str(RED_TEAM_VERDICTS_JSON.relative_to(REPO_ROOT)),
+        "allowed_verdicts": sorted(PHASE11_ALLOWED_VERDICTS),
+        "cost_assumptions": summarize_cost_assumptions(),
+        "rows": [r.to_dict() for r in rows],
+        "top_actions": _top_phase11_actions(rows),
+    }
+    out_json.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    print(f"Wrote {out_md}")
+    print(f"Wrote {out_json}")
+    print(
+        f"Phase 12 rows: {len(rows)}; OOS candidates: {payload['oos_candidate_count']}"
+    )
+    return len(rows)
+
+
 def _write_phase11() -> int:
     rows = build_phase11_rows()
     out_md: Path = PHASE11["out_md"]
@@ -1526,7 +1625,16 @@ def main() -> int:
         action="store_true",
         help="Build Phase 11 leaderboard from reports/research_runs_phase11/",
     )
+    parser.add_argument(
+        "--phase12",
+        action="store_true",
+        help="Build Phase 12 leaderboard from reports/research_runs_phase12/",
+    )
     args = parser.parse_args()
+
+    if args.phase12:
+        _write_phase12()
+        return 0
 
     if args.phase11:
         _write_phase11()

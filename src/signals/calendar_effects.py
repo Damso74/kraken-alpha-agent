@@ -56,6 +56,26 @@ PRE_REGISTERED_CALENDAR_EFFECTS: tuple[str, ...] = (
     "month_end",
 )
 
+# On daily UTC OHLC, Sunday ET and Monday Tokyo pick the same candle timestamps
+# (red team Phase 11). Phase 12 runs the canonical effect only.
+CALENDAR_EFFECT_DAILY_ALIASES: dict[str, str] = {
+    "monday_asia_open": "sunday_us_evening",
+}
+
+
+def resolve_calendar_effect_id(effect_id: str) -> str:
+    """Map alias effect ids to their canonical pre-registered id."""
+    return CALENDAR_EFFECT_DAILY_ALIASES.get(effect_id, effect_id)
+
+
+def is_calendar_effect_alias(effect_id: str) -> bool:
+    return effect_id in CALENDAR_EFFECT_DAILY_ALIASES
+
+
+def calendar_effects_for_event_study() -> tuple[str, ...]:
+    """Distinct effects to execute (aliases excluded from runs)."""
+    return tuple(e for e in PRE_REGISTERED_CALENDAR_EFFECTS if not is_calendar_effect_alias(e))
+
 
 def _dedupe_timestamps(timestamps: Sequence[int]) -> list[int]:
     seen: set[int] = set()
