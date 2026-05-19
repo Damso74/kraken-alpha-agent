@@ -10,8 +10,6 @@ import {
   PlayCircle,
   ShieldCheck,
   Sparkles,
-  TrendingDown,
-  TrendingUp,
 } from "lucide-react";
 
 import { ActivityFeed } from "@/components/ActivityFeed";
@@ -100,8 +98,123 @@ export default function Page() {
         </header>
 
         <div className="px-4 sm:px-6 lg:px-10 py-5 sm:py-6 lg:py-8 space-y-6 sm:space-y-7 lg:space-y-8 max-w-[1380px]">
-          {/* KPI cards */}
-          <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5 lg:gap-4">
+          {/* Hero star metric — Hackathon-window PnL */}
+          <section
+            id="overview"
+            aria-labelledby="hero-metric-label"
+            className="scroll-mt-24 relative rounded-xl border border-[var(--border)] bg-[var(--surface-1)] overflow-hidden ring-1 ring-inset ring-[color:var(--gold)]/15 shadow-[0_24px_60px_-30px_rgba(245,158,11,0.35)]"
+          >
+            <div
+              aria-hidden
+              className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-[var(--gold)] via-[var(--accent-emerald)] to-[var(--accent-teal)] opacity-80"
+            />
+            <div className="grid grid-cols-1 lg:grid-cols-[1.45fr_1fr]">
+              <div className="p-5 sm:p-6 lg:p-7">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10.5px] sm:text-[11px] uppercase tracking-[0.14em] text-[var(--text-tertiary)] font-medium">
+                  <span id="hero-metric-label" className="text-[var(--gold)]">
+                    Hackathon-window PnL
+                  </span>
+                  <span aria-hidden className="h-1 w-1 rounded-full bg-[var(--text-tertiary)]" />
+                  <span>{periodLabel}</span>
+                  <span aria-hidden className="h-1 w-1 rounded-full bg-[var(--text-tertiary)]" />
+                  <span className="normal-case tracking-normal text-[10.5px] sm:text-[11px]">
+                    on ${summary.starting_capital_usd.toLocaleString("en-US")} sim. capital
+                  </span>
+                </div>
+                <div
+                  className={`mt-3 sm:mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-1 font-semibold tabular tracking-tight leading-none ${
+                    positive ? "text-[var(--success)]" : "text-[var(--warning)]"
+                  }`}
+                >
+                  <span className="text-[40px] sm:text-[48px] lg:text-[56px]">
+                    {fmtUsd(summary.total_pnl_usd, { signed: true })}
+                  </span>
+                  <span className="text-[16px] sm:text-[18px] lg:text-[20px] font-medium text-[var(--text-tertiary)]">
+                    ({fmtPct(summary.total_pnl_pct, { signed: true, decimals: 4 })})
+                  </span>
+                </div>
+                <dl className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2.5 text-[12px]">
+                  <div>
+                    <dt className="text-[10px] uppercase tracking-[0.14em] text-[var(--text-tertiary)] font-medium">
+                      Win rate
+                    </dt>
+                    <dd className="mt-0.5 text-[14px] font-semibold tabular text-[var(--text-primary)]">
+                      {(summary.win_rate * 100).toFixed(1)}%
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-[10px] uppercase tracking-[0.14em] text-[var(--text-tertiary)] font-medium">
+                      Max DD
+                    </dt>
+                    <dd className="mt-0.5 text-[14px] font-semibold tabular text-[var(--text-primary)]">
+                      {summary.max_drawdown_pct.toFixed(2)}%
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-[10px] uppercase tracking-[0.14em] text-[var(--text-tertiary)] font-medium">
+                      Trades
+                    </dt>
+                    <dd className="mt-0.5 text-[14px] font-semibold tabular text-[var(--text-primary)]">
+                      {summary.total_trades}
+                      <span className="ml-1 text-[11px] font-normal text-[var(--text-tertiary)]">
+                        ({summary.winning_trades}W·{summary.losing_trades}L)
+                      </span>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-[10px] uppercase tracking-[0.14em] text-[var(--text-tertiary)] font-medium">
+                      Best / Worst
+                    </dt>
+                    <dd className="mt-0.5 text-[14px] font-semibold tabular">
+                      <span className="text-[var(--success)]">{summary.best_symbol ?? "—"}</span>
+                      <span className="mx-1 text-[var(--text-tertiary)] font-normal">/</span>
+                      <span className="text-[var(--warning)]">{summary.worst_symbol ?? "—"}</span>
+                    </dd>
+                  </div>
+                </dl>
+                <div className="mt-4 pt-3 border-t border-[var(--border)] text-[11px] sm:text-[11.5px] text-[var(--text-tertiary)] leading-relaxed">
+                  30-day baseline (transparency):{" "}
+                  <span
+                    className={`tabular font-medium ${
+                      data30d.summary.total_pnl_usd >= 0
+                        ? "text-[var(--success)]"
+                        : "text-[var(--warning)]"
+                    }`}
+                  >
+                    {fmtUsd(data30d.summary.total_pnl_usd, { signed: true })}
+                  </span>{" "}
+                  · {data30d.summary.total_trades} trades · win rate{" "}
+                  <span className="tabular text-[var(--text-secondary)]">
+                    {(data30d.summary.win_rate * 100).toFixed(1)}%
+                  </span>
+                </div>
+              </div>
+              <div className="border-t lg:border-t-0 lg:border-l border-[var(--border)] bg-[var(--surface-0)]/50 p-5 sm:p-6 flex flex-col justify-between gap-3">
+                <div className="text-[10.5px] uppercase tracking-[0.14em] text-[var(--text-tertiary)] font-medium">
+                  Equity curve · {summary.total_trades} trades · hourly OHLC
+                </div>
+                <div className="flex-1 grid place-items-center">
+                  <MiniSpark
+                    points={equity_curve}
+                    positive={positive}
+                    width={300}
+                    height={120}
+                  />
+                </div>
+                <div className="flex items-center justify-between text-[11px] tabular text-[var(--text-tertiary)]">
+                  <span>{fmtUsd(summary.starting_capital_usd)}</span>
+                  <span
+                    className={positive ? "text-[var(--success)]" : "text-[var(--warning)]"}
+                  >
+                    {fmtUsd(summary.ending_capital_usd)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Supporting KPI cards */}
+          <section className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-3.5 lg:gap-4">
             <KPICard
               label="Tests passed"
               value={`${tests.passed} / ${tests.passed}`}
@@ -115,13 +228,6 @@ export default function Page() {
               hint={`${summary.buy_count} BUY · ${summary.sell_count} SELL · win rate ${(summary.win_rate * 100).toFixed(1)}%`}
               tone="info"
               icon={Layers}
-            />
-            <KPICard
-              label="Hackathon-window PnL"
-              value={fmtUsd(summary.total_pnl_usd, { signed: true })}
-              hint={`${fmtPct(summary.total_pnl_pct, { signed: true, decimals: 4 })} on $${summary.starting_capital_usd.toLocaleString("en-US")} · max DD ${summary.max_drawdown_pct.toFixed(2)}% · 30d baseline ${fmtUsd(data30d.summary.total_pnl_usd, { signed: true })}`}
-              tone={positive ? "success" : "warning"}
-              icon={positive ? TrendingUp : TrendingDown}
             />
             <KPICard
               label="Capital safety"
@@ -168,6 +274,7 @@ export default function Page() {
             </Section>
 
             <Section
+              id="risk"
               title="What blocked xStocks live"
               description="Account-class restriction, transparently diagnosed with API evidence."
               tone="warning"
@@ -287,6 +394,7 @@ export default function Page() {
             </Section>
 
             <Section
+              id="system"
               title="System overview"
               description="Deterministic engine, defence-in-depth, no shortcuts."
               tone="gold"
@@ -298,6 +406,7 @@ export default function Page() {
 
           {/* Backtest Run */}
           <Section
+            id="performance"
             title={`Backtest run · hackathon window · ${periodLabel}`}
             description={`Universe: ${universe.join(" · ")} — hourly OHLC replayed through the deterministic engine over the lablab AI Agent Olympics submission window. No live or paper orders placed. 30-day baseline (${fmtUsd(data30d.summary.total_pnl_usd, { signed: true })}, ${data30d.summary.total_trades} trades) reported alongside in the KPI card and in docs/SUBMISSION.md.`}
             tone="info"
@@ -405,7 +514,7 @@ export default function Page() {
 
           {/* Activity feed + Judge takeaway */}
           <section className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-3 lg:gap-4">
-            <Section title="Recent activity" description="Operational signals from the deployed agent." tone="info" icon={Sparkles}>
+            <Section id="logs" title="Recent activity" description="Operational signals from the deployed agent." tone="info" icon={Sparkles}>
               <ActivityFeed
                 generatedAt={data.generated_at}
                 testsPassed={tests.passed}
@@ -418,7 +527,7 @@ export default function Page() {
             <div className="space-y-3 lg:space-y-4">
               <JudgeTakeaway message="Production-grade agent with real exchange integration, strong safeguards, and a clearly diagnosed venue-level xStocks restriction — ready for any eligible account." />
 
-              <Section title="Per-symbol breakdown" tone="neutral" icon={CircleDollarSign}>
+              <Section id="trades" title="Per-symbol breakdown" tone="neutral" icon={CircleDollarSign}>
                 <div className="overflow-x-auto -mx-2 px-2 scrollbar-thin">
                   <table className="w-full text-[12px] tabular">
                     <thead>

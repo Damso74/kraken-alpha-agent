@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
-  Activity,
   BarChart3,
+  GitMerge,
   LayoutDashboard,
   ListChecks,
   Menu,
-  Settings as SettingsIcon,
   ShieldCheck,
   Terminal,
   Waves,
@@ -15,23 +14,63 @@ import {
 } from "lucide-react";
 import { GithubIcon } from "@/components/GithubIcon";
 import { cn } from "@/lib/cn";
+import { data, fmtUsd } from "@/lib/data";
 
 type NavItem = {
+  id: string;
   label: string;
   icon: typeof LayoutDashboard;
-  active?: boolean;
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "Overview", icon: LayoutDashboard, active: true },
-  { label: "Performance", icon: BarChart3 },
-  { label: "Trades", icon: ListChecks },
-  { label: "Risk", icon: ShieldCheck },
-  { label: "Logs", icon: Terminal },
-  { label: "Settings", icon: SettingsIcon },
+  { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "performance", label: "Performance", icon: BarChart3 },
+  { id: "trades", label: "Trades", icon: ListChecks },
+  { id: "risk", label: "Risk", icon: ShieldCheck },
+  { id: "logs", label: "Logs", icon: Terminal },
+  { id: "system", label: "System", icon: GitMerge },
 ];
 
-function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
+function SnapshotStatusCard() {
+  const { summary } = data;
+  const positive = summary.total_pnl_usd >= 0;
+  const winRatePct = (summary.win_rate * 100).toFixed(0);
+  return (
+    <div className="rounded-md border border-[var(--border)] bg-[var(--surface-1)] px-3 py-2.5">
+      <div className="flex items-center gap-2">
+        <span className="relative flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--gold)] opacity-60" />
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--gold)]" />
+        </span>
+        <span className="text-[11.5px] font-medium text-[var(--gold)]">
+          Snapshot ready
+        </span>
+      </div>
+      <div className="mt-1.5 text-[10.5px] text-[var(--text-tertiary)] leading-tight">
+        Backtest mode · hackathon window
+      </div>
+      <div className="mt-1.5 flex items-center justify-between gap-2 text-[10.5px] tabular">
+        <span
+          className={cn(
+            "font-semibold",
+            positive ? "text-[var(--success)]" : "text-[var(--warning)]",
+          )}
+        >
+          {fmtUsd(summary.total_pnl_usd, { signed: true })}
+        </span>
+        <span className="text-[var(--text-tertiary)]">{winRatePct}% win rate</span>
+      </div>
+    </div>
+  );
+}
+
+function SidebarContent({
+  activeId,
+  onNavClick,
+}: {
+  activeId: string;
+  onNavClick?: (id: string) => void;
+}) {
   return (
     <>
       <div className="px-5 pt-6 pb-5 border-b border-[var(--border)]">
@@ -46,44 +85,53 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
               Agent
             </div>
             <div className="mt-1 text-[11px] text-[var(--text-tertiary)] leading-none">
-              v1.0.0
+              Read-only inspection
             </div>
           </div>
         </div>
       </div>
 
-      <nav className="flex-1 px-3 py-4 flex flex-col gap-0.5 overflow-y-auto">
+      <nav
+        aria-label="Page sections"
+        className="flex-1 px-3 py-4 flex flex-col gap-0.5 overflow-y-auto"
+      >
         <div className="px-2 pb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
           Workspace
         </div>
-        {NAV_ITEMS.map(({ label, icon: Icon, active }) => (
-          <button
-            type="button"
-            key={label}
-            onClick={onNavClick}
-            className={cn(
-              "group relative flex items-center gap-3 px-3 py-2 rounded-md text-[13px] transition-colors text-left",
-              active
-                ? "bg-[color:var(--success)]/[0.06] text-[var(--text-primary)]"
-                : "text-[var(--text-secondary)] hover:bg-[var(--surface-1)] hover:text-[var(--text-primary)]",
-            )}
-          >
-            {active ? (
-              <span
-                aria-hidden
-                className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-[var(--accent-emerald)] shadow-[0_0_10px_rgba(16,185,129,0.55)]"
-              />
-            ) : null}
-            <Icon
+        {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
+          const active = activeId === id;
+          return (
+            <a
+              key={id}
+              href={`#${id}`}
+              aria-current={active ? "true" : undefined}
+              onClick={() => onNavClick?.(id)}
               className={cn(
-                "h-4 w-4 shrink-0 transition-colors",
-                active ? "text-[var(--accent-emerald)]" : "text-[var(--text-tertiary)] group-hover:text-[var(--text-secondary)]",
+                "group relative flex items-center gap-3 px-3 py-2 rounded-md text-[13px] transition-colors text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-emerald)]",
+                active
+                  ? "bg-[color:var(--success)]/[0.06] text-[var(--text-primary)]"
+                  : "text-[var(--text-secondary)] hover:bg-[var(--surface-1)] hover:text-[var(--text-primary)]",
               )}
-              strokeWidth={1.8}
-            />
-            <span className="font-medium">{label}</span>
-          </button>
-        ))}
+            >
+              {active ? (
+                <span
+                  aria-hidden
+                  className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-[var(--accent-emerald)] shadow-[0_0_10px_rgba(16,185,129,0.55)]"
+                />
+              ) : null}
+              <Icon
+                className={cn(
+                  "h-4 w-4 shrink-0 transition-colors",
+                  active
+                    ? "text-[var(--accent-emerald)]"
+                    : "text-[var(--text-tertiary)] group-hover:text-[var(--text-secondary)]",
+                )}
+                strokeWidth={1.8}
+              />
+              <span className="font-medium">{label}</span>
+            </a>
+          );
+        })}
       </nav>
 
       <div className="border-t border-[var(--border)] px-4 py-4 flex flex-col gap-3">
@@ -96,31 +144,59 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
           <GithubIcon className="h-3.5 w-3.5" strokeWidth={1.8} />
           <span className="truncate">Damso74/kraken-alpha-agent</span>
         </a>
-        <div className="rounded-md border border-[var(--border)] bg-[var(--surface-1)] px-3 py-2.5">
-          <div className="flex items-center gap-2">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--success)] opacity-60" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--success)]" />
-            </span>
-            <span className="text-[11.5px] font-medium text-[var(--success)]">
-              Agent Online
-            </span>
-          </div>
-          <div className="mt-1.5 flex items-center justify-between gap-2 text-[10.5px] text-[var(--text-tertiary)] tabular">
-            <span className="inline-flex items-center gap-1">
-              <Activity className="h-2.5 w-2.5" strokeWidth={2} />
-              <span>Uptime 02h 14m</span>
-            </span>
-            <span>v1.0.0</span>
-          </div>
-        </div>
+        <SnapshotStatusCard />
       </div>
     </>
   );
 }
 
+function useActiveSection(ids: string[]): string {
+  const [activeId, setActiveId] = useState<string>(ids[0] ?? "");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const elements = ids
+      .map((id) => document.getElementById(id))
+      .filter((el): el is HTMLElement => el !== null);
+    if (elements.length === 0) return;
+
+    const visibility = new Map<string, number>();
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          visibility.set(entry.target.id, entry.intersectionRatio);
+        }
+        let bestId = "";
+        let bestRatio = -1;
+        for (const [id, ratio] of visibility) {
+          if (ratio > bestRatio) {
+            bestRatio = ratio;
+            bestId = id;
+          }
+        }
+        if (bestId && bestRatio > 0) {
+          setActiveId(bestId);
+        }
+      },
+      {
+        rootMargin: "-20% 0px -55% 0px",
+        threshold: [0, 0.1, 0.25, 0.5, 0.75, 1],
+      },
+    );
+
+    for (const el of elements) {
+      observer.observe(el);
+    }
+    return () => observer.disconnect();
+  }, [ids]);
+
+  return activeId;
+}
+
 export function Sidebar() {
   const [open, setOpen] = useState(false);
+  const activeId = useActiveSection(NAV_ITEMS.map((item) => item.id));
 
   useEffect(() => {
     if (open) {
@@ -140,6 +216,10 @@ export function Sidebar() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  const handleMobileNavClick = useCallback(() => {
+    setOpen(false);
+  }, []);
+
   return (
     <>
       {/* Mobile hamburger button */}
@@ -154,7 +234,7 @@ export function Sidebar() {
 
       {/* Desktop sidebar (sticky) */}
       <aside className="hidden lg:flex w-[240px] shrink-0 flex-col border-r border-[var(--border)] bg-[var(--surface-0)] sticky top-0 h-screen">
-        <SidebarContent />
+        <SidebarContent activeId={activeId} />
       </aside>
 
       {/* Mobile drawer */}
@@ -190,7 +270,7 @@ export function Sidebar() {
           >
             <X className="h-4 w-4" strokeWidth={2} />
           </button>
-          <SidebarContent onNavClick={() => setOpen(false)} />
+          <SidebarContent activeId={activeId} onNavClick={handleMobileNavClick} />
         </aside>
       </div>
     </>

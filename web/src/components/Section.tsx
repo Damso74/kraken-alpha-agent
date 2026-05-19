@@ -20,6 +20,7 @@ const TONE_ICON: Record<Tone, string> = {
 };
 
 export function Section({
+  id,
   title,
   description,
   tone = "neutral",
@@ -28,6 +29,7 @@ export function Section({
   className,
   contentClassName,
 }: {
+  id?: string;
   title: string;
   description?: string;
   tone?: Tone;
@@ -38,8 +40,9 @@ export function Section({
 }) {
   return (
     <section
+      id={id}
       className={cn(
-        "rounded-xl bg-[var(--surface-1)] border border-[var(--border)] overflow-hidden",
+        "rounded-xl bg-[var(--surface-1)] border border-[var(--border)] overflow-hidden scroll-mt-24",
         className,
       )}
     >
