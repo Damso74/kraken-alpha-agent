@@ -1,0 +1,60 @@
+{
+  "schema_version": "phase13-v1",
+  "generated_by": "Agent 51",
+  "protocols": {
+    "protocol_a": {
+      "label": "single-agent",
+      "scores": {
+        "scope": 9,
+        "minimal_diff": 10,
+        "data_quality": 8,
+        "test_quality": 7,
+        "placebo_quality": 8,
+        "red_team_quality": 6,
+        "reproducibility": 9,
+        "verdict_clarity": 8,
+        "ability_to_say_no": 7,
+        "overengineering_control": 9
+      },
+      "total": 81,
+      "max": 110
+    },
+    "protocol_b": {
+      "label": "builder_red_team",
+      "scores": {
+        "scope": 9,
+        "minimal_diff": 9,
+        "data_quality": 8,
+        "test_quality": 7,
+        "placebo_quality": 9,
+        "red_team_quality": 10,
+        "reproducibility": 9,
+        "verdict_clarity": 9,
+        "ability_to_say_no": 9,
+        "overengineering_control": 8
+      },
+      "total": 87,
+      "max": 110
+    },
+    "protocol_c": {
+      "label": "full_committee",
+      "scores": {
+        "scope": 8,
+        "minimal_diff": 7,
+        "data_quality": 9,
+        "test_quality": 7,
+        "placebo_quality": 9,
+        "red_team_quality": 9,
+        "reproducibility": 10,
+        "verdict_clarity": 10,
+        "ability_to_say_no": 10,
+        "overengineering_control": 7
+      },
+      "total": 86,
+      "max": 110
+    }
+  },
+  "recommended_protocol_phase14": "protocol_b",
+  "recommended_protocol_near_oos": "protocol_c",
+  "research_oos_count": 0
+}

@@ -1,13 +1,15 @@
 """Temporal hold-out utilities for G4 out-of-sample checks (research-only).
 
-Pure functions — no network I/O. See ``docs/PAPER_OBSERVATION_DESIGN.md`` (G4)
-and ``docs/SIGNAL_REJECTION_POLICY.md``.
+Pure functions — no network I/O. Optional ``embargo_days`` removes events within
+N UTC calendar days of the train/test split (see ``apply_embargo``). See
+``docs/PAPER_OBSERVATION_DESIGN.md`` (G4) and ``docs/SIGNAL_REJECTION_POLICY.md``.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
+from datetime import datetime, timezone
+from typing import Any, Literal, Mapping, Sequence
 
 from src.research.event_study import EventStudyWindow, run_event_study
 from src.research.placebo import benjamini_hochberg, empirical_p_value
@@ -56,6 +58,10 @@ class HoldoutEvaluation:
     cells: tuple[HoldoutCellResult, ...]
     oos_survives: bool
     failure_reason: str | None
+    embargo_days_requested: int = 0
+    embargo_days_applied: int = 0
+    train_events_removed_embargo: int = 0
+    test_events_removed_embargo: int = 0
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -65,6 +71,10 @@ class HoldoutEvaluation:
           "n_test_candles": self.split.n_test,
           "train_events": self.train_events,
           "test_events": self.test_events,
+          "embargo_days_requested": self.embargo_days_requested,
+          "embargo_days_applied": self.embargo_days_applied,
+          "train_events_removed_embargo": self.train_events_removed_embargo,
+          "test_events_removed_embargo": self.test_events_removed_embargo,
           "oos_survives": self.oos_survives,
           "failure_reason": self.failure_reason,
           "cells": [
@@ -119,6 +129,39 @@ def filter_events_to_candles(
     """Keep events whose timestamp exists in ``candles``."""
     allowed = {int(c["timestamp"]) for c in candles}
     return sorted({int(e) for e in events if int(e) in allowed})
+
+
+def apply_embargo(
+    events: Sequence[int],
+    *,
+    split_timestamp: int | None,
+    embargo_days: int,
+    side: Literal["train", "test"],
+) -> tuple[list[int], int]:
+    """Drop events within ``embargo_days`` UTC calendar days of the hold-out split.
+
+    Train keeps events strictly more than ``embargo_days`` before the split day.
+    Test keeps events strictly more than ``embargo_days`` after the split day.
+    Returns ``(filtered_events, n_removed)``.
+    """
+    if embargo_days <= 0 or split_timestamp is None or not events:
+        return sorted({int(e) for e in events}), 0
+
+    split_day = datetime.fromtimestamp(int(split_timestamp), tz=timezone.utc).date()
+    kept: list[int] = []
+    removed = 0
+    for ev in events:
+        ev_day = datetime.fromtimestamp(int(ev), tz=timezone.utc).date()
+        delta_days = (ev_day - split_day).days
+        if side == "train":
+            if delta_days > -embargo_days:
+                removed += 1
+                continue
+        elif delta_days < embargo_days:
+            removed += 1
+            continue
+        kept.append(int(ev))
+    return sorted(kept), removed
 
 
 def _cell_p_values(
@@ -192,6 +235,7 @@ def evaluate_holdout_g4(
     metrics: Sequence[str],
     windows: Sequence[EventStudyWindow],
     holdout_fraction: float = DEFAULT_HOLDOUT_FRACTION,
+    embargo_days: int = 0,
     n_placebos: int = 200,
     seed: int = 20260519,
     alpha: float = DEFAULT_ALPHA,
@@ -199,9 +243,27 @@ def evaluate_holdout_g4(
     reference_window: str = "post_7",
 ) -> HoldoutEvaluation:
     """G4: BH or empirical p < alpha on **test** partition for reference cell."""
+    if embargo_days < 0:
+        raise ValueError(f"embargo_days must be >= 0, got {embargo_days}")
+
     split = split_candles_holdout(candles, holdout_fraction=holdout_fraction)
-    train_events = filter_events_to_candles(events, split.train_candles)
-    test_events = filter_events_to_candles(events, split.test_candles)
+    train_raw = filter_events_to_candles(events, split.train_candles)
+    test_raw = filter_events_to_candles(events, split.test_candles)
+    train_events, train_removed = apply_embargo(
+        train_raw,
+        split_timestamp=split.split_timestamp,
+        embargo_days=embargo_days,
+        side="train",
+    )
+    test_events, test_removed = apply_embargo(
+        test_raw,
+        split_timestamp=split.split_timestamp,
+        embargo_days=embargo_days,
+        side="test",
+    )
+    embargo_applied = (
+        embargo_days if embargo_days > 0 and split.split_timestamp is not None else 0
+    )
 
     if split.n_test < MIN_TEST_CANDLES:
         return HoldoutEvaluation(
@@ -211,6 +273,24 @@ def evaluate_holdout_g4(
             cells=(),
             oos_survives=False,
             failure_reason="ELIG_G4_FAIL_OOS: test window too short",
+            embargo_days_requested=embargo_days,
+            embargo_days_applied=embargo_applied,
+            train_events_removed_embargo=train_removed,
+            test_events_removed_embargo=test_removed,
+        )
+
+    if embargo_days > 0 and embargo_applied == 0:
+        return HoldoutEvaluation(
+            split=split,
+            train_events=len(train_events),
+            test_events=len(test_events),
+            cells=(),
+            oos_survives=False,
+            failure_reason="ELIG_G4_FAIL_OOS: embargo requested but split undefined",
+            embargo_days_requested=embargo_days,
+            embargo_days_applied=0,
+            train_events_removed_embargo=train_removed,
+            test_events_removed_embargo=test_removed,
         )
 
     def uniform_placebo(pool: list[int], n_events: int, sub_seed: int) -> list[int]:
@@ -284,4 +364,8 @@ def evaluate_holdout_g4(
         cells=tuple(merged),
         oos_survives=survives,
         failure_reason=reason,
+        embargo_days_requested=embargo_days,
+        embargo_days_applied=embargo_applied,
+        train_events_removed_embargo=train_removed,
+        test_events_removed_embargo=test_removed,
     )

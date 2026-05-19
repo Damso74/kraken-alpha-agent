@@ -1,0 +1,1330 @@
+{
+  "tag": "volume_shock",
+  "phase": "phase13",
+  "protocol": "protocol_a",
+  "hypothesis": "Pre-registered volume shock (z>=2) multi-asset proxy for forward vol/risk \u2014 NOT directional, NOT tradable",
+  "window_days": 365,
+  "ohlc_source": "cache",
+  "git_commit": "a066001f4a3f93e7f4dea1643451c7b469c3ecf3",
+  "embargo_days_requested": 7,
+  "embargo_days_applied": 7,
+  "holdout_enabled": true,
+  "holdout_fraction": 0.5,
+  "assets": {
+    "BTC": {
+      "status": "ok",
+      "ticker": "BTC",
+      "window_days": 365,
+      "ohlc_source": "cache",
+      "candles_count": 371,
+      "variants": {
+        "vol_z20_high": {
+          "hypothesis": "vol_z20_high on BTC daily OHLC -> forward return / vol / max DD (z>=2.0 pre-registered; NOT tradeable)",
+          "verdict": "supported",
+          "events_count": 18,
+          "events_used": 18,
+          "events_skipped_oob": 0,
+          "candles_count": 371,
+          "n_placebos": 200,
+          "seed": 20260519,
+          "alpha": 0.05,
+          "baseline": {
+            "return": 0.0,
+            "max_drawdown": 0.0
+          },
+          "cells": [
+            {
+              "metric": "return",
+              "window": "post_1",
+              "mean": 0.0,
+              "baseline": 0.0,
+              "n_events": 18,
+              "two_sided_p": 1.0
+            },
+            {
+              "metric": "return",
+              "window": "post_3",
+              "mean": -0.011441981346328628,
+              "baseline": 0.0,
+              "n_events": 18,
+              "two_sided_p": 0.1691542288557214
+            },
+            {
+              "metric": "return",
+              "window": "post_7",
+              "mean": -0.04346723092026633,
+              "baseline": 0.0,
+              "n_events": 18,
+              "two_sided_p": 0.009950248756218905
+            },
+            {
+              "metric": "realized_vol",
+              "window": "post_3",
+              "mean": 0.02021391901338075,
+              "baseline": NaN,
+              "n_events": 18,
+              "two_sided_p": 0.208955223880597
+            },
+            {
+              "metric": "realized_vol",
+              "window": "post_7",
+              "mean": 0.03108952616619763,
+              "baseline": NaN,
+              "n_events": 18,
+              "two_sided_p": 0.009950248756218905
+            },
+            {
+              "metric": "max_drawdown",
+              "window": "post_1",
+              "mean": 0.0,
+              "baseline": 0.0,
+              "n_events": 18,
+              "two_sided_p": 1.0
+            },
+            {
+              "metric": "max_drawdown",
+              "window": "post_3",
+              "mean": -0.026333712921874145,
+              "baseline": 0.0,
+              "n_events": 18,
+              "two_sided_p": 0.06965174129353234
+            },
+            {
+              "metric": "max_drawdown",
+              "window": "post_7",
+              "mean": -0.08129340833456399,
+              "baseline": 0.0,
+              "n_events": 18,
+              "two_sided_p": 0.009950248756218905
+            }
+          ],
+          "bh_rejected": 3,
+          "bh_q_values": [
+            1.0,
+            0.27064676616915423,
+            0.026533996683250415,
+            0.27860696517412936,
+            0.026533996683250415,
+            1.0,
+            0.13930348258706468,
+            0.026533996683250415
+          ],
+          "bh_rejected_mask": [
+            false,
+            false,
+            true,
+            false,
+            true,
+            false,
+            false,
+            true
+          ],
+          "variant": "vol_z20_high",
+          "ticker": "BTC",
+          "window_days": 365,
+          "event_rate_fraction": 0.0485,
+          "g2_blocked_by_rate": false,
+          "placebos": {
+            "random_dates_bootstrap_n": 200,
+            "shift_plus_30d_seconds": 2592000,
+            "aligned_metric": "return",
+            "aligned_window": "post_7",
+            "shift_return_post_7_p": 1.0,
+            "shuffle_labels_return_post_7_p": 1.0,
+            "shift_return_post_3_p": 1.0,
+            "shuffle_labels_return_post_3_p": 1.0
+          },
+          "research_verdict": "weak evidence",
+          "tradable": false,
+          "holdout": {
+            "holdout_fraction": 0.5013477088948787,
+            "split_timestamp": 1763164800,
+            "n_train_candles": 185,
+            "n_test_candles": 186,
+            "train_events": 9,
+            "test_events": 7,
+            "embargo_days_requested": 7,
+            "embargo_days_applied": 7,
+            "train_events_removed_embargo": 1,
+            "test_events_removed_embargo": 1,
+            "oos_survives": true,
+            "failure_reason": null,
+            "cells": [
+              {
+                "metric": "max_drawdown",
+                "window": "post_1",
+                "train_mean": 0.0,
+                "train_p": 1.0,
+                "test_mean": 0.0,
+                "test_p": 1.0,
+                "train_bh_rejected": false,
+                "test_bh_rejected": false
+              },
+              {
+                "metric": "max_drawdown",
+                "window": "post_3",
+                "train_mean": -0.005550130665853614,
+                "train_p": 0.14925373134328357,
+                "test_mean": -0.05552673010359844,
+                "test_p": 0.009950248756218905,
+                "train_bh_rejected": false,
+                "test_bh_rejected": true
+              },
+              {
+                "metric": "max_drawdown",
+                "window": "post_7",
+                "train_mean": -0.03665807040228455,
+                "train_p": 0.736318407960199,
+                "test_mean": -0.1447623012098875,
+                "test_p": 0.009950248756218905,
+                "train_bh_rejected": false,
+                "test_bh_rejected": true
+              },
+              {
+                "metric": "realized_vol",
+                "window": "post_3",
+                "train_mean": 0.012019556507629665,
+                "train_p": 0.6865671641791045,
+                "test_mean": 0.03496262612472341,
+                "test_p": 0.13930348258706468,
+                "train_bh_rejected": false,
+                "test_bh_rejected": false
+              },
+              {
+                "metric": "realized_vol",
+                "window": "post_7",
+                "train_mean": 0.015259870428433495,
+                "train_p": 0.5373134328358209,
+                "test_mean": 0.05492263591595688,
+                "test_p": 0.009950248756218905,
+                "train_bh_rejected": false,
+                "test_bh_rejected": true
+              },
+              {
+                "metric": "return",
+                "window": "post_1",
+                "train_mean": 0.0,
+                "train_p": 1.0,
+                "test_mean": 0.0,
+                "test_p": 1.0,
+                "train_bh_rejected": false,
+                "test_bh_rejected": false
+              },
+              {
+                "metric": "return",
+                "window": "post_3",
+                "train_mean": 0.011303937314827754,
+                "train_p": 0.23880597014925373,
+                "test_mean": -0.04490524657923828,
+                "test_p": 0.01990049751243781,
+                "train_bh_rejected": false,
+                "test_bh_rejected": true
+              },
+              {
+                "metric": "return",
+                "window": "post_7",
+                "train_mean": -0.015244179904677083,
+                "train_p": 0.3681592039800995,
+                "test_mean": -0.08690132249371554,
+                "test_p": 0.009950248756218905,
+                "train_bh_rejected": false,
+                "test_bh_rejected": true
+              }
+            ]
+          },
+          "holdout_status": "passed",
+          "embargo_days_requested": 7,
+          "embargo_days_applied": 7,
+          "data_provenance": {
+            "ohlc": {
+              "source": "cache",
+              "path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_daily_BTC.json",
+              "sha256": "32d7b6b00974ffb41608d1355bad7e2b036846b57e03d74c89dccb83068fa9b6",
+              "row_count": 736,
+              "generated_at": "2026-05-19T17:54:14.786791+00:00",
+              "schema_version": "phase12-v1"
+            }
+          }
+        },
+        "vol_z60_high": {
+          "hypothesis": "vol_z60_high on BTC daily OHLC -> forward return / vol / max DD (z>=2.0 pre-registered; NOT tradeable)",
+          "verdict": "supported",
+          "events_count": 16,
+          "events_used": 16,
+          "events_skipped_oob": 0,
+          "candles_count": 371,
+          "n_placebos": 200,
+          "seed": 20260519,
+          "alpha": 0.05,
+          "baseline": {
+            "return": 0.0,
+            "max_drawdown": 0.0
+          },
+          "cells": [
+            {
+              "metric": "return",
+              "window": "post_1",
+              "mean": 0.0,
+              "baseline": 0.0,
+              "n_events": 16,
+              "two_sided_p": 1.0
+            },
+            {
+              "metric": "return",
+              "window": "post_3",
+              "mean": -0.006702632178687676,
+              "baseline": 0.0,
+              "n_events": 16,
+              "two_sided_p": 0.44776119402985076
+            },
+            {
+              "metric": "return",
+              "window": "post_7",
+              "mean": -0.043486305601387575,
+              "baseline": 0.0,
+              "n_events": 16,
+              "two_sided_p": 0.009950248756218905
+            },
+            {
+              "metric": "realized_vol",
+              "window": "post_3",
+              "mean": 0.03877627497700411,
+              "baseline": NaN,
+              "n_events": 16,
+              "two_sided_p": 0.009950248756218905
+            },
+            {
+              "metric": "realized_vol",
+              "window": "post_7",
+              "mean": 0.039698442482837555,
+              "baseline": NaN,
+              "n_events": 16,
+              "two_sided_p": 0.009950248756218905
+            },
+            {
+              "metric": "max_drawdown",
+              "window": "post_1",
+              "mean": 0.0,
+              "baseline": 0.0,
+              "n_events": 16,
+              "two_sided_p": 1.0
+            },
+            {
+              "metric": "max_drawdown",
+              "window": "post_3",
+              "mean": -0.036605114162403155,
+              "baseline": 0.0,
+              "n_events": 16,
+              "two_sided_p": 0.009950248756218905
+            },
+            {
+              "metric": "max_drawdown",
+              "window": "post_7",
+              "mean": -0.09536085828691905,
+              "baseline": 0.0,
+              "n_events": 16,
+              "two_sided_p": 0.009950248756218905
+            }
+          ],
+          "bh_rejected": 5,
+          "bh_q_values": [
+            1.0,
+            0.5970149253731344,
+            0.015920398009950248,
+            0.015920398009950248,
+            0.015920398009950248,
+            1.0,
+            0.015920398009950248,
+            0.015920398009950248
+          ],
+          "bh_rejected_mask": [
+            false,
+            false,
+            true,
+            true,
+            true,
+            false,
+            true,
+            true
+          ],
+          "variant": "vol_z60_high",
+          "ticker": "BTC",
+          "window_days": 365,
+          "event_rate_fraction": 0.0431,
+          "g2_blocked_by_rate": false,
+          "placebos": {
+            "random_dates_bootstrap_n": 200,
+            "shift_plus_30d_seconds": 2592000,
+            "aligned_metric": "return",
+            "aligned_window": "post_7",
+            "shift_return_post_7_p": 1.0,
+            "shuffle_labels_return_post_7_p": 1.0,
+            "shift_return_post_3_p": 1.0,
+            "shuffle_labels_return_post_3_p": 1.0
+          },
+          "research_verdict": "weak evidence",
+          "tradable": false,
+          "holdout": {
+            "holdout_fraction": 0.5013477088948787,
+            "split_timestamp": 1763164800,
+            "n_train_candles": 185,
+            "n_test_candles": 186,
+            "train_events": 6,
+            "test_events": 8,
+            "embargo_days_requested": 7,
+            "embargo_days_applied": 7,
+            "train_events_removed_embargo": 1,
+            "test_events_removed_embargo": 1,
+            "oos_survives": true,
+            "failure_reason": null,
+            "cells": [
+              {
+                "metric": "max_drawdown",
+                "window": "post_1",
+                "train_mean": 0.0,
+                "train_p": 1.0,
+                "test_mean": 0.0,
+                "test_p": 1.0,
+                "train_bh_rejected": false,
+                "test_bh_rejected": false
+              },
+              {
+                "metric": "max_drawdown",
+                "window": "post_3",
+                "train_mean": -0.009056167427266611,
+                "train_p": 0.5174129353233831,
+                "test_mean": -0.061997034519873484,
+                "test_p": 0.009950248756218905,
+                "train_bh_rejected": false,
+                "test_bh_rejected": true
+              },
+              {
+                "metric": "max_drawdown",
+                "window": "post_7",
+                "train_mean": -0.04534660196949598,
+                "train_p": 0.22885572139303484,
+                "test_mean": -0.14170893910516882,
+                "test_p": 0.009950248756218905,
+                "train_bh_rejected": false,
+                "test_bh_rejected": true
+              },
+              {
+                "metric": "realized_vol",
+                "window": "post_3",
+                "train_mean": 0.01692710907245919,
+                "train_p": 0.42786069651741293,
+                "test_mean": 0.06349019929977348,
+                "test_p": 0.009950248756218905,
+                "train_bh_rejected": false,
+                "test_bh_rejected": true
+              },
+              {
+                "metric": "realized_vol",
+                "window": "post_7",
+                "train_mean": 0.0170951031854078,
+                "train_p": 0.8159203980099502,
+                "test_mean": 0.06184878436112454,
+                "test_p": 0.009950248756218905,
+                "train_bh_rejected": false,
+                "test_bh_rejected": true
+              },
+              {
+                "metric": "return",
+                "window": "post_1",
+                "train_mean": 0.0,
+                "train_p": 1.0,
+                "test_mean": 0.0,
+                "test_p": 1.0,
+                "train_bh_rejected": false,
+                "test_bh_rejected": false
+              },
+              {
+                "metric": "return",
+                "window": "post_3",
+                "train_mean": 0.013867579907733067,
+                "train_p": 0.1890547263681592,
+                "test_mean": -0.024636652536588012,
+                "test_p": 0.11940298507462686,
+                "train_bh_rejected": false,
+                "test_bh_rejected": false
+              },
+              {
+                "metric": "return",
+                "window": "post_7",
+                "train_mean": -0.011274702923656702,
+                "train_p": 0.5970149253731343,
+                "test_mean": -0.0739036740141962,
+                "test_p": 0.009950248756218905,
+                "train_bh_rejected": false,
+                "test_bh_rejected": true
+              }
+            ]
+          },
+          "holdout_status": "passed",
+          "embargo_days_requested": 7,
+          "embargo_days_applied": 7,
+          "data_provenance": {
+            "ohlc": {
+              "source": "cache",
+              "path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_daily_BTC.json",
+              "sha256": "32d7b6b00974ffb41608d1355bad7e2b036846b57e03d74c89dccb83068fa9b6",
+              "row_count": 736,
+              "generated_at": "2026-05-19T17:54:14.786791+00:00",
+              "schema_version": "phase12-v1"
+            }
+          }
+        },
+        "vol_z20_range_compression": {
+          "hypothesis": "vol_z20_range_compression on BTC daily OHLC -> forward return / vol / max DD (z>=2.0 pre-registered; NOT tradeable)",
+          "verdict": "blocked: insufficient events",
+          "events_count": 0,
+          "events_used": 0,
+          "events_skipped_oob": 0,
+          "candles_count": 371,
+          "n_placebos": 200,
+          "seed": 20260519,
+          "alpha": 0.05,
+          "baseline": {
+            "return": 0.0,
+            "max_drawdown": 0.0
+          },
+          "cells": [],
+          "variant": "vol_z20_range_compression",
+          "ticker": "BTC",
+          "window_days": 365,
+          "event_rate_fraction": 0.0,
+          "g2_blocked_by_rate": false,
+          "placebos": {
+            "random_dates_bootstrap_n": 200,
+            "shift_plus_30d_seconds": 2592000,
+            "aligned_metric": "return",
+            "aligned_window": "post_7",
+            "shift_return_post_7_p": null,
+            "shuffle_labels_return_post_7_p": null,
+            "shift_return_post_3_p": null,
+            "shuffle_labels_return_post_3_p": null
+          },
+          "research_verdict": "blocked",
+          "tradable": false,
+          "data_provenance": {
+            "ohlc": {
+              "source": "cache",
+              "path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_daily_BTC.json",
+              "sha256": "32d7b6b00974ffb41608d1355bad7e2b036846b57e03d74c89dccb83068fa9b6",
+              "row_count": 736,
+              "generated_at": "2026-05-19T17:54:14.786791+00:00",
+              "schema_version": "phase12-v1"
+            }
+          }
+        },
+        "vol_z20_low_abs_return": {
+          "hypothesis": "vol_z20_low_abs_return on BTC daily OHLC -> forward return / vol / max DD (z>=2.0 pre-registered; NOT tradeable)",
+          "verdict": "blocked: insufficient events",
+          "events_count": 0,
+          "events_used": 0,
+          "events_skipped_oob": 0,
+          "candles_count": 371,
+          "n_placebos": 200,
+          "seed": 20260519,
+          "alpha": 0.05,
+          "baseline": {
+            "return": 0.0,
+            "max_drawdown": 0.0
+          },
+          "cells": [],
+          "variant": "vol_z20_low_abs_return",
+          "ticker": "BTC",
+          "window_days": 365,
+          "event_rate_fraction": 0.0,
+          "g2_blocked_by_rate": false,
+          "placebos": {
+            "random_dates_bootstrap_n": 200,
+            "shift_plus_30d_seconds": 2592000,
+            "aligned_metric": "return",
+            "aligned_window": "post_7",
+            "shift_return_post_7_p": null,
+            "shuffle_labels_return_post_7_p": null,
+            "shift_return_post_3_p": null,
+            "shuffle_labels_return_post_3_p": null
+          },
+          "research_verdict": "blocked",
+          "tradable": false,
+          "data_provenance": {
+            "ohlc": {
+              "source": "cache",
+              "path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_daily_BTC.json",
+              "sha256": "32d7b6b00974ffb41608d1355bad7e2b036846b57e03d74c89dccb83068fa9b6",
+              "row_count": 736,
+              "generated_at": "2026-05-19T17:54:14.786791+00:00",
+              "schema_version": "phase12-v1"
+            }
+          }
+        }
+      },
+      "data_provenance": {
+        "ohlc": {
+          "source": "cache",
+          "path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_daily_BTC.json",
+          "sha256": "32d7b6b00974ffb41608d1355bad7e2b036846b57e03d74c89dccb83068fa9b6",
+          "row_count": 736,
+          "generated_at": "2026-05-19T17:54:14.786791+00:00",
+          "schema_version": "phase12-v1"
+        }
+      }
+    },
+    "ETH": {
+      "status": "ok",
+      "ticker": "ETH",
+      "window_days": 365,
+      "ohlc_source": "cache",
+      "candles_count": 371,
+      "variants": {
+        "vol_z20_high": {
+          "hypothesis": "vol_z20_high on ETH daily OHLC -> forward return / vol / max DD (z>=2.0 pre-registered; NOT tradeable)",
+          "verdict": "supported",
+          "events_count": 23,
+          "events_used": 23,
+          "events_skipped_oob": 0,
+          "candles_count": 371,
+          "n_placebos": 200,
+          "seed": 20260519,
+          "alpha": 0.05,
+          "baseline": {
+            "return": 0.0,
+            "max_drawdown": 0.0
+          },
+          "cells": [
+            {
+              "metric": "return",
+              "window": "post_1",
+              "mean": 0.0,
+              "baseline": 0.0,
+              "n_events": 23,
+              "two_sided_p": 1.0
+            },
+            {
+              "metric": "return",
+              "window": "post_3",
+              "mean": -0.01968235956662885,
+              "baseline": 0.0,
+              "n_events": 23,
+              "two_sided_p": 0.05970149253731343
+            },
+            {
+              "metric": "return",
+              "window": "post_7",
+              "mean": -0.01966558768923269,
+              "baseline": 0.0,
+              "n_events": 23,
+              "two_sided_p": 0.19900497512437812
+            },
+            {
+              "metric": "realized_vol",
+              "window": "post_3",
+              "mean": 0.0351707841166999,
+              "baseline": NaN,
+              "n_events": 23,
+              "two_sided_p": 0.05970149253731343
+            },
+            {
+              "metric": "realized_vol",
+              "window": "post_7",
+              "mean": 0.045230380879366316,
+              "baseline": NaN,
+              "n_events": 23,
+              "two_sided_p": 0.009950248756218905
+            },
+            {
+              "metric": "max_drawdown",
+              "window": "post_1",
+              "mean": 0.0,
+              "baseline": 0.0,
+              "n_events": 23,
+              "two_sided_p": 1.0
+            },
+            {
+              "metric": "max_drawdown",
+              "window": "post_3",
+              "mean": -0.04258067712323093,
+              "baseline": 0.0,
+              "n_events": 23,
+              "two_sided_p": 0.029850746268656716
+            },
+            {
+              "metric": "max_drawdown",
+              "window": "post_7",
+              "mean": -0.09668231477829896,
+              "baseline": 0.0,
+              "n_events": 23,
+              "two_sided_p": 0.009950248756218905
+            }
+          ],
+          "bh_rejected": 2,
+          "bh_q_values": [
+            1.0,
+            0.0955223880597015,
+            0.26533996683250416,
+            0.0955223880597015,
+            0.03980099502487562,
+            1.0,
+            0.07960199004975124,
+            0.03980099502487562
+          ],
+          "bh_rejected_mask": [
+            false,
+            false,
+            false,
+            false,
+            true,
+            false,
+            false,
+            true
+          ],
+          "variant": "vol_z20_high",
+          "ticker": "ETH",
+          "window_days": 365,
+          "event_rate_fraction": 0.062,
+          "g2_blocked_by_rate": false,
+          "placebos": {
+            "random_dates_bootstrap_n": 200,
+            "shift_plus_30d_seconds": 2592000,
+            "aligned_metric": "return",
+            "aligned_window": "post_7",
+            "shift_return_post_7_p": 1.0,
+            "shuffle_labels_return_post_7_p": 1.0,
+            "shift_return_post_3_p": 1.0,
+            "shuffle_labels_return_post_3_p": 1.0
+          },
+          "research_verdict": "weak evidence",
+          "tradable": false,
+          "holdout": {
+            "holdout_fraction": 0.5013477088948787,
+            "split_timestamp": 1763164800,
+            "n_train_candles": 185,
+            "n_test_candles": 186,
+            "train_events": 14,
+            "test_events": 9,
+            "embargo_days_requested": 7,
+            "embargo_days_applied": 7,
+            "train_events_removed_embargo": 0,
+            "test_events_removed_embargo": 0,
+            "oos_survives": true,
+            "failure_reason": null,
+            "cells": [
+              {
+                "metric": "max_drawdown",
+                "window": "post_1",
+                "train_mean": 0.0,
+                "train_p": 1.0,
+                "test_mean": 0.0,
+                "test_p": 1.0,
+                "train_bh_rejected": false,
+                "test_bh_rejected": false
+              },
+              {
+                "metric": "max_drawdown",
+                "window": "post_3",
+                "train_mean": -0.025849829876831487,
+                "train_p": 0.746268656716418,
+                "test_mean": -0.06860643950651896,
+                "test_p": 0.009950248756218905,
+                "train_bh_rejected": false,
+                "test_bh_rejected": true
+              },
+              {
+                "metric": "max_drawdown",
+                "window": "post_7",
+                "train_mean": -0.06265163171713606,
+                "train_p": 0.8258706467661692,
+                "test_mean": -0.1496189328734413,
+                "test_p": 0.009950248756218905,
+                "train_bh_rejected": false,
+                "test_bh_rejected": true
+              },
+              {
+                "metric": "realized_vol",
+                "window": "post_3",
+                "train_mean": 0.024990200285301963,
+                "train_p": 0.7860696517412935,
+                "test_mean": 0.05100724785443004,
+                "test_p": 0.01990049751243781,
+                "train_bh_rejected": false,
+                "test_bh_rejected": true
+              },
+              {
+                "metric": "realized_vol",
+                "window": "post_7",
+                "train_mean": 0.03201597160506272,
+                "train_p": 0.845771144278607,
+                "test_mean": 0.06578612863939415,
+                "test_p": 0.009950248756218905,
+                "train_bh_rejected": false,
+                "test_bh_rejected": true
+              },
+              {
+                "metric": "return",
+                "window": "post_1",
+                "train_mean": 0.0,
+                "train_p": 1.0,
+                "test_mean": 0.0,
+                "test_p": 1.0,
+                "train_bh_rejected": false,
+                "test_bh_rejected": false
+              },
+              {
+                "metric": "return",
+                "window": "post_3",
+                "train_mean": -0.002253945098864392,
+                "train_p": 0.6069651741293532,
+                "test_mean": -0.04679322651648468,
+                "test_p": 0.01990049751243781,
+                "train_bh_rejected": false,
+                "test_bh_rejected": true
+              },
+              {
+                "metric": "return",
+                "window": "post_7",
+                "train_mean": 0.009897040572982203,
+                "train_p": 0.8656716417910447,
+                "test_mean": -0.06565189831934476,
+                "test_p": 0.07960199004975124,
+                "train_bh_rejected": false,
+                "test_bh_rejected": false
+              }
+            ]
+          },
+          "holdout_status": "passed",
+          "embargo_days_requested": 7,
+          "embargo_days_applied": 7,
+          "data_provenance": {
+            "ohlc": {
+              "source": "cache",
+              "path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_daily_ETH.json",
+              "sha256": "7dc8e8c6fb07020c8e9bebff52368f5f0f62de0516d2ae378e75e9550080a4f7",
+              "row_count": 371,
+              "generated_at": "2026-05-19T18:27:02.948570+00:00",
+              "schema_version": "phase12-v1"
+            }
+          }
+        },
+        "vol_z60_high": {
+          "hypothesis": "vol_z60_high on ETH daily OHLC -> forward return / vol / max DD (z>=2.0 pre-registered; NOT tradeable)",
+          "verdict": "supported",
+          "events_count": 15,
+          "events_used": 15,
+          "events_skipped_oob": 0,
+          "candles_count": 371,
+          "n_placebos": 200,
+          "seed": 20260519,
+          "alpha": 0.05,
+          "baseline": {
+            "return": 0.0,
+            "max_drawdown": 0.0
+          },
+          "cells": [
+            {
+              "metric": "return",
+              "window": "post_1",
+              "mean": 0.0,
+              "baseline": 0.0,
+              "n_events": 15,
+              "two_sided_p": 1.0
+            },
+            {
+              "metric": "return",
+              "window": "post_3",
+              "mean": 0.0002563790838881048,
+              "baseline": 0.0,
+              "n_events": 15,
+              "two_sided_p": 0.9950248756218906
+            },
+            {
+              "metric": "return",
+              "window": "post_7",
+              "mean": -0.02778937887324022,
+              "baseline": 0.0,
+              "n_events": 15,
+              "two_sided_p": 0.14925373134328357
+            },
+            {
+              "metric": "realized_vol",
+              "window": "post_3",
+              "mean": 0.05102917495254391,
+              "baseline": NaN,
+              "n_events": 15,
+              "two_sided_p": 0.009950248756218905
+            },
+            {
+              "metric": "realized_vol",
+              "window": "post_7",
+              "mean": 0.055721012279272855,
+              "baseline": NaN,
+              "n_events": 15,
+              "two_sided_p": 0.009950248756218905
+            },
+            {
+              "metric": "max_drawdown",
+              "window": "post_1",
+              "mean": 0.0,
+              "baseline": 0.0,
+              "n_events": 15,
+              "two_sided_p": 1.0
+            },
+            {
+              "metric": "max_drawdown",
+              "window": "post_3",
+              "mean": -0.04394727473263298,
+              "baseline": 0.0,
+              "n_events": 15,
+              "two_sided_p": 0.029850746268656716
+            },
+            {
+              "metric": "max_drawdown",
+              "window": "post_7",
+              "mean": -0.11052126123793041,
+              "baseline": 0.0,
+              "n_events": 15,
+              "two_sided_p": 0.009950248756218905
+            }
+          ],
+          "bh_rejected": 3,
+          "bh_q_values": [
+            1.0,
+            1.0,
+            0.2388059701492537,
+            0.026533996683250415,
+            0.026533996683250415,
+            1.0,
+            0.05970149253731343,
+            0.026533996683250415
+          ],
+          "bh_rejected_mask": [
+            false,
+            false,
+            false,
+            true,
+            true,
+            false,
+            false,
+            true
+          ],
+          "variant": "vol_z60_high",
+          "ticker": "ETH",
+          "window_days": 365,
+          "event_rate_fraction": 0.0404,
+          "g2_blocked_by_rate": false,
+          "placebos": {
+            "random_dates_bootstrap_n": 200,
+            "shift_plus_30d_seconds": 2592000,
+            "aligned_metric": "return",
+            "aligned_window": "post_7",
+            "shift_return_post_7_p": 1.0,
+            "shuffle_labels_return_post_7_p": 0.736318407960199,
+            "shift_return_post_3_p": 1.0,
+            "shuffle_labels_return_post_3_p": 0.736318407960199
+          },
+          "research_verdict": "weak evidence",
+          "tradable": false,
+          "holdout": {
+            "holdout_fraction": 0.5013477088948787,
+            "split_timestamp": 1763164800,
+            "n_train_candles": 185,
+            "n_test_candles": 186,
+            "train_events": 6,
+            "test_events": 8,
+            "embargo_days_requested": 7,
+            "embargo_days_applied": 7,
+            "train_events_removed_embargo": 0,
+            "test_events_removed_embargo": 1,
+            "oos_survives": true,
+            "failure_reason": null,
+            "cells": [
+              {
+                "metric": "max_drawdown",
+                "window": "post_1",
+                "train_mean": 0.0,
+                "train_p": 1.0,
+                "test_mean": 0.0,
+                "test_p": 1.0,
+                "train_bh_rejected": false,
+                "test_bh_rejected": false
+              },
+              {
+                "metric": "max_drawdown",
+                "window": "post_3",
+                "train_mean": -0.020053754684726297,
+                "train_p": 0.8656716417910447,
+                "test_mean": -0.06736082411014212,
+                "test_p": 0.009950248756218905,
+                "train_bh_rejected": false,
+                "test_bh_rejected": true
+              },
+              {
+                "metric": "max_drawdown",
+                "window": "post_7",
+                "train_mean": -0.06509498095434717,
+                "train_p": 0.8059701492537313,
+                "test_mean": -0.1579381886052534,
+                "test_p": 0.009950248756218905,
+                "train_bh_rejected": false,
+                "test_bh_rejected": true
+              },
+              {
+                "metric": "realized_vol",
+                "window": "post_3",
+                "train_mean": 0.0358787775243407,
+                "train_p": 0.29850746268656714,
+                "test_mean": 0.06514141015718877,
+                "test_p": 0.009950248756218905,
+                "train_bh_rejected": false,
+                "test_bh_rejected": true
+              },
+              {
+                "metric": "realized_vol",
+                "window": "post_7",
+                "train_mean": 0.03814910485349284,
+                "train_p": 0.4079601990049751,
+                "test_mean": 0.07330743168110512,
+                "test_p": 0.009950248756218905,
+                "train_bh_rejected": false,
+                "test_bh_rejected": true
+              },
+              {
+                "metric": "return",
+                "window": "post_1",
+                "train_mean": 0.0,
+                "train_p": 1.0,
+                "test_mean": 0.0,
+                "test_p": 1.0,
+                "train_bh_rejected": false,
+                "test_bh_rejected": false
+              },
+              {
+                "metric": "return",
+                "window": "post_3",
+                "train_mean": 0.02317600043326577,
+                "train_p": 0.46766169154228854,
+                "test_mean": -0.025170786892954437,
+                "test_p": 0.22885572139303484,
+                "train_bh_rejected": false,
+                "test_bh_rejected": false
+              },
+              {
+                "metric": "return",
+                "window": "post_7",
+                "train_mean": -0.005746915500353572,
+                "train_p": 0.6069651741293532,
+                "test_mean": -0.05957372061815313,
+                "test_p": 0.10945273631840796,
+                "train_bh_rejected": false,
+                "test_bh_rejected": false
+              }
+            ]
+          },
+          "holdout_status": "passed",
+          "embargo_days_requested": 7,
+          "embargo_days_applied": 7,
+          "data_provenance": {
+            "ohlc": {
+              "source": "cache",
+              "path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_daily_ETH.json",
+              "sha256": "7dc8e8c6fb07020c8e9bebff52368f5f0f62de0516d2ae378e75e9550080a4f7",
+              "row_count": 371,
+              "generated_at": "2026-05-19T18:27:02.948570+00:00",
+              "schema_version": "phase12-v1"
+            }
+          }
+        },
+        "vol_z20_range_compression": {
+          "hypothesis": "vol_z20_range_compression on ETH daily OHLC -> forward return / vol / max DD (z>=2.0 pre-registered; NOT tradeable)",
+          "verdict": "blocked: insufficient events",
+          "events_count": 0,
+          "events_used": 0,
+          "events_skipped_oob": 0,
+          "candles_count": 371,
+          "n_placebos": 200,
+          "seed": 20260519,
+          "alpha": 0.05,
+          "baseline": {
+            "return": 0.0,
+            "max_drawdown": 0.0
+          },
+          "cells": [],
+          "variant": "vol_z20_range_compression",
+          "ticker": "ETH",
+          "window_days": 365,
+          "event_rate_fraction": 0.0,
+          "g2_blocked_by_rate": false,
+          "placebos": {
+            "random_dates_bootstrap_n": 200,
+            "shift_plus_30d_seconds": 2592000,
+            "aligned_metric": "return",
+            "aligned_window": "post_7",
+            "shift_return_post_7_p": null,
+            "shuffle_labels_return_post_7_p": null,
+            "shift_return_post_3_p": null,
+            "shuffle_labels_return_post_3_p": null
+          },
+          "research_verdict": "blocked",
+          "tradable": false,
+          "data_provenance": {
+            "ohlc": {
+              "source": "cache",
+              "path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_daily_ETH.json",
+              "sha256": "7dc8e8c6fb07020c8e9bebff52368f5f0f62de0516d2ae378e75e9550080a4f7",
+              "row_count": 371,
+              "generated_at": "2026-05-19T18:27:02.948570+00:00",
+              "schema_version": "phase12-v1"
+            }
+          }
+        },
+        "vol_z20_low_abs_return": {
+          "hypothesis": "vol_z20_low_abs_return on ETH daily OHLC -> forward return / vol / max DD (z>=2.0 pre-registered; NOT tradeable)",
+          "verdict": "weak evidence",
+          "events_count": 1,
+          "events_used": 1,
+          "events_skipped_oob": 0,
+          "candles_count": 371,
+          "n_placebos": 200,
+          "seed": 20260519,
+          "alpha": 0.05,
+          "baseline": {
+            "return": 0.0,
+            "max_drawdown": 0.0
+          },
+          "cells": [
+            {
+              "metric": "return",
+              "window": "post_1",
+              "mean": 0.0,
+              "baseline": 0.0,
+              "n_events": 1,
+              "two_sided_p": 1.0
+            },
+            {
+              "metric": "return",
+              "window": "post_3",
+              "mean": 0.023898507787230468,
+              "baseline": 0.0,
+              "n_events": 1,
+              "two_sided_p": 0.54
+            },
+            {
+              "metric": "return",
+              "window": "post_7",
+              "mean": 0.2050909189747492,
+              "baseline": 0.0,
+              "n_events": 1,
+              "two_sided_p": 0.02040816326530612
+            },
+            {
+              "metric": "realized_vol",
+              "window": "post_3",
+              "mean": 0.002953003541665314,
+              "baseline": NaN,
+              "n_events": 1,
+              "two_sided_p": 0.14
+            },
+            {
+              "metric": "realized_vol",
+              "window": "post_7",
+              "mean": 0.022880534771189186,
+              "baseline": NaN,
+              "n_events": 1,
+              "two_sided_p": 0.5612244897959183
+            },
+            {
+              "metric": "max_drawdown",
+              "window": "post_1",
+              "mean": 0.0,
+              "baseline": 0.0,
+              "n_events": 1,
+              "two_sided_p": 1.0
+            },
+            {
+              "metric": "max_drawdown",
+              "window": "post_3",
+              "mean": 0.0,
+              "baseline": 0.0,
+              "n_events": 1,
+              "two_sided_p": 0.53
+            },
+            {
+              "metric": "max_drawdown",
+              "window": "post_7",
+              "mean": 0.0,
+              "baseline": 0.0,
+              "n_events": 1,
+              "two_sided_p": 0.07142857142857142
+            }
+          ],
+          "bh_rejected": 0,
+          "bh_q_values": [
+            1.0,
+            0.7482993197278911,
+            0.16326530612244897,
+            0.37333333333333335,
+            0.7482993197278911,
+            1.0,
+            0.7482993197278911,
+            0.2857142857142857
+          ],
+          "bh_rejected_mask": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          ],
+          "variant": "vol_z20_low_abs_return",
+          "ticker": "ETH",
+          "window_days": 365,
+          "event_rate_fraction": 0.0027,
+          "g2_blocked_by_rate": false,
+          "placebos": {
+            "random_dates_bootstrap_n": 200,
+            "shift_plus_30d_seconds": 2592000,
+            "aligned_metric": "return",
+            "aligned_window": "post_7",
+            "shift_return_post_7_p": 1.0,
+            "shuffle_labels_return_post_7_p": null,
+            "shift_return_post_3_p": 1.0,
+            "shuffle_labels_return_post_3_p": null
+          },
+          "research_verdict": "weak evidence",
+          "tradable": false,
+          "holdout": {
+            "holdout_fraction": 0.5013477088948787,
+            "split_timestamp": 1763164800,
+            "n_train_candles": 185,
+            "n_test_candles": 186,
+            "train_events": 1,
+            "test_events": 0,
+            "embargo_days_requested": 7,
+            "embargo_days_applied": 7,
+            "train_events_removed_embargo": 0,
+            "test_events_removed_embargo": 0,
+            "oos_survives": false,
+            "failure_reason": "ELIG_G4_FAIL_OOS: fewer than 5 test events",
+            "cells": [
+              {
+                "metric": "max_drawdown",
+                "window": "post_1",
+                "train_mean": 0.0,
+                "train_p": 1.0,
+                "test_mean": null,
+                "test_p": null,
+                "train_bh_rejected": false,
+                "test_bh_rejected": false
+              },
+              {
+                "metric": "max_drawdown",
+                "window": "post_3",
+                "train_mean": 0.0,
+                "train_p": 0.5510204081632653,
+                "test_mean": null,
+                "test_p": null,
+                "train_bh_rejected": false,
+                "test_bh_rejected": false
+              },
+              {
+                "metric": "max_drawdown",
+                "window": "post_7",
+                "train_mean": 0.0,
+                "train_p": 0.042105263157894736,
+                "test_mean": null,
+                "test_p": null,
+                "train_bh_rejected": false,
+                "test_bh_rejected": false
+              },
+              {
+                "metric": "realized_vol",
+                "window": "post_3",
+                "train_mean": 0.002953003541665314,
+                "train_p": 0.12244897959183673,
+                "test_mean": null,
+                "test_p": null,
+                "train_bh_rejected": false,
+                "test_bh_rejected": false
+              },
+              {
+                "metric": "realized_vol",
+                "window": "post_7",
+                "train_mean": 0.022880534771189186,
+                "train_p": 0.4105263157894737,
+                "test_mean": null,
+                "test_p": null,
+                "train_bh_rejected": false,
+                "test_bh_rejected": false
+              },
+              {
+                "metric": "return",
+                "window": "post_1",
+                "train_mean": 0.0,
+                "train_p": 1.0,
+                "test_mean": null,
+                "test_p": null,
+                "train_bh_rejected": false,
+                "test_bh_rejected": false
+              },
+              {
+                "metric": "return",
+                "window": "post_3",
+                "train_mean": 0.023898507787230468,
+                "train_p": 0.6224489795918368,
+                "test_mean": null,
+                "test_p": null,
+                "train_bh_rejected": false,
+                "test_bh_rejected": false
+              },
+              {
+                "metric": "return",
+                "window": "post_7",
+                "train_mean": 0.2050909189747492,
+                "train_p": 0.06315789473684211,
+                "test_mean": null,
+                "test_p": null,
+                "train_bh_rejected": false,
+                "test_bh_rejected": false
+              }
+            ]
+          },
+          "rejection_reason": "ELIG_G4_FAIL_OOS: fewer than 5 test events",
+          "holdout_status": "failed",
+          "embargo_days_requested": 7,
+          "embargo_days_applied": 7,
+          "data_provenance": {
+            "ohlc": {
+              "source": "cache",
+              "path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_daily_ETH.json",
+              "sha256": "7dc8e8c6fb07020c8e9bebff52368f5f0f62de0516d2ae378e75e9550080a4f7",
+              "row_count": 371,
+              "generated_at": "2026-05-19T18:27:02.948570+00:00",
+              "schema_version": "phase12-v1"
+            }
+          }
+        }
+      },
+      "data_provenance": {
+        "ohlc": {
+          "source": "cache",
+          "path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_daily_ETH.json",
+          "sha256": "7dc8e8c6fb07020c8e9bebff52368f5f0f62de0516d2ae378e75e9550080a4f7",
+          "row_count": 371,
+          "generated_at": "2026-05-19T18:27:02.948570+00:00",
+          "schema_version": "phase12-v1"
+        }
+      }
+    },
+    "SOL": {
+      "status": "blocked_data",
+      "blocked_reason": "OHLC cache data\\collector_cache\\ohlc_daily_SOL.json missing entries",
+      "ticker": "SOL",
+      "cache_path": "data\\collector_cache\\ohlc_daily_SOL.json",
+      "variants": {}
+    }
+  }
+}

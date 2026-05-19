@@ -1,0 +1,46 @@
+{
+  "schema_version": "phase13-v1",
+  "generated_at_utc": "2026-05-19T19:36:37.116875+00:00",
+  "git_commit": "a066001",
+  "policy": "no synthetic OHLC; missing asset = blocked_data",
+  "assets": {
+    "BTC": {
+      "ticker": "BTC",
+      "interval": "1d",
+      "timezone": "UTC",
+      "source_type": "cache",
+      "cache_path": "data\\collector_cache\\ohlc_daily_BTC.json",
+      "cache_sha256": "32d7b6b00974ffb41608d1355bad7e2b036846b57e03d74c89dccb83068fa9b6",
+      "row_count_total": 736,
+      "row_count_365d_window": 371,
+      "coverage_start": "2025-05-14",
+      "coverage_end": "2026-05-19",
+      "volume_field_present": true,
+      "status": "available"
+    },
+    "ETH": {
+      "ticker": "ETH",
+      "interval": "1d",
+      "timezone": "UTC",
+      "source_type": "cache",
+      "cache_path": "data\\collector_cache\\ohlc_daily_ETH.json",
+      "cache_sha256": "7dc8e8c6fb07020c8e9bebff52368f5f0f62de0516d2ae378e75e9550080a4f7",
+      "row_count_total": 371,
+      "row_count_365d_window": 371,
+      "coverage_start": "2025-05-14",
+      "coverage_end": "2026-05-19",
+      "volume_field_present": true,
+      "status": "available"
+    },
+    "SOL": {
+      "ticker": "SOL",
+      "interval": "1d",
+      "timezone": "UTC",
+      "source_type": "cache",
+      "cache_path": "data\\collector_cache\\ohlc_daily_SOL.json",
+      "status": "blocked_data",
+      "blocked_reason": "cache file missing (no network in CI; populate locally without commit)"
+    }
+  },
+  "decision": "partial_assets_available"
+}

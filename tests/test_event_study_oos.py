@@ -9,6 +9,7 @@ import pytest
 from src.research.event_study import EventStudyWindow
 from src.research.holdout import (
     DEFAULT_HOLDOUT_FRACTION,
+    apply_embargo,
     evaluate_holdout_g4,
     filter_events_to_candles,
     split_candles_holdout,
@@ -41,6 +42,50 @@ def test_filter_events_to_candles() -> None:
     events = [int(candles[3]["timestamp"]), 999_999_999]
     filtered = filter_events_to_candles(events, candles)
     assert filtered == [int(candles[3]["timestamp"])]
+
+
+def test_apply_embargo_strips_boundary_events() -> None:
+    candles = [_candle(d) for d in range(1, 101)]
+    split = split_candles_holdout(candles, holdout_fraction=0.30)
+    assert split.split_timestamp is not None
+    train_raw = [int(c["timestamp"]) for c in split.train_candles[-3:]]
+    test_raw = [int(c["timestamp"]) for c in split.test_candles[:3]]
+    train_kept, train_removed = apply_embargo(
+        train_raw,
+        split_timestamp=split.split_timestamp,
+        embargo_days=7,
+        side="train",
+    )
+    test_kept, test_removed = apply_embargo(
+        test_raw,
+        split_timestamp=split.split_timestamp,
+        embargo_days=7,
+        side="test",
+    )
+    assert train_removed == len(train_raw)
+    assert test_removed == len(test_raw)
+    assert train_kept == []
+    assert test_kept == []
+
+
+def test_evaluate_holdout_g4_records_embargo_metadata() -> None:
+    candles = [_candle(d) for d in range(1, 120)]
+    events = [int(candles[i]["timestamp"]) for i in (5, 15, 25, 95, 105, 110)]
+    evaluation = evaluate_holdout_g4(
+        candles,
+        events,
+        metrics=("return",),
+        windows=(EventStudyWindow("post_1", 1, 1),),
+        holdout_fraction=0.25,
+        embargo_days=7,
+        n_placebos=20,
+        seed=7,
+    )
+    payload = evaluation.to_dict()
+    assert payload["embargo_days_requested"] == 7
+    assert payload["embargo_days_applied"] == 7
+    assert payload["train_events_removed_embargo"] >= 0
+    assert payload["test_events_removed_embargo"] >= 0
 
 
 def test_evaluate_holdout_g4_fails_without_test_events() -> None:

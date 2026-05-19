@@ -108,6 +108,17 @@ PHASE12 = {
     "phase11_json": REPO_ROOT / "reports" / "ALPHA_RESEARCH_LEADERBOARD_PHASE11.json",
 }
 
+PHASE13 = {
+    "runs_dir": REPO_ROOT / "reports" / "research_runs_phase13",
+    "out_md": REPO_ROOT / "reports" / "ALPHA_RESEARCH_LEADERBOARD_PHASE13.md",
+    "out_json": REPO_ROOT / "reports" / "ALPHA_RESEARCH_LEADERBOARD_PHASE13.json",
+    "title": "Phase 13",
+    "run_log": "reports/research_runs_phase13/RUN_LOG_PHASE13.md",
+    "red_team_doc": REPO_ROOT / "reports" / "RED_TEAM_PHASE13.md",
+}
+
+PHASE13_PROTOCOLS = ("protocol_a", "protocol_b", "protocol_c")
+
 # Statuts red team qui interdisent toute promotion OOS (règle explicite Phase 11/12).
 PHASE11_RED_TEAM_BLOCKS_OOS = frozenset({"fail", "revoked", "révoqué", "révoque"})
 
@@ -559,6 +570,33 @@ class Phase11LeaderboardRow:
     bh_rejected: int | None
     bh_cells_total: int | None
     placebo: str
+    cost_verdict: str
+    regime_verdict: str
+    concentration_verdict: str
+    red_team_status: str
+    final_verdict: str
+    next_action: str
+    artifact: str
+    rejection_reason: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass
+class Phase13LeaderboardRow:
+    asset: str
+    signal_variant: str
+    protocol: str
+    signal: str
+    hypothesis_id: str
+    dataset: str
+    events: int | None
+    bh_rejected: int | None
+    bh_cells_total: int | None
+    placebo: str
+    placebo_status: str
+    holdout_status: str
     cost_verdict: str
     regime_verdict: str
     concentration_verdict: str
@@ -1078,6 +1116,299 @@ def build_phase12_rows() -> list[Phase11LeaderboardRow]:
         if path.is_file():
             rows.extend(loader(path, runs_rel))
     return [apply_phase12_gates(r) for r in rows]
+
+
+def _holdout_status_from_block(block: dict[str, Any]) -> str:
+    holdout = block.get("holdout") or {}
+    if block.get("holdout_status"):
+        return str(block["holdout_status"])
+    if not holdout:
+        return "not_run"
+    if holdout.get("oos_survives"):
+        return "passed"
+    return "failed"
+
+
+def _placebo_pass_label(block: dict[str, Any]) -> str:
+    placebos = block.get("placebos") or {}
+    shift_p = placebos.get("shift_return_post_7_p")
+    shuffle_p = placebos.get("shuffle_labels_return_post_7_p")
+    if shift_p is None and shuffle_p is None:
+        return "not_evaluated"
+    if shift_p == 1.0 and shuffle_p == 1.0:
+        return "fail_both_p1"
+    if (shift_p is not None and shift_p < 0.05) or (
+        shuffle_p is not None and shuffle_p < 0.05
+    ):
+        return "pass_at_least_one"
+    return "fail"
+
+
+def _phase13_row_from_variant(
+    *,
+    asset: str,
+    variant_id: str,
+    block: dict[str, Any],
+    protocol: str,
+    runs_rel: str,
+    artifact_path: str,
+    assets_ok_count: int,
+) -> Phase13LeaderboardRow:
+    signal = f"volume_shock_{variant_id}"
+    events = int(block.get("events_used") or block.get("events_count") or 0)
+    bh, n_cells = _bh_summary(block)
+    overlay = _overlay_for_report(block) if block.get("cells") else None
+    script_v = str(block.get("research_verdict") or block.get("verdict") or "kill")
+    final_v, reason = _finalize_phase11_verdict(script_v, overlay)
+
+    holdout_st = _holdout_status_from_block(block)
+    if holdout_st == "failed" and final_v == "candidate for further OOS testing":
+        final_v = "weak evidence"
+        reason = (reason or "") + "; failed_holdout"
+
+    if not block.get("data_provenance"):
+        if final_v == "candidate for further OOS testing":
+            final_v = "weak evidence"
+        reason = (reason or "") + "; missing_provenance"
+
+    placebo_st = _placebo_pass_label(block)
+    if placebo_st == "fail_both_p1" and final_v == "candidate for further OOS testing":
+        final_v = "weak evidence"
+        reason = (reason or "") + "; placebos_not_passed"
+
+    if assets_ok_count < 2 and asset != "BTC":
+        pass
+    if assets_ok_count < 2 and final_v == "candidate for further OOS testing":
+        final_v = "weak evidence"
+        reason = (reason or "") + "; partial_multi_asset"
+
+    red_team = lookup_red_team_status(signal, "P13-VS-MA")
+    final_v, reason = apply_red_team_final_cap(final_v, red_team, rejection_reason=reason)
+
+    if protocol == "protocol_b" and final_v == "candidate for further OOS testing":
+        final_v = "weak evidence"
+        reason = (reason or "") + "; protocol_b_red_team_cap"
+    if protocol == "protocol_c" and final_v in (
+        "candidate for further OOS testing",
+        "not supported",
+    ):
+        final_v = "kill" if final_v == "not supported" else "weak evidence"
+        reason = (reason or "") + "; protocol_c_committee_conservative"
+
+    placebos = block.get("placebos") or {}
+    shift_p = placebos.get("shift_return_post_7_p")
+    shuffle_p = placebos.get("shuffle_labels_return_post_7_p")
+    aligned_w = placebos.get("aligned_window", "post_7")
+    placebo = (
+        f"[{placebo_st}] bootstrap {placebos.get('random_dates_bootstrap_n', 200)} ; "
+        f"shift +30j {aligned_w} p={_fmt_p(shift_p) if shift_p is not None else '—'} ; "
+        f"shuffle {aligned_w} p={_fmt_p(shuffle_p) if shuffle_p is not None else '—'}"
+    )
+
+    base_row = Phase11LeaderboardRow(
+        signal=signal,
+        hypothesis_id="P13-VS-MA",
+        dataset=f"{asset} OHLC journalier (cache) — volume shock z pré-enregistré",
+        events=events,
+        bh_rejected=bh,
+        bh_cells_total=n_cells,
+        placebo=placebo,
+        cost_verdict=cost_verdict_from_overlay(overlay),
+        regime_verdict="non évalué (Phase 13 scope)",
+        concentration_verdict=overlay.concentration_verdict if overlay else "not_assessed",
+        red_team_status=red_team,
+        final_verdict=final_v,
+        next_action=_phase11_next_action(
+            final_v,
+            signal=signal,
+            hypothesis_id="P13-VS-MA",
+            rejection_reason=reason,
+        ),
+        artifact=f"{runs_rel}/{artifact_path}#{asset}/{variant_id}",
+        rejection_reason=reason,
+    )
+    capped = apply_phase11_red_team_row(base_row)
+    return Phase13LeaderboardRow(
+        asset=asset,
+        signal_variant=variant_id,
+        protocol=protocol,
+        signal=capped.signal,
+        hypothesis_id=capped.hypothesis_id,
+        dataset=capped.dataset,
+        events=capped.events,
+        bh_rejected=capped.bh_rejected,
+        bh_cells_total=capped.bh_cells_total,
+        placebo=capped.placebo,
+        placebo_status=placebo_st,
+        holdout_status=holdout_st,
+        cost_verdict=capped.cost_verdict,
+        regime_verdict=capped.regime_verdict,
+        concentration_verdict=capped.concentration_verdict,
+        red_team_status=capped.red_team_status,
+        final_verdict=capped.final_verdict,
+        next_action=capped.next_action,
+        artifact=capped.artifact,
+        rejection_reason=capped.rejection_reason,
+    )
+
+
+def _rows_from_phase13_multi_asset(
+    path: Path,
+    runs_rel: str,
+    *,
+    protocol: str,
+) -> list[Phase13LeaderboardRow]:
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    rows: list[Phase13LeaderboardRow] = []
+    artifact_name = path.name
+    assets_doc = doc.get("assets") or {}
+    assets_ok = [
+        a
+        for a, block in assets_doc.items()
+        if isinstance(block, dict) and block.get("status") == "ok"
+    ]
+    assets_ok_count = len(assets_ok)
+
+    for asset, asset_block in assets_doc.items():
+        if not isinstance(asset_block, dict):
+            continue
+        if asset_block.get("status") == "blocked_data":
+            rows.append(
+                Phase13LeaderboardRow(
+                    signal=f"volume_shock_multi_asset_{asset}",
+                    hypothesis_id="P13-VS-MA",
+                    dataset=f"{asset} — données indisponibles",
+                    events=0,
+                    bh_rejected=0,
+                    bh_cells_total=0,
+                    placebo="not run",
+                    cost_verdict="non évalué",
+                    regime_verdict="non évalué",
+                    concentration_verdict="not_assessed",
+                    red_team_status="blocked",
+                    final_verdict="blocked",
+                    next_action="Populate cache or unblock data source; no invented rows.",
+                    artifact=f"{runs_rel}/{artifact_name}#{asset}",
+                    rejection_reason=str(
+                        asset_block.get("blocked_reason") or "blocked_data"
+                    ),
+                    asset=str(asset),
+                    signal_variant="—",
+                    protocol=protocol,
+                    placebo_status="not_run",
+                    holdout_status="not_run",
+                )
+            )
+            continue
+        for variant_id, block in (asset_block.get("variants") or {}).items():
+            rows.append(
+                _phase13_row_from_variant(
+                    asset=str(asset),
+                    variant_id=str(variant_id),
+                    block=block,
+                    protocol=protocol,
+                    runs_rel=runs_rel,
+                    artifact_path=artifact_name,
+                    assets_ok_count=assets_ok_count,
+                )
+            )
+    return rows
+
+
+def build_phase13_rows() -> list[Phase13LeaderboardRow]:
+    runs_dir = PHASE13["runs_dir"]
+    runs_rel = str(runs_dir.relative_to(REPO_ROOT)).replace("\\", "/")
+    multi_path = runs_dir / "volume_shock_multi_asset_365d.json"
+    protocol_path = runs_dir / "volume_shock_protocol_a_365d.json"
+    source = multi_path if multi_path.is_file() else protocol_path
+    if not source.is_file():
+        return []
+    rows: list[Phase13LeaderboardRow] = []
+    for protocol in PHASE13_PROTOCOLS:
+        rows.extend(
+            _rows_from_phase13_multi_asset(source, runs_rel, protocol=protocol)
+        )
+    return rows
+
+
+def render_phase13_md(rows: list[Phase13LeaderboardRow]) -> str:
+    oos = sum(1 for r in rows if r.final_verdict == "candidate for further OOS testing")
+    protocols = sorted({r.protocol for r in rows})
+    lines = [
+        "# Alpha research leaderboard (Phase 13)",
+        "",
+        "**Généré par :** `reports/_build_leaderboard.py --phase13`",
+        f"**Périmètre :** volume shock multi-asset (BTC/ETH/SOL) — benchmark agentique.",
+        "",
+        "## Synthèse exécutive",
+        "",
+        f"- **Lignes (actif × variante × protocole) :** {len(rows)}",
+        f"- **Candidats OOS :** **{oos}** (0 attendu et acceptable)",
+        f"- **Protocoles agentiques :** {', '.join(f'`{p}`' for p in protocols)}",
+        "- **Signal tradable / live-ready :** **0**",
+        "",
+        "## Leaderboard",
+        "",
+        "| Asset | Variante | Protocole | Events | BH | Placebo | Holdout | Red team | Coûts | Final |",
+        "|-------|----------|-----------|--------|----|---------|---------|----------|-------|-------|",
+    ]
+    for r in rows:
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    f"`{r.asset}`",
+                    f"`{r.signal_variant}`",
+                    f"`{r.protocol}`",
+                    str(r.events) if r.events is not None else "—",
+                    f"{r.bh_rejected}/{r.bh_cells_total}"
+                    if r.bh_rejected is not None
+                    else "—",
+                    r.placebo_status[:20],
+                    r.holdout_status,
+                    r.red_team_status[:12],
+                    r.cost_verdict[:16],
+                    f"**{r.final_verdict}**",
+                ]
+            )
+            + " |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Références",
+            "",
+            f"- `{PHASE13['run_log']}`",
+            f"- `{PHASE13['red_team_doc'].relative_to(REPO_ROOT).as_posix()}`",
+            "- Rebuild : `python reports/_build_leaderboard.py --phase13`",
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def _write_phase13() -> int:
+    rows = build_phase13_rows()
+    out_md: Path = PHASE13["out_md"]
+    out_json: Path = PHASE13["out_json"]
+    out_md.write_text(render_phase13_md(rows), encoding="utf-8")
+    payload = {
+        "generated_by": "reports/_build_leaderboard.py",
+        "phase": PHASE13["title"],
+        "tradable_count": 0,
+        "oos_candidate_count": sum(
+            1 for r in rows if r.final_verdict == "candidate for further OOS testing"
+        ),
+        "allowed_verdicts": sorted(PHASE11_ALLOWED_VERDICTS),
+        "protocols": list(PHASE13_PROTOCOLS),
+        "cost_assumptions": summarize_cost_assumptions(),
+        "rows": [r.to_dict() for r in rows],
+    }
+    out_json.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    print(f"Wrote {out_md}")
+    print(f"Wrote {out_json}")
+    print(f"Rows: {len(rows)}; OOS candidates: {payload['oos_candidate_count']}")
+    return len(rows)
 
 
 def build_phase11_rows() -> list[Phase11LeaderboardRow]:
@@ -1630,7 +1961,16 @@ def main() -> int:
         action="store_true",
         help="Build Phase 12 leaderboard from reports/research_runs_phase12/",
     )
+    parser.add_argument(
+        "--phase13",
+        action="store_true",
+        help="Build Phase 13 multi-asset volume-shock leaderboard",
+    )
     args = parser.parse_args()
+
+    if args.phase13:
+        _write_phase13()
+        return 0
 
     if args.phase12:
         _write_phase12()

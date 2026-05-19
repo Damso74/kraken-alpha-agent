@@ -10,6 +10,9 @@ CLI flag: `--enable-holdout` on event-study scripts via `scripts/_event_study_co
 - Reference cell for return-based studies: `return` / `post_7`.
 - **Pass (oos_survives):** BH rejection on the test partition **or**
   empirical placebo `p < 0.05` on the test partition for the reference cell.
+- **Embargo (optional):** `embargo_days` drops train events within N calendar days
+  before the split and test events within N days after the split (`apply_embargo`).
+  JSON reports use `embargo_days_requested` / `embargo_days_applied`.
 - Any script verdict of `candidate for OOS*` is **downgraded** to `weak evidence`
   when hold-out fails (`ELIG_G4_FAIL_OOS`).
 

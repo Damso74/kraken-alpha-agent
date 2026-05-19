@@ -35,11 +35,17 @@ from _event_study_common import (  # noqa: E402
     DEFAULT_WINDOWS,
     add_common_event_study_args,
     align_events_to_daily_candles,
+    attach_holdout_to_report,
+    attach_provenance,
+    fetch_daily_ohlc,
     fetch_daily_ohlc_from_args,
     run_event_study_pipeline,
     write_json_report,
 )
+from src.data.collectors.binance_public import default_ohlc_daily_cache_path
+from src.data.collectors._provenance import safe_git_commit
 from src.crypto_ohlc_rest import CryptoOHLCFetchError
+from src.data.collectors._common import CollectorError
 from src.research.event_study import EventStudyWindow, run_event_study
 from src.research.placebo import empirical_p_value, shift_events_in_time, shuffle_labels
 from src.signals.volume_shock import (
@@ -83,7 +89,31 @@ def parse_args() -> argparse.Namespace:
         default=_REPO_ROOT / "reports" / "research_runs_phase11",
         help="Directory for JSON artifacts (default reports/research_runs_phase11/).",
     )
+    p.add_argument(
+        "--assets",
+        type=str,
+        default=None,
+        help="Comma-separated tickers for multi-asset Phase 13 (e.g. BTC,ETH,SOL).",
+    )
+    p.add_argument(
+        "--protocol",
+        type=str,
+        default=None,
+        help="Agentic protocol label stored in JSON (e.g. protocol_a).",
+    )
+    p.add_argument(
+        "--embargo-days",
+        type=int,
+        default=0,
+        help="Embargo calendar days around hold-out split (filtered in holdout.py; 0 = none).",
+    )
     return p.parse_args()
+
+
+def parse_assets_list(raw: str | None) -> list[str]:
+    if not raw:
+        return []
+    return [part.strip().upper() for part in raw.split(",") if part.strip()]
 
 
 def _per_event_metric_values(
@@ -199,6 +229,9 @@ def run_variant_study(
     n_placebos: int,
     seed: int,
     alpha: float,
+    enable_holdout: bool = False,
+    holdout_fraction: float = 0.5,
+    embargo_days: int = 0,
 ) -> dict[str, Any]:
     hypothesis = (
         f"{variant} on {ticker} daily OHLC -> forward return / vol / max DD "
@@ -302,11 +335,170 @@ def run_variant_study(
     }
     report["research_verdict"] = research_verdict
     report["tradable"] = False
+
+    if enable_holdout and events:
+        report = attach_holdout_to_report(
+            report,
+            candles=candles,
+            events=events,
+            metrics=PHASE11_METRICS,
+            windows=DEFAULT_WINDOWS,
+            holdout_fraction=holdout_fraction,
+            embargo_days=embargo_days,
+            n_placebos=n_placebos,
+            seed=seed,
+            alpha=alpha,
+            reference_metric="realized_vol",
+            reference_window="post_7",
+        )
+        holdout_block = report.get("holdout") or {}
+        if not holdout_block.get("oos_survives", False):
+            if report["research_verdict"] == "candidate for OOS":
+                report["research_verdict"] = "weak evidence"
+            report["holdout_status"] = "failed"
+        else:
+            report["holdout_status"] = "passed"
+        if embargo_days > 0:
+            report["embargo_days_requested"] = embargo_days
+            report["embargo_days_applied"] = int(
+                holdout_block.get("embargo_days_applied", 0) or 0
+            )
+
     return report
+
+
+def _run_ticker_block(
+    args: argparse.Namespace,
+    *,
+    ticker: str,
+    variants: list[str],
+) -> tuple[dict[str, Any], int]:
+    """Run all variants for one asset; return asset block and exit code."""
+    cache_path = getattr(args, "ohlc_cache_path", None) or default_ohlc_daily_cache_path(
+        ticker
+    )
+    try:
+        candles = fetch_daily_ohlc(
+            ticker,
+            args.days,
+            ohlc_source=args.ohlc_source,
+            ohlc_cache_path=cache_path,
+            use_cache_only=bool(args.use_cache_only),
+        )
+    except (CryptoOHLCFetchError, CollectorError, OSError, ValueError) as exc:
+        return (
+            {
+                "status": "blocked_data",
+                "blocked_reason": str(exc),
+                "ticker": ticker,
+                "cache_path": str(cache_path),
+                "variants": {},
+            },
+            2,
+        )
+
+    if not candles:
+        return (
+            {
+                "status": "blocked_data",
+                "blocked_reason": "0 candles after fetch",
+                "ticker": ticker,
+                "variants": {},
+            },
+            2,
+        )
+
+    print(f"[{TAG}] {ticker} daily OHLC: {len(candles)} candles")
+    asset_block: dict[str, Any] = {
+        "status": "ok",
+        "ticker": ticker,
+        "window_days": args.days,
+        "ohlc_source": args.ohlc_source,
+        "candles_count": len(candles),
+        "variants": {},
+    }
+    worst_code = 0
+    enable_holdout = bool(getattr(args, "enable_holdout", False))
+    holdout_fraction = float(getattr(args, "holdout_fraction", 0.5))
+    embargo_days = int(getattr(args, "embargo_days", 0) or 0)
+
+    for variant in variants:
+        report = run_variant_study(
+            variant=variant,
+            candles=candles,
+            ticker=ticker,
+            days=args.days,
+            n_placebos=args.n_placebos,
+            seed=args.seed,
+            alpha=args.alpha,
+            enable_holdout=enable_holdout,
+            holdout_fraction=holdout_fraction,
+            embargo_days=embargo_days,
+        )
+        report = attach_provenance(
+            report,
+            ohlc_cache_path=cache_path,
+            ohlc_source=args.ohlc_source,
+        )
+        asset_block["variants"][variant] = report
+        print(
+            f"[{TAG}] {ticker}/{variant}: events={report['events_count']} "
+            f"rate={report.get('event_rate_fraction', 0):.1%} "
+            f"research_verdict={report['research_verdict']}"
+        )
+        if report["research_verdict"] == "blocked":
+            worst_code = max(worst_code, 2)
+
+    asset_block["data_provenance"] = attach_provenance(
+        {},
+        ohlc_cache_path=cache_path,
+        ohlc_source=args.ohlc_source,
+    ).get("data_provenance")
+    return asset_block, worst_code
 
 
 def main() -> int:
     args = parse_args()
+    assets = parse_assets_list(args.assets)
+    variants = list(EVENT_VARIANTS) if args.run_all_variants else [args.variant]
+
+    if assets:
+        reports: dict[str, Any] = {
+            "tag": TAG,
+            "phase": "phase13",
+            "protocol": args.protocol or "multi_asset",
+            "hypothesis": (
+                "Pre-registered volume shock (z>=2) multi-asset proxy for "
+                "forward vol/risk — NOT directional, NOT tradable"
+            ),
+            "window_days": args.days,
+            "ohlc_source": args.ohlc_source,
+            "git_commit": safe_git_commit(),
+            "embargo_days_requested": int(args.embargo_days or 0),
+            "embargo_days_applied": int(args.embargo_days or 0)
+            if int(args.embargo_days or 0) > 0
+            and bool(getattr(args, "enable_holdout", False))
+            else 0,
+            "holdout_enabled": bool(getattr(args, "enable_holdout", False)),
+            "holdout_fraction": float(getattr(args, "holdout_fraction", 0.5)),
+            "assets": {},
+        }
+        worst_code = 0
+        for ticker in assets:
+            block, code = _run_ticker_block(args, ticker=ticker, variants=variants)
+            reports["assets"][ticker] = block
+            worst_code = max(worst_code, code)
+
+        if args.output_json is not None:
+            out_path = args.output_json
+        elif args.protocol:
+            out_path = (
+                args.output_dir / f"volume_shock_{args.protocol}_{args.days}d.json"
+            )
+        else:
+            out_path = args.output_dir / f"volume_shock_multi_asset_{args.days}d.json"
+        write_json_report(out_path, reports, tag=TAG)
+        return worst_code
 
     try:
         candles = fetch_daily_ohlc_from_args(args)
@@ -318,8 +510,7 @@ def main() -> int:
         return 3
     print(f"[{TAG}] {args.ticker} daily OHLC: {len(candles)} candles")
 
-    variants = list(EVENT_VARIANTS) if args.run_all_variants else [args.variant]
-    reports: dict[str, Any] = {
+    single: dict[str, Any] = {
         "tag": TAG,
         "ticker": args.ticker,
         "window_days": args.days,
@@ -329,6 +520,13 @@ def main() -> int:
     }
 
     worst_code = 0
+    enable_holdout = bool(getattr(args, "enable_holdout", False))
+    holdout_fraction = float(getattr(args, "holdout_fraction", 0.5))
+    embargo_days = int(getattr(args, "embargo_days", 0) or 0)
+    cache_path = getattr(args, "ohlc_cache_path", None) or default_ohlc_daily_cache_path(
+        args.ticker
+    )
+
     for variant in variants:
         report = run_variant_study(
             variant=variant,
@@ -338,15 +536,22 @@ def main() -> int:
             n_placebos=args.n_placebos,
             seed=args.seed,
             alpha=args.alpha,
+            enable_holdout=enable_holdout,
+            holdout_fraction=holdout_fraction,
+            embargo_days=embargo_days,
         )
-        reports["variants"][variant] = report
+        report = attach_provenance(
+            report,
+            ohlc_cache_path=cache_path,
+            ohlc_source=args.ohlc_source,
+        )
+        single["variants"][variant] = report
         print(
             f"[{TAG}] {variant}: events={report['events_count']} "
             f"rate={report['event_rate_fraction']:.1%} "
             f"research_verdict={report['research_verdict']}"
         )
-        rv = report["research_verdict"]
-        if rv == "blocked":
+        if report["research_verdict"] == "blocked":
             worst_code = max(worst_code, 2)
 
     if args.output_json is not None:
@@ -356,7 +561,7 @@ def main() -> int:
     else:
         out_path = args.output_dir / f"{args.variant}_{args.days}d.json"
 
-    payload = reports if args.run_all_variants else reports["variants"][variants[0]]
+    payload = single if args.run_all_variants else single["variants"][variants[0]]
     write_json_report(out_path, payload, tag=TAG)
 
     return worst_code

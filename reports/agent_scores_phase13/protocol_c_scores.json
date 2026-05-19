@@ -1,0 +1,14 @@
+{
+  "schema_version": "phase13-v1",
+  "protocol": "protocol_c",
+  "roles": {
+    "data_auditor": 9,
+    "builder": 8,
+    "sceptic": 9,
+    "economist": 8,
+    "repro_auditor": 9,
+    "pm_gatekeeper": 10
+  },
+  "total": 53,
+  "max": 60
+}
