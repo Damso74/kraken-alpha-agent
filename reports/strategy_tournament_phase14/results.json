@@ -1,0 +1,205 @@
+{
+  "timeframe": "1d",
+  "cash": 1000.0,
+  "fee_bps": 40.0,
+  "slippage_bps": 5.0,
+  "runs": [
+    {
+      "run_id": "BTC_trend_following",
+      "asset": "BTC",
+      "strategy": "trend_following",
+      "verdict": "blocked_risk",
+      "verdict_reasons": [
+        "risk_denial_rate=43.75%"
+      ],
+      "total_return_pct": -4.221063430443882,
+      "sharpe_ratio": -0.538556700814564,
+      "max_drawdown_pct": 8.766647725673863,
+      "trade_count": 9,
+      "fees_usd": 8.64772752056851,
+      "slippage_drag_usd": 1.0808956015674482,
+      "fee_bps": 40.0,
+      "slippage_bps": 5.0,
+      "data_ok": true,
+      "risk_denials_count": 7,
+      "risk_denial_rate": 0.4375,
+      "risk_rules_triggered": [
+        "max_position_fraction"
+      ],
+      "stopped_by_risk": false
+    },
+    {
+      "run_id": "BTC_breakout",
+      "asset": "BTC",
+      "strategy": "breakout",
+      "verdict": "blocked_costs",
+      "verdict_reasons": [
+        "cost_drag_pct=100.00"
+      ],
+      "total_return_pct": -6.168845279106449,
+      "sharpe_ratio": -0.7819018834133377,
+      "max_drawdown_pct": 11.913919541916632,
+      "trade_count": 9,
+      "fees_usd": 8.49320242011592,
+      "slippage_drag_usd": 1.0615760830086174,
+      "fee_bps": 40.0,
+      "slippage_bps": 5.0,
+      "data_ok": true,
+      "risk_denials_count": 2,
+      "risk_denial_rate": 0.1818,
+      "risk_rules_triggered": [
+        "max_position_fraction"
+      ],
+      "stopped_by_risk": false
+    },
+    {
+      "run_id": "BTC_mean_reversion",
+      "asset": "BTC",
+      "strategy": "mean_reversion",
+      "verdict": "blocked_risk",
+      "verdict_reasons": [
+        "max_drawdown_pct=15.62",
+        "risk_denial_rate=95.42%"
+      ],
+      "total_return_pct": -5.176562681049086,
+      "sharpe_ratio": -0.38557990861476493,
+      "max_drawdown_pct": 15.61695391944423,
+      "trade_count": 13,
+      "fees_usd": 12.18464239129429,
+      "slippage_drag_usd": 1.5230034658029865,
+      "fee_bps": 40.0,
+      "slippage_bps": 5.0,
+      "data_ok": true,
+      "risk_denials_count": 271,
+      "risk_denial_rate": 0.9542,
+      "risk_rules_triggered": [
+        "max_position_fraction"
+      ],
+      "stopped_by_risk": false
+    },
+    {
+      "run_id": "BTC_grid",
+      "asset": "BTC",
+      "strategy": "grid",
+      "verdict": "blocked_costs",
+      "verdict_reasons": [
+        "cost_drag_pct=100.00"
+      ],
+      "total_return_pct": -4.396227539037795,
+      "sharpe_ratio": -0.6979693263959303,
+      "max_drawdown_pct": 8.061648124561668,
+      "trade_count": 9,
+      "fees_usd": 3.774148965720234,
+      "slippage_drag_usd": 0.47175869162306583,
+      "fee_bps": 40.0,
+      "slippage_bps": 5.0,
+      "data_ok": true,
+      "risk_denials_count": 1,
+      "risk_denial_rate": 0.1,
+      "risk_rules_triggered": [
+        "max_position_fraction"
+      ],
+      "stopped_by_risk": false
+    },
+    {
+      "run_id": "ETH_trend_following",
+      "asset": "ETH",
+      "strategy": "trend_following",
+      "verdict": "insufficient_trades",
+      "verdict_reasons": [
+        "trade_count=3 < 5"
+      ],
+      "total_return_pct": -9.481746190870535,
+      "sharpe_ratio": -0.46408685426055435,
+      "max_drawdown_pct": 23.85449598832216,
+      "trade_count": 3,
+      "fees_usd": 2.951987084340934,
+      "slippage_drag_usd": 0.3689342866618972,
+      "fee_bps": 40.0,
+      "slippage_bps": 5.0,
+      "data_ok": true,
+      "risk_denials_count": 103,
+      "risk_denial_rate": 0.9717,
+      "risk_rules_triggered": [
+        "max_drawdown_pct",
+        "max_position_fraction"
+      ],
+      "stopped_by_risk": true
+    },
+    {
+      "run_id": "ETH_breakout",
+      "asset": "ETH",
+      "strategy": "breakout",
+      "verdict": "insufficient_trades",
+      "verdict_reasons": [
+        "trade_count=3 < 5"
+      ],
+      "total_return_pct": -10.55685073384159,
+      "sharpe_ratio": -0.45434887420257947,
+      "max_drawdown_pct": 22.895627281780115,
+      "trade_count": 3,
+      "fees_usd": 2.7674377464002653,
+      "slippage_drag_usd": 0.3458586801153274,
+      "fee_bps": 40.0,
+      "slippage_bps": 5.0,
+      "data_ok": true,
+      "risk_denials_count": 13,
+      "risk_denial_rate": 0.8125,
+      "risk_rules_triggered": [
+        "max_drawdown_pct",
+        "max_position_fraction"
+      ],
+      "stopped_by_risk": true
+    },
+    {
+      "run_id": "ETH_mean_reversion",
+      "asset": "ETH",
+      "strategy": "mean_reversion",
+      "verdict": "insufficient_trades",
+      "verdict_reasons": [
+        "trade_count=1 < 5"
+      ],
+      "total_return_pct": -3.147675847188225,
+      "sharpe_ratio": -0.054129002261994706,
+      "max_drawdown_pct": 24.95900161076625,
+      "trade_count": 1,
+      "fees_usd": 1.0005,
+      "slippage_drag_usd": 0.12499999999997158,
+      "fee_bps": 40.0,
+      "slippage_bps": 5.0,
+      "data_ok": true,
+      "risk_denials_count": 327,
+      "risk_denial_rate": 0.997,
+      "risk_rules_triggered": [
+        "max_drawdown_pct",
+        "max_position_fraction"
+      ],
+      "stopped_by_risk": true
+    },
+    {
+      "run_id": "ETH_grid",
+      "asset": "ETH",
+      "strategy": "grid",
+      "verdict": "insufficient_trades",
+      "verdict_reasons": [
+        "trade_count=2 < 5"
+      ],
+      "total_return_pct": -2.1171543149146372,
+      "sharpe_ratio": -0.042147839329023835,
+      "max_drawdown_pct": 21.063963863372066,
+      "trade_count": 2,
+      "fees_usd": 0.7982589575526777,
+      "slippage_drag_usd": 0.09973250344233975,
+      "fee_bps": 40.0,
+      "slippage_bps": 5.0,
+      "data_ok": true,
+      "risk_denials_count": 3,
+      "risk_denial_rate": 0.6,
+      "risk_rules_triggered": [
+        "max_drawdown_pct",
+        "max_position_fraction"
+      ],
+      "stopped_by_risk": true
+    }
+  ]
+}

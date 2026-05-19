@@ -26,3 +26,52 @@ def score(features: Features) -> StrategyVote:
         confidence=confidence,
         rationale=rationale,
     )
+
+
+# --- Phase 14 paper-bot (rolling high/low on OHLC) -------------------------
+
+
+from typing import Sequence  # noqa: E402
+
+from src.bot.paper_engine import BotCandle  # noqa: E402
+from src.bot.portfolio import PaperPortfolio  # noqa: E402
+
+from .base import StrategySignal  # noqa: E402
+
+
+class BreakoutStrategy:
+    """Rolling high/low breakout for paper backtests."""
+
+    name = "breakout"
+    lookback = 20
+    max_position_fraction = 0.25
+
+    def warmup_bars(self) -> int:
+        return self.lookback + 1
+
+    def on_bar(
+        self,
+        index: int,
+        candles: Sequence[BotCandle],
+        portfolio: PaperPortfolio,
+        symbol: str,
+    ) -> StrategySignal | None:
+        window = candles[max(0, index - self.lookback + 1) : index + 1]
+        if len(window) < self.lookback:
+            return StrategySignal("hold", 0.0, "warming up")
+        highs = [c.high for c in window]
+        lows = [c.low for c in window]
+        roll_high = max(highs[:-1]) if len(highs) > 1 else highs[0]
+        roll_low = min(lows[:-1]) if len(lows) > 1 else lows[0]
+        close = window[-1].close
+        pos = portfolio.position(symbol)
+
+        if close > roll_high and pos.quantity <= 1e-12:
+            return StrategySignal(
+                "buy",
+                self.max_position_fraction,
+                f"close>{roll_high:.4f}",
+            )
+        if close < roll_low and pos.quantity > 1e-12:
+            return StrategySignal("sell", 1.0, f"close<{roll_low:.4f}")
+        return StrategySignal("hold", 0.0, "inside range")
