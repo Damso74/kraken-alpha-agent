@@ -1,0 +1,125 @@
+{
+  "schema_version": "phase15-v1",
+  "generated_at_utc": "2026-05-19T20:20:26.780675+00:00",
+  "policy": "no synthetic OHLC; missing cache = blocked_data",
+  "required_columns": [
+    "close",
+    "high",
+    "low",
+    "open",
+    "timestamp",
+    "volume"
+  ],
+  "timeframes": {
+    "1d": 1440,
+    "4h": 240,
+    "1h": 60
+  },
+  "assets": {
+    "BTC": {
+      "1d": {
+        "path": "data\\collector_cache\\ohlc_daily_BTC.json",
+        "status": "available",
+        "candle_count": 736,
+        "coverage_days": 735.0,
+        "sha256": "32d7b6b00974ffb41608d1355bad7e2b036846b57e03d74c89dccb83068fa9b6",
+        "interval_minutes": 1440,
+        "first_timestamp": 1715644800,
+        "last_timestamp": 1779148800,
+        "blocked_reason": null
+      },
+      "4h": {
+        "path": "data\\collector_cache\\ohlc_4h_BTC.json",
+        "status": "blocked_data",
+        "candle_count": 0,
+        "coverage_days": 0.0,
+        "sha256": "",
+        "interval_minutes": 240,
+        "first_timestamp": null,
+        "last_timestamp": null,
+        "blocked_reason": "cache file missing"
+      },
+      "1h": {
+        "path": "data\\collector_cache\\ohlc_1h_BTC.json",
+        "status": "blocked_data",
+        "candle_count": 0,
+        "coverage_days": 0.0,
+        "sha256": "",
+        "interval_minutes": 60,
+        "first_timestamp": null,
+        "last_timestamp": null,
+        "blocked_reason": "cache file missing"
+      }
+    },
+    "ETH": {
+      "1d": {
+        "path": "data\\collector_cache\\ohlc_daily_ETH.json",
+        "status": "available",
+        "candle_count": 371,
+        "coverage_days": 370.0,
+        "sha256": "7dc8e8c6fb07020c8e9bebff52368f5f0f62de0516d2ae378e75e9550080a4f7",
+        "interval_minutes": 1440,
+        "first_timestamp": 1747180800,
+        "last_timestamp": 1779148800,
+        "blocked_reason": null
+      },
+      "4h": {
+        "path": "data\\collector_cache\\ohlc_4h_ETH.json",
+        "status": "blocked_data",
+        "candle_count": 0,
+        "coverage_days": 0.0,
+        "sha256": "",
+        "interval_minutes": 240,
+        "first_timestamp": null,
+        "last_timestamp": null,
+        "blocked_reason": "cache file missing"
+      },
+      "1h": {
+        "path": "data\\collector_cache\\ohlc_1h_ETH.json",
+        "status": "blocked_data",
+        "candle_count": 0,
+        "coverage_days": 0.0,
+        "sha256": "",
+        "interval_minutes": 60,
+        "first_timestamp": null,
+        "last_timestamp": null,
+        "blocked_reason": "cache file missing"
+      }
+    },
+    "SOL": {
+      "1d": {
+        "path": "data\\collector_cache\\ohlc_daily_SOL.json",
+        "status": "blocked_data",
+        "candle_count": 0,
+        "coverage_days": 0.0,
+        "sha256": "",
+        "interval_minutes": 1440,
+        "first_timestamp": null,
+        "last_timestamp": null,
+        "blocked_reason": "cache file missing"
+      },
+      "4h": {
+        "path": "data\\collector_cache\\ohlc_4h_SOL.json",
+        "status": "blocked_data",
+        "candle_count": 0,
+        "coverage_days": 0.0,
+        "sha256": "",
+        "interval_minutes": 240,
+        "first_timestamp": null,
+        "last_timestamp": null,
+        "blocked_reason": "cache file missing"
+      },
+      "1h": {
+        "path": "data\\collector_cache\\ohlc_1h_SOL.json",
+        "status": "blocked_data",
+        "candle_count": 0,
+        "coverage_days": 0.0,
+        "sha256": "",
+        "interval_minutes": 60,
+        "first_timestamp": null,
+        "last_timestamp": null,
+        "blocked_reason": "cache file missing"
+      }
+    }
+  }
+}

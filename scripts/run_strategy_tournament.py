@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run Phase 14 strategy tournament on cached OHLCV (no live trading)."""
+"""Run strategy tournament on cached OHLCV (Phase 14/15, no live trading)."""
 
 from __future__ import annotations
 
@@ -7,132 +7,193 @@ import argparse
 import csv
 import json
 import sys
-from datetime import date, timedelta
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from src.bot.data_loader import load_ohlcv_candles
 from src.bot.execution_simulator import ExecutionConfig, ExecutionSimulator
 from src.bot.journal import BotJournal
+from src.bot.metrics import classify_strategy_verdict, metrics_to_dict
 from src.bot.paper_engine import run_paper_backtest
 from src.bot.portfolio import PaperPortfolio
 from src.bot.risk_manager import RiskManager
-from src.data.collectors.binance_public import (
-    CollectorError,
-    default_ohlc_daily_cache_path,
-    load_ohlc_daily_cache,
-)
-from src.strategies.breakout import BreakoutStrategy
-from src.strategies.grid import GridStrategy
-from src.strategies.mean_reversion import MeanReversionStrategy
-from src.strategies.trend_following import TrendFollowingStrategy
+from src.strategies.presets import STRATEGY_CLASSES, build_strategy
 
-STRATEGIES = {
-    "trend_following": TrendFollowingStrategy,
-    "breakout": BreakoutStrategy,
-    "mean_reversion": MeanReversionStrategy,
-    "grid": GridStrategy,
-}
+STRATEGIES = STRATEGY_CLASSES
+
+
+def _load_candles(asset: str, min_rows: int = 60) -> tuple[list[dict], bool]:
+    """Phase 14 compatibility — daily cache via data_loader."""
+    _ = min_rows
+    candles, summary = load_ohlcv_candles(asset, "1d", cache_only=True)
+    ok = summary.status == "available"
+    return candles, ok
 
 
 def _parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="Phase 14 paper strategy tournament")
+    p = argparse.ArgumentParser(description="Paper strategy tournament (cache-only)")
     p.add_argument("--assets", nargs="+", default=["BTC", "ETH"])
-    p.add_argument("--timeframe", default="1d", choices=["1d"])
+    p.add_argument("--timeframe", default=None, choices=["1d", "4h", "1h"])
+    p.add_argument("--timeframes", nargs="+", default=None, choices=["1d", "4h", "1h"])
     p.add_argument("--cash", type=float, default=1000.0)
     p.add_argument("--fees-bps", type=float, default=40.0)
     p.add_argument("--slippage-bps", type=float, default=5.0)
     p.add_argument(
         "--output-dir",
         type=Path,
-        default=REPO_ROOT / "reports" / "strategy_tournament_phase14",
+        default=REPO_ROOT / "reports" / "strategy_tournament_phase15",
     )
-    p.add_argument("--min-rows", type=int, default=60)
+    p.add_argument("--cache-only", action="store_true", default=True)
+    p.add_argument("--min-rows", type=int, default=0, help="legacy; ignored if 0")
+    p.add_argument(
+        "--cache-root",
+        type=Path,
+        default=REPO_ROOT / "data" / "collector_cache",
+    )
     return p.parse_args()
 
 
-def _load_candles(asset: str, min_rows: int) -> tuple[list[dict], bool]:
-    path = default_ohlc_daily_cache_path(asset)
-    if not path.is_file():
-        return [], False
-    end = date.today()
-    start = end - timedelta(days=max(min_rows * 2, 365))
-    try:
-        rows = load_ohlc_daily_cache(path, ticker=asset, start=start, end=end, min_rows=min_rows)
-        return rows, True
-    except CollectorError:
-        return [], False
+def _resolve_timeframes(args: argparse.Namespace) -> list[str]:
+    if args.timeframes:
+        return list(args.timeframes)
+    if args.timeframe:
+        return [args.timeframe]
+    return ["1d"]
 
 
 def main() -> int:
     args = _parse_args()
+    timeframes = _resolve_timeframes(args)
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
     exec_cfg = ExecutionConfig(fee_bps=args.fees_bps, slippage_bps=args.slippage_bps)
     results: dict = {
-        "timeframe": args.timeframe,
+        "phase": 15,
+        "timeframes": timeframes,
         "cash": args.cash,
         "fee_bps": args.fees_bps,
         "slippage_bps": args.slippage_bps,
+        "cache_only": bool(args.cache_only),
         "runs": [],
     }
     all_trades: list[dict] = []
     all_equity: list[dict] = []
     all_decisions: list[dict] = []
+    matrix_rows: list[dict] = []
 
     for asset in args.assets:
-        candles, ok = _load_candles(asset.upper(), args.min_rows)
-        for strat_name, strat_cls in STRATEGIES.items():
-            journal = BotJournal()
-            portfolio = PaperPortfolio(cash_usd=args.cash)
-            result = run_paper_backtest(
-                candles,
-                strat_cls(),
-                portfolio,
-                RiskManager(),
-                ExecutionSimulator(exec_cfg),
-                journal,
-                {"starting_equity": args.cash},
-                symbol=asset.upper(),
-                data_ok=ok and len(candles) >= args.min_rows,
-            )
-            run_id = f"{asset}_{strat_name}"
-            rs = result.risk_stats
-            row = {
-                "run_id": run_id,
-                "asset": asset.upper(),
-                "strategy": strat_name,
-                "verdict": result.verdict.verdict,
-                "verdict_reasons": result.verdict.reasons,
-                "total_return_pct": result.metrics.total_return_pct,
-                "sharpe_ratio": result.metrics.sharpe_ratio,
-                "max_drawdown_pct": result.metrics.max_drawdown_pct,
-                "trade_count": result.metrics.trade_count,
-                "fees_usd": result.metrics.fees_usd,
-                "slippage_drag_usd": result.metrics.slippage_drag_usd,
-                "fee_bps": args.fees_bps,
-                "slippage_bps": args.slippage_bps,
-                "data_ok": ok and len(candles) >= args.min_rows,
-                "risk_denials_count": rs.risk_denials_count,
-                "risk_denial_rate": round(rs.risk_denial_rate, 4),
-                "risk_rules_triggered": rs.risk_rules_triggered,
-                "stopped_by_risk": rs.stopped_by_risk,
-            }
-            results["runs"].append(row)
-            for i, eq in enumerate(result.equity_curve):
-                ts = result.equity_timestamps[i] if i < len(result.equity_timestamps) else i
-                all_equity.append({"run_id": run_id, "timestamp": ts, "equity": eq})
-            if journal:
-                for t in journal.trades:
-                    t["run_id"] = run_id
-                    all_trades.append(t)
-                for d in journal.decisions_as_dicts():
-                    d["run_id"] = run_id
-                    all_decisions.append(d)
+        sym = asset.upper()
+        for tf in timeframes:
+            warmup = 0
+            for strat_name in STRATEGIES:
+                strategy = build_strategy(strat_name, tf)
+                warmup = max(warmup, strategy.warmup_bars())
 
-    (args.output_dir / "results.json").write_text(json.dumps(results, indent=2), encoding="utf-8")
+            candles, summary = load_ohlcv_candles(
+                sym,
+                tf,
+                args.cache_root,
+                cache_only=args.cache_only,
+                warmup_bars=warmup,
+            )
+            data_ok = summary.status == "available"
+
+            for strat_name in STRATEGIES:
+                strategy = build_strategy(strat_name, tf)
+                journal = BotJournal()
+                portfolio = PaperPortfolio(cash_usd=args.cash)
+                result = run_paper_backtest(
+                    candles,
+                    strategy,
+                    portfolio,
+                    RiskManager(),
+                    ExecutionSimulator(exec_cfg),
+                    journal,
+                    {"starting_equity": args.cash, "timeframe": tf},
+                    symbol=sym,
+                    data_ok=data_ok,
+                )
+                ctx = {
+                    "timeframe": tf,
+                    "data_ok": data_ok,
+                    "risk_stats": result.risk_stats,
+                    "candle_count": summary.candle_count,
+                    "usable_bars": max(0, summary.candle_count - strategy.warmup_bars()),
+                    "blocked_reason": summary.blocked_reason,
+                    "enforce_candle_minimum": data_ok,
+                }
+                result.metrics.candle_count = ctx["candle_count"]
+                result.metrics.usable_bars = ctx["usable_bars"]
+                verdict = classify_strategy_verdict(result.metrics, ctx)
+
+                run_id = f"{sym}_{tf}_{strat_name}"
+                rs = result.risk_stats
+                row = {
+                    "run_id": run_id,
+                    "asset": sym,
+                    "timeframe": tf,
+                    "strategy": strat_name,
+                    "verdict": verdict.verdict,
+                    "verdict_reasons": verdict.reasons,
+                    "data_ok": data_ok,
+                    "cache_path": summary.path,
+                    "cache_status": summary.status,
+                    **metrics_to_dict(result.metrics, rs),
+                    "fee_bps": args.fees_bps,
+                    "slippage_bps": args.slippage_bps,
+                }
+                results["runs"].append(row)
+                matrix_rows.append(
+                    {
+                        "asset": sym,
+                        "timeframe": tf,
+                        "strategy": strat_name,
+                        "verdict": verdict.verdict,
+                        "total_return_pct": result.metrics.total_return_pct,
+                        "trade_count": result.metrics.trade_count,
+                        "cost_drag_pct": result.metrics.cost_drag_pct,
+                    }
+                )
+
+                for i, eq in enumerate(result.equity_curve):
+                    ts = (
+                        result.equity_timestamps[i]
+                        if i < len(result.equity_timestamps)
+                        else i
+                    )
+                    all_equity.append(
+                        {
+                            "run_id": run_id,
+                            "asset": sym,
+                            "timeframe": tf,
+                            "timestamp": ts,
+                            "equity": eq,
+                        }
+                    )
+                if journal:
+                    for t in journal.trades:
+                        t["run_id"] = run_id
+                        t["timeframe"] = tf
+                        all_trades.append(t)
+                    for d in journal.decisions_as_dicts():
+                        d["run_id"] = run_id
+                        d["timeframe"] = tf
+                        all_decisions.append(d)
+
+    (args.output_dir / "results.json").write_text(
+        json.dumps(results, indent=2), encoding="utf-8"
+    )
+
+    if matrix_rows:
+        with (args.output_dir / "results_matrix.csv").open(
+            "w", newline="", encoding="utf-8"
+        ) as fh:
+            writer = csv.DictWriter(fh, fieldnames=list(matrix_rows[0].keys()))
+            writer.writeheader()
+            writer.writerows(matrix_rows)
 
     if all_trades:
         with (args.output_dir / "trades.csv").open("w", newline="", encoding="utf-8") as fh:
@@ -141,8 +202,13 @@ def main() -> int:
             writer.writerows(all_trades)
 
     if all_equity:
-        with (args.output_dir / "equity_curve.csv").open("w", newline="", encoding="utf-8") as fh:
-            writer = csv.DictWriter(fh, fieldnames=["run_id", "timestamp", "equity"])
+        with (args.output_dir / "equity_curve.csv").open(
+            "w", newline="", encoding="utf-8"
+        ) as fh:
+            writer = csv.DictWriter(
+                fh,
+                fieldnames=["run_id", "asset", "timeframe", "timestamp", "equity"],
+            )
             writer.writeheader()
             writer.writerows(all_equity)
 
@@ -150,7 +216,16 @@ def main() -> int:
         for d in all_decisions:
             fh.write(json.dumps(d) + "\n")
 
-    print(json.dumps({"output_dir": str(args.output_dir), "runs": len(results["runs"])}, indent=2))
+    print(
+        json.dumps(
+            {
+                "output_dir": str(args.output_dir),
+                "runs": len(results["runs"]),
+                "timeframes": timeframes,
+            },
+            indent=2,
+        )
+    )
     return 0
 
 

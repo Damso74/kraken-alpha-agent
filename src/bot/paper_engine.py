@@ -11,6 +11,7 @@ from .metrics import (
     BacktestMetrics,
     RiskRunStats,
     VerdictResult,
+    classify_strategy_verdict,
     compute_metrics,
     compute_verdict,
 )
@@ -226,19 +227,50 @@ def run_paper_backtest(
             risk_stats.grid_inventory_exceeded = True
 
     risk_stats.risk_rules_triggered = sorted(rules_seen)
+    timeframe = str(cfg.get("timeframe", "1d"))
+    candle_count = len(bars)
+    usable_bars = max(0, candle_count - warmup)
     metrics = compute_metrics(
         equity_curve=equity_curve,
         trade_pnls=trade_pnls,
         fees_usd=portfolio.fees_paid_usd,
         slippage_drag_usd=slippage_drag,
         starting_equity=float(cfg.get("starting_equity", portfolio.cash_usd)),
+        candle_count=candle_count,
+        usable_bars=usable_bars,
+        timeframe=timeframe,
     )
-    verdict = compute_verdict(
-        metrics,
-        data_ok=data_ok,
-        risk_stats=risk_stats,
-        allow_micro_live=bool(cfg.get("allow_micro_live", False)),
-    )
+    if cfg.get("use_classify_verdict", True):
+        verdict = classify_strategy_verdict(
+            metrics,
+            {
+                "timeframe": timeframe,
+                "data_ok": data_ok,
+                "risk_stats": risk_stats,
+                "candle_count": candle_count,
+                "usable_bars": usable_bars,
+            },
+        )
+        if bool(cfg.get("allow_micro_live", False)) and verdict.verdict == "paper_candidate":
+            verdict = compute_verdict(
+                metrics,
+                data_ok=data_ok,
+                risk_stats=risk_stats,
+                allow_micro_live=True,
+                timeframe=timeframe,
+                candle_count=candle_count,
+                usable_bars=usable_bars,
+            )
+    else:
+        verdict = compute_verdict(
+            metrics,
+            data_ok=data_ok,
+            risk_stats=risk_stats,
+            allow_micro_live=bool(cfg.get("allow_micro_live", False)),
+            timeframe=timeframe,
+            candle_count=candle_count,
+            usable_bars=usable_bars,
+        )
     return BacktestResult(
         metrics=metrics,
         verdict=verdict,

@@ -41,3 +41,11 @@ Ne pas modifier pour intégrer le bot papier : `config.yaml`, `src/execution.py`
 ## Verdicts tournoi
 
 Voir `src/bot/metrics.py`. `micro_live_candidate` nécessite `allow_micro_live=True` (désactivé par défaut).
+
+## Phase 15 — multi-timeframe (addendum)
+
+- Loader : `src/bot/data_loader.py` (`1d` → `ohlc_daily_*`, `4h` → `ohlc_4h_*`, `1h` → `ohlc_1h_*`).
+- Presets verrouillés : `src/strategies/presets.py` (`phase15_1d` / `phase15_4h` / `phase15_1h`).
+- Tournoi V2 : `python scripts/run_strategy_tournament.py --timeframes 1d 4h 1h --cache-only`.
+- Verdict centralisé : `classify_strategy_verdict()` — inclut `insufficient_candles`, `weak` ; pas de `micro_live_candidate`.
+- Rapport : `reports/STRATEGY_TOURNAMENT_PHASE15.md`.
