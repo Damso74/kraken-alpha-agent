@@ -1,0 +1,29 @@
+usage: event_study_exchange_status.py [-h] [--days DAYS] [--ticker TICKER]
+                                      [--n-placebos N_PLACEBOS] [--seed SEED]
+                                      [--alpha ALPHA] [--use-cache-only]
+                                      [--output-json OUTPUT_JSON]
+                                      [--venue {all,kraken,coinbase}]
+                                      [--min-impact {minor,major,critical}]
+                                      [--cache-path CACHE_PATH]
+
+Event study: Statuspage exchange incidents vs forward crypto returns/vol
+(read-only).
+
+options:
+  -h, --help            show this help message and exit
+  --days DAYS           Look-back window in days (default 180).
+  --ticker TICKER       Crypto ticker for Kraken public OHLC (default 'BTC').
+  --n-placebos N_PLACEBOS
+                        Placebo bootstrap replicates (default 200).
+  --seed SEED           Master seed for placebo bootstrap (default 20260519).
+  --alpha ALPHA         Target FDR for Benjamini-Hochberg (default 0.05).
+  --use-cache-only      Do not perform live HTTP for signal feeds (cache must
+                        cover the window).
+  --output-json OUTPUT_JSON
+                        Optional path to write the full JSON report.
+  --venue {all,kraken,coinbase}
+                        Statuspage venue filter (default all).
+  --min-impact {minor,major,critical}
+                        Minimum incident impact tier (default major).
+  --cache-path CACHE_PATH
+                        Statuspage incidents JSON cache path.

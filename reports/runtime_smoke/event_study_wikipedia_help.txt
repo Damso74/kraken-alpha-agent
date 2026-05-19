@@ -1,0 +1,35 @@
+usage: event_study_wikipedia.py [-h] [--days DAYS] [--ticker TICKER]
+                                [--n-placebos N_PLACEBOS] [--seed SEED]
+                                [--alpha ALPHA] [--use-cache-only]
+                                [--output-json OUTPUT_JSON]
+                                [--article ARTICLE] [--project PROJECT]
+                                [--mode {momentum,contrarian}]
+                                [--z-threshold Z_THRESHOLD]
+                                [--lookback LOOKBACK]
+                                [--cache-path CACHE_PATH]
+
+Event study: Wikipedia pageview z-score events vs forward crypto returns
+(read-only).
+
+options:
+  -h, --help            show this help message and exit
+  --days DAYS           Look-back window in days (default 180).
+  --ticker TICKER       Crypto ticker for Kraken public OHLC (default 'BTC').
+  --n-placebos N_PLACEBOS
+                        Placebo bootstrap replicates (default 200).
+  --seed SEED           Master seed for placebo bootstrap (default 20260519).
+  --alpha ALPHA         Target FDR for Benjamini-Hochberg (default 0.05).
+  --use-cache-only      Do not perform live HTTP for signal feeds (cache must
+                        cover the window).
+  --output-json OUTPUT_JSON
+                        Optional path to write the full JSON report.
+  --article ARTICLE     Wikipedia article title (default Bitcoin).
+  --project PROJECT     Wikimedia project (default en.wikipedia).
+  --mode {momentum,contrarian}
+                        momentum=high z spike; contrarian=low z vacuum
+                        (default momentum).
+  --z-threshold Z_THRESHOLD
+                        Absolute z-score threshold (default 2.0).
+  --lookback LOOKBACK   Rolling z-score window in days (default 30).
+  --cache-path CACHE_PATH
+                        Wikimedia pageviews JSON cache path.

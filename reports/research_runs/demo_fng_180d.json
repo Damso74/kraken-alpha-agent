@@ -1,0 +1,72 @@
+{
+  "hypothesis": "F&G < 25 \u2192 positive forward return on BTC",
+  "window_days": 180,
+  "fear_threshold": 25,
+  "n_placebos": 200,
+  "seed": 20260519,
+  "alpha": 0.05,
+  "candles_count": 185,
+  "events_count": 113,
+  "events_used": 113,
+  "events_skipped_oob": 0,
+  "baseline": {
+    "return": 0.0
+  },
+  "cells": [
+    {
+      "metric": "return",
+      "window": "post_1",
+      "mean": 0.0,
+      "baseline": 0.0,
+      "n_events": 113,
+      "two_sided_p": 1.0
+    },
+    {
+      "metric": "return",
+      "window": "post_3",
+      "mean": 0.0010517908027580694,
+      "baseline": 0.0,
+      "n_events": 113,
+      "two_sided_p": 0.13930348258706468
+    },
+    {
+      "metric": "return",
+      "window": "post_7",
+      "mean": 0.004296166664880421,
+      "baseline": 0.0,
+      "n_events": 113,
+      "two_sided_p": 0.009950248756218905
+    },
+    {
+      "metric": "realized_vol",
+      "window": "post_3",
+      "mean": 0.02043022130318499,
+      "baseline": NaN,
+      "n_events": 113,
+      "two_sided_p": 0.04975124378109453
+    },
+    {
+      "metric": "realized_vol",
+      "window": "post_7",
+      "mean": 0.024508433940920775,
+      "baseline": NaN,
+      "n_events": 113,
+      "two_sided_p": 0.009950248756218905
+    }
+  ],
+  "bh_rejected": 2,
+  "bh_q_values": [
+    1.0,
+    0.17412935323383086,
+    0.02487562189054726,
+    0.08291873963515754,
+    0.02487562189054726
+  ],
+  "bh_rejected_mask": [
+    false,
+    false,
+    true,
+    false,
+    true
+  ]
+}

@@ -1,0 +1,4 @@
+[stablecoins] stablecoin supply rows: 31
+2026-05-19T19:35:27 | INFO    | httpx | HTTP Request: GET https://api.kraken.com/0/public/OHLC?pair=XBTUSD&interval=1440&since=1776188126 "HTTP/1.1 200 OK"
+2026-05-19T19:35:27 | INFO    | httpx | HTTP Request: GET https://api.kraken.com/0/public/OHLC?pair=XBTUSD&interval=1440&since=1779062400 "HTTP/1.1 200 OK"
+[stablecoins] BTC daily OHLC: 35 candles

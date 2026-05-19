@@ -1,0 +1,1 @@
+[eth_gas] FATAL --use-cache-only but no gas history at C:\Users\credo\Documents\Code_Informatique\Projets-en-cours\kraken-alpha-agent\data\collector_cache\etherscan_gas_history.json. Seed or append rows (see C:\Users\credo\Documents\Code_Informatique\Projets-en-cours\kraken-alpha-agent\data\collector_cache\README.md).

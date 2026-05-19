@@ -12,6 +12,10 @@ data/*.csv
 data/*.md
 data/ohlc_cache/
 data/external_cache/
+data/collector_cache/*
+!data/collector_cache/README.md
+!data/collector_cache/examples/
+!data/collector_cache/examples/**
 data/optuna_crypto_results.json
 data/walk_forward_with_signals_results.json
 !data/.gitkeep

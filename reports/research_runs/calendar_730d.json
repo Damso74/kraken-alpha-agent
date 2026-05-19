@@ -1,0 +1,74 @@
+{
+  "hypothesis": "calendar weekend_start boundary \u2192 forward BTC return/vol",
+  "verdict": "not supported, move on",
+  "events_count": 103,
+  "events_used": 103,
+  "events_skipped_oob": 0,
+  "candles_count": 721,
+  "n_placebos": 200,
+  "seed": 20260519,
+  "alpha": 0.05,
+  "baseline": {
+    "return": 0.0
+  },
+  "cells": [
+    {
+      "metric": "return",
+      "window": "post_1",
+      "mean": 0.0,
+      "baseline": 0.0,
+      "n_events": 103,
+      "two_sided_p": 1.0
+    },
+    {
+      "metric": "return",
+      "window": "post_3",
+      "mean": 0.002910236009337183,
+      "baseline": 0.0,
+      "n_events": 103,
+      "two_sided_p": 0.5870646766169154
+    },
+    {
+      "metric": "return",
+      "window": "post_7",
+      "mean": 0.003656391359852631,
+      "baseline": 0.0,
+      "n_events": 102,
+      "two_sided_p": 0.9552238805970149
+    },
+    {
+      "metric": "realized_vol",
+      "window": "post_3",
+      "mean": 0.02075744539690051,
+      "baseline": NaN,
+      "n_events": 103,
+      "two_sided_p": 0.09950248756218906
+    },
+    {
+      "metric": "realized_vol",
+      "window": "post_7",
+      "mean": 0.022032585514869734,
+      "baseline": NaN,
+      "n_events": 102,
+      "two_sided_p": 0.7064676616915423
+    }
+  ],
+  "bh_rejected": 0,
+  "bh_q_values": [
+    1.0,
+    1.0,
+    1.0,
+    0.4975124378109453,
+    1.0
+  ],
+  "bh_rejected_mask": [
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "calendar_flag": "weekend_start",
+  "ticker": "BTC",
+  "window_days": 730
+}

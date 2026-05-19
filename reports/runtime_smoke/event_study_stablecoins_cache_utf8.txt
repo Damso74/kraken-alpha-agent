@@ -1,0 +1,19 @@
+﻿[stablecoins] stablecoin supply rows: 31
+2026-05-19T19:36:22 | INFO    | httpx | HTTP Request: GET https://api.kraken.com/0/public/OHLC?pair=XBTUSD&interval=1440&since=1776188181 "HTTP/1.1 200 OK"
+2026-05-19T19:36:22 | INFO    | httpx | HTTP Request: GET https://api.kraken.com/0/public/OHLC?pair=XBTUSD&interval=1440&since=1779062400 "HTTP/1.1 200 OK"
+[stablecoins] BTC daily OHLC: 35 candles
+[stablecoins] hypothesis: stablecoin supply high z>=1.5 -> forward BTC return/vol
+[stablecoins] events aligned to daily candles: 0 (0.0% of candles)
+[stablecoins] WARNING fewer than 5 events ÔÇö statistical power is negligible.
+[stablecoins] event study: 0 used, 0 skipped at boundary
+
+metric         window        n       mean   baseline    two-sided p
+----------------------------------------------------------------------
+return         post_1        0        n/a        n/a            n/a
+return         post_3        0        n/a        n/a            n/a
+return         post_7        0        n/a        n/a            n/a
+realized_vol   post_1        0        n/a        n/a            n/a
+realized_vol   post_3        0        n/a        n/a            n/a
+realized_vol   post_7        0        n/a        n/a            n/a
+[stablecoins] VERDICT: weak evidence
+[stablecoins] full report written to reports\runtime_smoke\event_study_stablecoins_cache_only.json

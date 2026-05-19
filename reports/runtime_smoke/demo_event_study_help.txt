@@ -1,0 +1,29 @@
+usage: demo_event_study.py [-h] [--days DAYS] [--ticker TICKER]
+                           [--fear-threshold FEAR_THRESHOLD]
+                           [--n-placebos N_PLACEBOS] [--seed SEED]
+                           [--alpha ALPHA] [--cache-path CACHE_PATH]
+                           [--use-cache-only] [--json-out JSON_OUT]
+
+Demo end-to-end run of the research harness on the 'extreme fear precedes a
+positive 7d return' hypothesis.
+
+options:
+  -h, --help            show this help message and exit
+  --days DAYS           Look-back window in days (default 180).
+  --ticker TICKER       Crypto ticker to study (default 'BTC').
+  --fear-threshold FEAR_THRESHOLD
+                        Fear & Greed value strictly below which we declare an
+                        event (default 25).
+  --n-placebos N_PLACEBOS
+                        Number of placebo bootstrap replicates (default 200).
+  --seed SEED           Master seed for the placebo bootstrap (default
+                        20260519).
+  --alpha ALPHA         Target FDR for the BH correction (default 0.05).
+  --cache-path CACHE_PATH
+                        Path to the Fear & Greed cache JSON. Created on first
+                        run (default data\external_cache\fear_greed.json).
+  --use-cache-only      Do not perform live HTTP calls for the Fear & Greed
+                        feed. Fails fast if the cache is empty / missing
+                        dates.
+  --json-out JSON_OUT   Optional path; if set, the full report is also written
+                        here.

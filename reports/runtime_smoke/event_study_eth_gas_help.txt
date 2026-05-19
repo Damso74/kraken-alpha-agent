@@ -1,0 +1,31 @@
+usage: event_study_eth_gas.py [-h] [--days DAYS] [--ticker TICKER]
+                              [--n-placebos N_PLACEBOS] [--seed SEED]
+                              [--alpha ALPHA] [--use-cache-only]
+                              [--output-json OUTPUT_JSON]
+                              [--z-threshold Z_THRESHOLD]
+                              [--lookback LOOKBACK]
+                              [--history-cache HISTORY_CACHE]
+                              [--snapshot-cache SNAPSHOT_CACHE]
+
+Event study: ETH gas congestion z-score vs forward ETH returns/vol (read-only;
+needs gas history cache).
+
+options:
+  -h, --help            show this help message and exit
+  --days DAYS           Look-back window in days (default 180).
+  --ticker TICKER       Crypto ticker for Kraken public OHLC (default 'ETH').
+  --n-placebos N_PLACEBOS
+                        Placebo bootstrap replicates (default 200).
+  --seed SEED           Master seed for placebo bootstrap (default 20260519).
+  --alpha ALPHA         Target FDR for Benjamini-Hochberg (default 0.05).
+  --use-cache-only      Do not perform live HTTP for signal feeds (cache must
+                        cover the window).
+  --output-json OUTPUT_JSON
+                        Optional path to write the full JSON report.
+  --z-threshold Z_THRESHOLD
+                        Minimum fast-gwei z-score (default 1.5).
+  --lookback LOOKBACK   Rolling z-score window in observations (default 180).
+  --history-cache HISTORY_CACHE
+                        JSON file with daily gas rows (timestamp, fast_gwei).
+  --snapshot-cache SNAPSHOT_CACHE
+                        Etherscan snapshot cache for live oracle fetch.

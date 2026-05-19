@@ -1,0 +1,76 @@
+{
+  "hypothesis": "exchange status impact>=major (all) \u2192 abnormal forward BTC return/vol",
+  "verdict": "weak evidence",
+  "events_count": 2,
+  "events_used": 2,
+  "events_skipped_oob": 0,
+  "candles_count": 370,
+  "n_placebos": 200,
+  "seed": 20260519,
+  "alpha": 0.05,
+  "baseline": {
+    "return": 0.0
+  },
+  "cells": [
+    {
+      "metric": "return",
+      "window": "post_1",
+      "mean": 0.0,
+      "baseline": 0.0,
+      "n_events": 2,
+      "two_sided_p": 1.0
+    },
+    {
+      "metric": "return",
+      "window": "post_3",
+      "mean": 0.0023166788735438154,
+      "baseline": 0.0,
+      "n_events": 2,
+      "two_sided_p": 0.945273631840796
+    },
+    {
+      "metric": "return",
+      "window": "post_7",
+      "mean": 0.0038053471282505635,
+      "baseline": 0.0,
+      "n_events": 2,
+      "two_sided_p": 0.9552238805970149
+    },
+    {
+      "metric": "realized_vol",
+      "window": "post_3",
+      "mean": 0.03220617564783766,
+      "baseline": NaN,
+      "n_events": 2,
+      "two_sided_p": 0.07960199004975124
+    },
+    {
+      "metric": "realized_vol",
+      "window": "post_7",
+      "mean": 0.019438779317645087,
+      "baseline": NaN,
+      "n_events": 2,
+      "two_sided_p": 0.746268656716418
+    }
+  ],
+  "bh_rejected": 0,
+  "bh_q_values": [
+    1.0,
+    1.0,
+    1.0,
+    0.3980099502487562,
+    1.0
+  ],
+  "bh_rejected_mask": [
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "venue": "all",
+  "min_impact": "major",
+  "incident_rows": 100,
+  "ticker": "BTC",
+  "window_days": 365
+}

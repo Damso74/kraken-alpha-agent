@@ -1,0 +1,297 @@
+{
+  "tag": "volume_shock",
+  "ticker": "BTC",
+  "window_days": 365,
+  "ohlc_source": "cache",
+  "candles_count": 371,
+  "variants": {
+    "vol_z20_high": {
+      "hypothesis": "vol_z20_high on BTC daily OHLC \u2192 forward return / vol / max DD (z\u22652.0 pre-registered; NOT tradeable)",
+      "verdict": "supported",
+      "events_count": 18,
+      "events_used": 18,
+      "events_skipped_oob": 0,
+      "candles_count": 371,
+      "n_placebos": 200,
+      "seed": 20260519,
+      "alpha": 0.05,
+      "baseline": {
+        "return": 0.0,
+        "max_drawdown": 0.0
+      },
+      "cells": [
+        {
+          "metric": "return",
+          "window": "post_1",
+          "mean": 0.0,
+          "baseline": 0.0,
+          "n_events": 18,
+          "two_sided_p": 1.0
+        },
+        {
+          "metric": "return",
+          "window": "post_3",
+          "mean": -0.011441981346328628,
+          "baseline": 0.0,
+          "n_events": 18,
+          "two_sided_p": 0.1691542288557214
+        },
+        {
+          "metric": "return",
+          "window": "post_7",
+          "mean": -0.04346723092026633,
+          "baseline": 0.0,
+          "n_events": 18,
+          "two_sided_p": 0.009950248756218905
+        },
+        {
+          "metric": "realized_vol",
+          "window": "post_3",
+          "mean": 0.02021391901338075,
+          "baseline": NaN,
+          "n_events": 18,
+          "two_sided_p": 0.208955223880597
+        },
+        {
+          "metric": "realized_vol",
+          "window": "post_7",
+          "mean": 0.03108952616619763,
+          "baseline": NaN,
+          "n_events": 18,
+          "two_sided_p": 0.009950248756218905
+        },
+        {
+          "metric": "max_drawdown",
+          "window": "post_1",
+          "mean": 0.0,
+          "baseline": 0.0,
+          "n_events": 18,
+          "two_sided_p": 1.0
+        },
+        {
+          "metric": "max_drawdown",
+          "window": "post_3",
+          "mean": -0.026333712921874145,
+          "baseline": 0.0,
+          "n_events": 18,
+          "two_sided_p": 0.06965174129353234
+        },
+        {
+          "metric": "max_drawdown",
+          "window": "post_7",
+          "mean": -0.08129340833456399,
+          "baseline": 0.0,
+          "n_events": 18,
+          "two_sided_p": 0.009950248756218905
+        }
+      ],
+      "bh_rejected": 3,
+      "bh_q_values": [
+        1.0,
+        0.27064676616915423,
+        0.026533996683250415,
+        0.27860696517412936,
+        0.026533996683250415,
+        1.0,
+        0.13930348258706468,
+        0.026533996683250415
+      ],
+      "bh_rejected_mask": [
+        false,
+        false,
+        true,
+        false,
+        true,
+        false,
+        false,
+        true
+      ],
+      "variant": "vol_z20_high",
+      "ticker": "BTC",
+      "window_days": 365,
+      "event_rate_fraction": 0.0485,
+      "g2_blocked_by_rate": false,
+      "placebos": {
+        "random_dates_bootstrap_n": 200,
+        "shift_plus_30d_seconds": 2592000,
+        "shift_return_post_3_p": 1.0,
+        "shuffle_labels_return_post_3_p": 1.0
+      },
+      "research_verdict": "weak evidence",
+      "tradable": false
+    },
+    "vol_z60_high": {
+      "hypothesis": "vol_z60_high on BTC daily OHLC \u2192 forward return / vol / max DD (z\u22652.0 pre-registered; NOT tradeable)",
+      "verdict": "supported",
+      "events_count": 16,
+      "events_used": 16,
+      "events_skipped_oob": 0,
+      "candles_count": 371,
+      "n_placebos": 200,
+      "seed": 20260519,
+      "alpha": 0.05,
+      "baseline": {
+        "return": 0.0,
+        "max_drawdown": 0.0
+      },
+      "cells": [
+        {
+          "metric": "return",
+          "window": "post_1",
+          "mean": 0.0,
+          "baseline": 0.0,
+          "n_events": 16,
+          "two_sided_p": 1.0
+        },
+        {
+          "metric": "return",
+          "window": "post_3",
+          "mean": -0.006702632178687676,
+          "baseline": 0.0,
+          "n_events": 16,
+          "two_sided_p": 0.44776119402985076
+        },
+        {
+          "metric": "return",
+          "window": "post_7",
+          "mean": -0.043486305601387575,
+          "baseline": 0.0,
+          "n_events": 16,
+          "two_sided_p": 0.009950248756218905
+        },
+        {
+          "metric": "realized_vol",
+          "window": "post_3",
+          "mean": 0.03877627497700411,
+          "baseline": NaN,
+          "n_events": 16,
+          "two_sided_p": 0.009950248756218905
+        },
+        {
+          "metric": "realized_vol",
+          "window": "post_7",
+          "mean": 0.039698442482837555,
+          "baseline": NaN,
+          "n_events": 16,
+          "two_sided_p": 0.009950248756218905
+        },
+        {
+          "metric": "max_drawdown",
+          "window": "post_1",
+          "mean": 0.0,
+          "baseline": 0.0,
+          "n_events": 16,
+          "two_sided_p": 1.0
+        },
+        {
+          "metric": "max_drawdown",
+          "window": "post_3",
+          "mean": -0.036605114162403155,
+          "baseline": 0.0,
+          "n_events": 16,
+          "two_sided_p": 0.009950248756218905
+        },
+        {
+          "metric": "max_drawdown",
+          "window": "post_7",
+          "mean": -0.09536085828691905,
+          "baseline": 0.0,
+          "n_events": 16,
+          "two_sided_p": 0.009950248756218905
+        }
+      ],
+      "bh_rejected": 5,
+      "bh_q_values": [
+        1.0,
+        0.5970149253731344,
+        0.015920398009950248,
+        0.015920398009950248,
+        0.015920398009950248,
+        1.0,
+        0.015920398009950248,
+        0.015920398009950248
+      ],
+      "bh_rejected_mask": [
+        false,
+        false,
+        true,
+        true,
+        true,
+        false,
+        true,
+        true
+      ],
+      "variant": "vol_z60_high",
+      "ticker": "BTC",
+      "window_days": 365,
+      "event_rate_fraction": 0.0431,
+      "g2_blocked_by_rate": false,
+      "placebos": {
+        "random_dates_bootstrap_n": 200,
+        "shift_plus_30d_seconds": 2592000,
+        "shift_return_post_3_p": 1.0,
+        "shuffle_labels_return_post_3_p": 1.0
+      },
+      "research_verdict": "weak evidence",
+      "tradable": false
+    },
+    "vol_z20_range_compression": {
+      "hypothesis": "vol_z20_range_compression on BTC daily OHLC \u2192 forward return / vol / max DD (z\u22652.0 pre-registered; NOT tradeable)",
+      "verdict": "blocked: insufficient events",
+      "events_count": 0,
+      "events_used": 0,
+      "events_skipped_oob": 0,
+      "candles_count": 371,
+      "n_placebos": 200,
+      "seed": 20260519,
+      "alpha": 0.05,
+      "baseline": {
+        "return": 0.0,
+        "max_drawdown": 0.0
+      },
+      "cells": [],
+      "variant": "vol_z20_range_compression",
+      "ticker": "BTC",
+      "window_days": 365,
+      "event_rate_fraction": 0.0,
+      "g2_blocked_by_rate": false,
+      "placebos": {
+        "random_dates_bootstrap_n": 200,
+        "shift_plus_30d_seconds": 2592000,
+        "shift_return_post_3_p": null,
+        "shuffle_labels_return_post_3_p": null
+      },
+      "research_verdict": "blocked",
+      "tradable": false
+    },
+    "vol_z20_low_abs_return": {
+      "hypothesis": "vol_z20_low_abs_return on BTC daily OHLC \u2192 forward return / vol / max DD (z\u22652.0 pre-registered; NOT tradeable)",
+      "verdict": "blocked: insufficient events",
+      "events_count": 0,
+      "events_used": 0,
+      "events_skipped_oob": 0,
+      "candles_count": 371,
+      "n_placebos": 200,
+      "seed": 20260519,
+      "alpha": 0.05,
+      "baseline": {
+        "return": 0.0,
+        "max_drawdown": 0.0
+      },
+      "cells": [],
+      "variant": "vol_z20_low_abs_return",
+      "ticker": "BTC",
+      "window_days": 365,
+      "event_rate_fraction": 0.0,
+      "g2_blocked_by_rate": false,
+      "placebos": {
+        "random_dates_bootstrap_n": 200,
+        "shift_plus_30d_seconds": 2592000,
+        "shift_return_post_3_p": null,
+        "shuffle_labels_return_post_3_p": null
+      },
+      "research_verdict": "blocked",
+      "tradable": false
+    }
+  }
+}

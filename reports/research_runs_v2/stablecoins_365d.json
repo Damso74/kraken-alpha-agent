@@ -1,0 +1,21 @@
+{
+  "hypothesis": "stablecoin supply high z>=1.5 \u2192 forward BTC return/vol",
+  "verdict": "blocked: insufficient events",
+  "events_count": 0,
+  "events_used": 0,
+  "events_skipped_oob": 0,
+  "candles_count": 371,
+  "n_placebos": 200,
+  "seed": 20260519,
+  "alpha": 0.05,
+  "baseline": {
+    "return": 0.0
+  },
+  "cells": [],
+  "supply_rows": 366,
+  "z_threshold": 1.5,
+  "lookback": 180,
+  "direction": "high",
+  "ticker": "BTC",
+  "window_days": 365
+}

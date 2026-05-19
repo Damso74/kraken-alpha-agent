@@ -1,0 +1,79 @@
+{
+  "hypothesis": "Wikipedia momentum (Bitcoin) z>=2.0 \u2192 forward BTC return/vol",
+  "verdict": "supported",
+  "events_count": 16,
+  "events_used": 16,
+  "events_skipped_oob": 0,
+  "candles_count": 370,
+  "n_placebos": 200,
+  "seed": 20260519,
+  "alpha": 0.05,
+  "baseline": {
+    "return": 0.0
+  },
+  "cells": [
+    {
+      "metric": "return",
+      "window": "post_1",
+      "mean": 0.0,
+      "baseline": 0.0,
+      "n_events": 16,
+      "two_sided_p": 1.0
+    },
+    {
+      "metric": "return",
+      "window": "post_3",
+      "mean": 0.002261087410706603,
+      "baseline": 0.0,
+      "n_events": 16,
+      "two_sided_p": 0.6169154228855721
+    },
+    {
+      "metric": "return",
+      "window": "post_7",
+      "mean": -0.009439785485982014,
+      "baseline": 0.0,
+      "n_events": 16,
+      "two_sided_p": 0.6467661691542289
+    },
+    {
+      "metric": "realized_vol",
+      "window": "post_3",
+      "mean": 0.028837436941459273,
+      "baseline": NaN,
+      "n_events": 16,
+      "two_sided_p": 0.009950248756218905
+    },
+    {
+      "metric": "realized_vol",
+      "window": "post_7",
+      "mean": 0.028013857775017335,
+      "baseline": NaN,
+      "n_events": 16,
+      "two_sided_p": 0.029850746268656716
+    }
+  ],
+  "bh_rejected": 1,
+  "bh_q_values": [
+    1.0,
+    0.8084577114427861,
+    0.8084577114427861,
+    0.04975124378109452,
+    0.07462686567164178
+  ],
+  "bh_rejected_mask": [
+    false,
+    false,
+    false,
+    true,
+    false
+  ],
+  "article": "Bitcoin",
+  "project": "en.wikipedia",
+  "mode": "momentum",
+  "z_threshold": 2.0,
+  "lookback": 30,
+  "ticker": "BTC",
+  "window_days": 365,
+  "pageview_rows": 365
+}

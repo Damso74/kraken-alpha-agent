@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "C:\Users\credo\Documents\Code_Informatique\Projets-en-cours\kraken-alpha-agent\scripts\event_study_stablecoins.py", line 169, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "C:\Users\credo\Documents\Code_Informatique\Projets-en-cours\kraken-alpha-agent\scripts\event_study_stablecoins.py", line 147, in main
+    code, report = run_event_study_pipeline(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\credo\Documents\Code_Informatique\Projets-en-cours\kraken-alpha-agent\scripts\_event_study_common.py", line 212, in run_event_study_pipeline
+    print(_console_text(f"[{tag}] hypothesis: {hypothesis}"))
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\credo\AppData\Local\Programs\Python\Python311\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2192' in position 56: character maps to <undefined>

@@ -1,0 +1,67 @@
+{
+  "phase": "11",
+  "preregistration_id": "P9-SC-001-PR-30d-high",
+  "preregistration_frozen_at": "2026-05-19",
+  "pre_registered_threshold": {
+    "metric": "supply_change_30d",
+    "supply_lag_days": 30,
+    "z_threshold": 1.0,
+    "direction": "high",
+    "lookback": 180,
+    "note": "Frozen before run \u2014 no grid search."
+  },
+  "hypothesis": "supply_change_30d z >= +1.0 -> forward return 3d/7d + realized_vol 7d",
+  "verdict": "blocked: insufficient events",
+  "events_count_raw": 0,
+  "events_count_aligned_btc": 0,
+  "supply_rows": 366,
+  "window_days": 365,
+  "n_placebos": 200,
+  "seed": 20260519,
+  "alpha": 0.05,
+  "targets": {
+    "return_windows": [
+      "post_3",
+      "post_7"
+    ],
+    "realized_vol_window": "post_7",
+    "tickers": [
+      "BTC",
+      "ETH"
+    ]
+  },
+  "placebos": {
+    "reference_metric": "return",
+    "reference_window": "post_7",
+    "observed_mean": null,
+    "n_events_used": 0,
+    "random_bootstrap": {
+      "p_two_sided": null,
+      "n_replicates": 0
+    },
+    "shift_30d": {
+      "delta_seconds": 2592000,
+      "survives": null
+    },
+    "wrong_direction_lag": {
+      "delta_seconds": -2592000,
+      "survives": null
+    },
+    "placebo_pass": false
+  },
+  "tickers": {
+    "BTC": {
+      "events_aligned": 0,
+      "candles_count": 371,
+      "cells": [],
+      "bh_rejected": 0
+    },
+    "ETH": {
+      "events_aligned": 0,
+      "candles_count": 371,
+      "cells": [],
+      "bh_rejected": 0
+    }
+  },
+  "disclaimer": "Research artifact only \u2014 not tradable, no profitability claim."
+}

@@ -1,0 +1,22 @@
+{
+  "_meta": {
+    "label": "SYNTHETIC_EXAMPLE",
+    "purpose": "Unit tests and JSON schema validation only",
+    "warning": "NOT real Etherscan historical gas data. Never use for research conclusions or backfill."
+  },
+  "source": "etherscan_gas_history",
+  "entries": {
+    "daily": [
+      {
+        "timestamp": 1609459200,
+        "fast_gwei": 42.0,
+        "source": "etherscan_gas_history"
+      },
+      {
+        "timestamp": 1609545600,
+        "fast_gwei": 35.5,
+        "source": "etherscan_gas_history"
+      }
+    ]
+  }
+}

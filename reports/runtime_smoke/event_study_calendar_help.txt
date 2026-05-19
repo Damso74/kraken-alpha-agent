@@ -1,0 +1,25 @@
+usage: event_study_calendar.py [-h] [--days DAYS] [--ticker TICKER]
+                               [--n-placebos N_PLACEBOS] [--seed SEED]
+                               [--alpha ALPHA] [--use-cache-only]
+                               [--output-json OUTPUT_JSON]
+                               [--calendar-flag {weekend_start,weekend_end,us_open,asia_open,combined}]
+
+Event study: calendar/session boundaries from daily OHLC vs forward returns
+(read-only, no external feed).
+
+options:
+  -h, --help            show this help message and exit
+  --days DAYS           Look-back window in days (default 180).
+  --ticker TICKER       Crypto ticker for Kraken public OHLC (default 'BTC').
+  --n-placebos N_PLACEBOS
+                        Placebo bootstrap replicates (default 200).
+  --seed SEED           Master seed for placebo bootstrap (default 20260519).
+  --alpha ALPHA         Target FDR for Benjamini-Hochberg (default 0.05).
+  --use-cache-only      Do not perform live HTTP for signal feeds (cache must
+                        cover the window).
+  --output-json OUTPUT_JSON
+                        Optional path to write the full JSON report.
+  --calendar-flag {weekend_start,weekend_end,us_open,asia_open,combined}
+                        Which calendar event set to test (default
+                        weekend_start). combined=weekend_start+us_open via
+                        build_calendar_boundary_events.

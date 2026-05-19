@@ -1,0 +1,665 @@
+{
+  "phase": 11,
+  "suite": "calendar_micro_baselines",
+  "pre_registered_effects": [
+    "us_market_open_window",
+    "sunday_us_evening",
+    "monday_asia_open",
+    "third_friday",
+    "month_end"
+  ],
+  "ticker": "BTC",
+  "window_days": 730,
+  "n_placebos": 200,
+  "seed": 20260519,
+  "alpha": 0.05,
+  "metrics": [
+    "return",
+    "realized_vol",
+    "volume_ratio"
+  ],
+  "placebo_protocol": [
+    "random_bootstrap (200 reps default)",
+    "random_same_weekday (return/post_7)",
+    "shifted_calendar +14..+60d (return/post_7)"
+  ],
+  "verdict_summary": {
+    "us_market_open_window": "weak evidence",
+    "sunday_us_evening": "weak evidence",
+    "monday_asia_open": "weak evidence",
+    "third_friday": "weak evidence",
+    "month_end": "weak evidence"
+  },
+  "effects": [
+    {
+      "effect_id": "us_market_open_window",
+      "description": "US equity weekday (Mon\u2013Fri ET) daily candle",
+      "hypothesis": "calendar us_market_open_window (US equity weekday (Mon\u2013Fri ET) daily candle) -> forward BTC return/vol/volume",
+      "verdict": "weak evidence",
+      "events_count": 526,
+      "events_used": 525,
+      "events_skipped_oob": 1,
+      "candles_count": 736,
+      "n_placebos": 200,
+      "seed": 20260519,
+      "alpha": 0.05,
+      "baseline": {
+        "return": 0.0,
+        "volume_ratio": 1.0081296847949517
+      },
+      "cells": [
+        {
+          "metric": "return",
+          "window": "post_1",
+          "mean": 0.0,
+          "baseline": 0.0,
+          "n_events": 525,
+          "two_sided_p": 1.0
+        },
+        {
+          "metric": "return",
+          "window": "post_3",
+          "mean": 0.0007086433453735594,
+          "baseline": 0.0,
+          "n_events": 525,
+          "two_sided_p": 0.6965174129353234
+        },
+        {
+          "metric": "return",
+          "window": "post_7",
+          "mean": 0.00335568148782089,
+          "baseline": 0.0,
+          "n_events": 521,
+          "two_sided_p": 0.6666666666666666
+        },
+        {
+          "metric": "realized_vol",
+          "window": "post_3",
+          "mean": 0.017389684429940367,
+          "baseline": NaN,
+          "n_events": 525,
+          "two_sided_p": 0.10945273631840796
+        },
+        {
+          "metric": "realized_vol",
+          "window": "post_7",
+          "mean": 0.021945409767298713,
+          "baseline": NaN,
+          "n_events": 521,
+          "two_sided_p": 0.1890547263681592
+        },
+        {
+          "metric": "volume_ratio",
+          "window": "post_1",
+          "mean": 0.9205868131724046,
+          "baseline": 1.0081296847949517,
+          "n_events": 525,
+          "two_sided_p": 0.009950248756218905
+        },
+        {
+          "metric": "volume_ratio",
+          "window": "post_3",
+          "mean": 0.9463669335941719,
+          "baseline": 1.0081296847949517,
+          "n_events": 525,
+          "two_sided_p": 0.009950248756218905
+        },
+        {
+          "metric": "volume_ratio",
+          "window": "post_7",
+          "mean": 1.007618501102608,
+          "baseline": 1.0081296847949517,
+          "n_events": 521,
+          "two_sided_p": 0.5472636815920398
+        }
+      ],
+      "placebo_notes": {
+        "random_bootstrap": "200 reps, seed 20260519 (uniform random candles)",
+        "same_weekday": "200 reps, random candles sharing event weekday in America/New_York",
+        "shifted_calendar": "200 reps, random +14..+60d shift aligned to candles"
+      },
+      "placebo_same_weekday_return_post_7_p": 0.9353233830845771,
+      "placebo_shifted_calendar_return_post_7_p": 1.0,
+      "ticker": "BTC",
+      "window_days": 730,
+      "bh_rejected": 2,
+      "bh_q_values": [
+        1.0,
+        0.7960199004975125,
+        0.7960199004975125,
+        0.29187396351575456,
+        0.3781094527363184,
+        0.03980099502487562,
+        0.03980099502487562,
+        0.7960199004975125
+      ],
+      "bh_rejected_mask": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        false
+      ],
+      "economic_overlay": {
+        "gross_avg_return_pct": 0.00335568148782089,
+        "round_trip_cost_pct": 0.01,
+        "net_avg_return_pct": -0.00664431851217911,
+        "turnover_proxy": 0.7146739130434783,
+        "cost_dominated": true,
+        "tradeability_verdict": "economically impossible",
+        "economic_reject": true,
+        "economic_reject_reason": "turnover proxy 71.5% > 30% (signal too noisy for distinct events); gross mean 0.3356% below suspect threshold 0.5000% per trade",
+        "reference_cell": "return/post_7",
+        "concentration_verdict": "not_assessed"
+      },
+      "rejection_reason": "turnover proxy 71.5% > 30% (signal too noisy for distinct events); gross mean 0.3356% below suspect threshold 0.5000% per trade"
+    },
+    {
+      "effect_id": "sunday_us_evening",
+      "description": "Sunday calendar day America/New_York (daily OHLC)",
+      "hypothesis": "calendar sunday_us_evening (Sunday calendar day America/New_York (daily OHLC)) -> forward BTC return/vol/volume",
+      "verdict": "weak evidence",
+      "events_count": 105,
+      "events_used": 105,
+      "events_skipped_oob": 0,
+      "candles_count": 736,
+      "n_placebos": 200,
+      "seed": 20270519,
+      "alpha": 0.05,
+      "baseline": {
+        "return": 0.0,
+        "volume_ratio": 1.0081296847949517
+      },
+      "cells": [
+        {
+          "metric": "return",
+          "window": "post_1",
+          "mean": 0.0,
+          "baseline": 0.0,
+          "n_events": 105,
+          "two_sided_p": 1.0
+        },
+        {
+          "metric": "return",
+          "window": "post_3",
+          "mean": -0.0007336512641152887,
+          "baseline": 0.0,
+          "n_events": 104,
+          "two_sided_p": 0.6766169154228856
+        },
+        {
+          "metric": "return",
+          "window": "post_7",
+          "mean": 0.0025070150217145156,
+          "baseline": 0.0,
+          "n_events": 104,
+          "two_sided_p": 0.9253731343283582
+        },
+        {
+          "metric": "realized_vol",
+          "window": "post_3",
+          "mean": 0.019809008960755048,
+          "baseline": NaN,
+          "n_events": 104,
+          "two_sided_p": 0.1890547263681592
+        },
+        {
+          "metric": "realized_vol",
+          "window": "post_7",
+          "mean": 0.02099615238232355,
+          "baseline": NaN,
+          "n_events": 104,
+          "two_sided_p": 0.5572139303482587
+        },
+        {
+          "metric": "volume_ratio",
+          "window": "post_1",
+          "mean": 1.1647571783272144,
+          "baseline": 1.0081296847949517,
+          "n_events": 105,
+          "two_sided_p": 0.01990049751243781
+        },
+        {
+          "metric": "volume_ratio",
+          "window": "post_3",
+          "mean": 1.136290621784463,
+          "baseline": 1.0081296847949517,
+          "n_events": 104,
+          "two_sided_p": 0.01990049751243781
+        },
+        {
+          "metric": "volume_ratio",
+          "window": "post_7",
+          "mean": 1.0174603197723027,
+          "baseline": 1.0081296847949517,
+          "n_events": 104,
+          "two_sided_p": 0.9253731343283582
+        }
+      ],
+      "placebo_notes": {
+        "random_bootstrap": "200 reps, seed 20270519 (uniform random candles)",
+        "same_weekday": "200 reps, random candles sharing event weekday in America/New_York",
+        "shifted_calendar": "200 reps, random +14..+60d shift aligned to candles"
+      },
+      "placebo_same_weekday_return_post_7_p": 0.9552238805970149,
+      "placebo_shifted_calendar_return_post_7_p": 0.8258706467661692,
+      "ticker": "BTC",
+      "window_days": 730,
+      "bh_rejected": 0,
+      "bh_q_values": [
+        1.0,
+        1.0,
+        1.0,
+        0.5041459369817579,
+        1.0,
+        0.07960199004975124,
+        0.07960199004975124,
+        1.0
+      ],
+      "bh_rejected_mask": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "economic_overlay": {
+        "gross_avg_return_pct": 0.0025070150217145156,
+        "round_trip_cost_pct": 0.01,
+        "net_avg_return_pct": -0.007492984978285485,
+        "turnover_proxy": 0.14266304347826086,
+        "cost_dominated": true,
+        "tradeability_verdict": "economically impossible",
+        "economic_reject": true,
+        "economic_reject_reason": "gross mean 0.2507% below suspect threshold 0.5000% per trade",
+        "reference_cell": "return/post_7",
+        "concentration_verdict": "not_assessed"
+      },
+      "rejection_reason": "gross mean 0.2507% below suspect threshold 0.5000% per trade"
+    },
+    {
+      "effect_id": "monday_asia_open",
+      "description": "Monday calendar day Asia/Tokyo (daily OHLC)",
+      "hypothesis": "calendar monday_asia_open (Monday calendar day Asia/Tokyo (daily OHLC)) -> forward BTC return/vol/volume",
+      "verdict": "weak evidence",
+      "events_count": 105,
+      "events_used": 105,
+      "events_skipped_oob": 0,
+      "candles_count": 736,
+      "n_placebos": 200,
+      "seed": 20280519,
+      "alpha": 0.05,
+      "baseline": {
+        "return": 0.0,
+        "volume_ratio": 1.0081296847949517
+      },
+      "cells": [
+        {
+          "metric": "return",
+          "window": "post_1",
+          "mean": 0.0,
+          "baseline": 0.0,
+          "n_events": 105,
+          "two_sided_p": 1.0
+        },
+        {
+          "metric": "return",
+          "window": "post_3",
+          "mean": -0.0007336512641152887,
+          "baseline": 0.0,
+          "n_events": 104,
+          "two_sided_p": 0.6368159203980099
+        },
+        {
+          "metric": "return",
+          "window": "post_7",
+          "mean": 0.0025070150217145156,
+          "baseline": 0.0,
+          "n_events": 104,
+          "two_sided_p": 0.9552238805970149
+        },
+        {
+          "metric": "realized_vol",
+          "window": "post_3",
+          "mean": 0.019809008960755048,
+          "baseline": NaN,
+          "n_events": 104,
+          "two_sided_p": 0.25870646766169153
+        },
+        {
+          "metric": "realized_vol",
+          "window": "post_7",
+          "mean": 0.02099615238232355,
+          "baseline": NaN,
+          "n_events": 104,
+          "two_sided_p": 0.6368159203980099
+        },
+        {
+          "metric": "volume_ratio",
+          "window": "post_1",
+          "mean": 1.1647571783272144,
+          "baseline": 1.0081296847949517,
+          "n_events": 105,
+          "two_sided_p": 0.009950248756218905
+        },
+        {
+          "metric": "volume_ratio",
+          "window": "post_3",
+          "mean": 1.136290621784463,
+          "baseline": 1.0081296847949517,
+          "n_events": 104,
+          "two_sided_p": 0.009950248756218905
+        },
+        {
+          "metric": "volume_ratio",
+          "window": "post_7",
+          "mean": 1.0174603197723027,
+          "baseline": 1.0081296847949517,
+          "n_events": 104,
+          "two_sided_p": 1.0
+        }
+      ],
+      "placebo_notes": {
+        "random_bootstrap": "200 reps, seed 20280519 (uniform random candles)",
+        "same_weekday": "200 reps, random candles sharing event weekday in Asia/Tokyo",
+        "shifted_calendar": "200 reps, random +14..+60d shift aligned to candles"
+      },
+      "placebo_same_weekday_return_post_7_p": 0.9751243781094527,
+      "placebo_shifted_calendar_return_post_7_p": 0.835820895522388,
+      "ticker": "BTC",
+      "window_days": 730,
+      "bh_rejected": 2,
+      "bh_q_values": [
+        1.0,
+        1.0,
+        1.0,
+        0.6898839137645107,
+        1.0,
+        0.03980099502487562,
+        0.03980099502487562,
+        1.0
+      ],
+      "bh_rejected_mask": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        false
+      ],
+      "economic_overlay": {
+        "gross_avg_return_pct": 0.0025070150217145156,
+        "round_trip_cost_pct": 0.01,
+        "net_avg_return_pct": -0.007492984978285485,
+        "turnover_proxy": 0.14266304347826086,
+        "cost_dominated": true,
+        "tradeability_verdict": "economically impossible",
+        "economic_reject": true,
+        "economic_reject_reason": "gross mean 0.2507% below suspect threshold 0.5000% per trade",
+        "reference_cell": "return/post_7",
+        "concentration_verdict": "not_assessed"
+      },
+      "rejection_reason": "gross mean 0.2507% below suspect threshold 0.5000% per trade"
+    },
+    {
+      "effect_id": "third_friday",
+      "description": "Third Friday UTC (options expiry calendar proxy)",
+      "hypothesis": "calendar third_friday (Third Friday UTC (options expiry calendar proxy)) -> forward BTC return/vol/volume",
+      "verdict": "weak evidence",
+      "events_count": 25,
+      "events_used": 25,
+      "events_skipped_oob": 0,
+      "candles_count": 736,
+      "n_placebos": 200,
+      "seed": 20290519,
+      "alpha": 0.05,
+      "baseline": {
+        "return": 0.0,
+        "volume_ratio": 1.0081296847949517
+      },
+      "cells": [
+        {
+          "metric": "return",
+          "window": "post_1",
+          "mean": 0.0,
+          "baseline": 0.0,
+          "n_events": 25,
+          "two_sided_p": 1.0
+        },
+        {
+          "metric": "return",
+          "window": "post_3",
+          "mean": 3.4019502790426576e-05,
+          "baseline": 0.0,
+          "n_events": 25,
+          "two_sided_p": 0.835820895522388
+        },
+        {
+          "metric": "return",
+          "window": "post_7",
+          "mean": 0.006187876431482412,
+          "baseline": 0.0,
+          "n_events": 24,
+          "two_sided_p": 0.7960199004975125
+        },
+        {
+          "metric": "realized_vol",
+          "window": "post_3",
+          "mean": 0.019143382497818624,
+          "baseline": NaN,
+          "n_events": 25,
+          "two_sided_p": 0.5970149253731343
+        },
+        {
+          "metric": "realized_vol",
+          "window": "post_7",
+          "mean": 0.02218670400140309,
+          "baseline": NaN,
+          "n_events": 24,
+          "two_sided_p": 0.736318407960199
+        },
+        {
+          "metric": "volume_ratio",
+          "window": "post_1",
+          "mean": 0.4642235829471811,
+          "baseline": 1.0081296847949517,
+          "n_events": 25,
+          "two_sided_p": 0.009950248756218905
+        },
+        {
+          "metric": "volume_ratio",
+          "window": "post_3",
+          "mean": 0.790284143818425,
+          "baseline": 1.0081296847949517,
+          "n_events": 25,
+          "two_sided_p": 0.01990049751243781
+        },
+        {
+          "metric": "volume_ratio",
+          "window": "post_7",
+          "mean": 0.967081288167681,
+          "baseline": 1.0081296847949517,
+          "n_events": 24,
+          "two_sided_p": 0.527363184079602
+        }
+      ],
+      "placebo_notes": {
+        "random_bootstrap": "200 reps, seed 20290519 (uniform random candles)",
+        "same_weekday": "200 reps, random candles sharing event weekday in UTC",
+        "shifted_calendar": "200 reps, random +14..+60d shift aligned to candles"
+      },
+      "placebo_same_weekday_return_post_7_p": 0.7661691542288557,
+      "placebo_shifted_calendar_return_post_7_p": 0.8656716417910447,
+      "ticker": "BTC",
+      "window_days": 730,
+      "bh_rejected": 0,
+      "bh_q_values": [
+        1.0,
+        0.9552238805970149,
+        0.9552238805970149,
+        0.9552238805970149,
+        0.9552238805970149,
+        0.07960199004975124,
+        0.07960199004975124,
+        0.9552238805970149
+      ],
+      "bh_rejected_mask": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "economic_overlay": {
+        "gross_avg_return_pct": 0.006187876431482412,
+        "round_trip_cost_pct": 0.01,
+        "net_avg_return_pct": -0.0038121235685175886,
+        "turnover_proxy": 0.033967391304347824,
+        "cost_dominated": true,
+        "tradeability_verdict": "cost dominated",
+        "economic_reject": true,
+        "economic_reject_reason": "gross 0.6188% does not exceed round-trip cost 1.0000%",
+        "reference_cell": "return/post_7",
+        "concentration_verdict": "not_assessed"
+      },
+      "rejection_reason": "gross 0.6188% does not exceed round-trip cost 1.0000%"
+    },
+    {
+      "effect_id": "month_end",
+      "description": "Last UTC calendar day with a candle each month",
+      "hypothesis": "calendar month_end (Last UTC calendar day with a candle each month) -> forward BTC return/vol/volume",
+      "verdict": "weak evidence",
+      "events_count": 25,
+      "events_used": 24,
+      "events_skipped_oob": 1,
+      "candles_count": 736,
+      "n_placebos": 200,
+      "seed": 20300519,
+      "alpha": 0.05,
+      "baseline": {
+        "return": 0.0,
+        "volume_ratio": 1.0081296847949517
+      },
+      "cells": [
+        {
+          "metric": "return",
+          "window": "post_1",
+          "mean": 0.0,
+          "baseline": 0.0,
+          "n_events": 24,
+          "two_sided_p": 1.0
+        },
+        {
+          "metric": "return",
+          "window": "post_3",
+          "mean": 0.0030971298649159038,
+          "baseline": 0.0,
+          "n_events": 24,
+          "two_sided_p": 0.7064676616915423
+        },
+        {
+          "metric": "return",
+          "window": "post_7",
+          "mean": -0.0047031552583671815,
+          "baseline": 0.0,
+          "n_events": 24,
+          "two_sided_p": 0.47761194029850745
+        },
+        {
+          "metric": "realized_vol",
+          "window": "post_3",
+          "mean": 0.02260311126781094,
+          "baseline": NaN,
+          "n_events": 24,
+          "two_sided_p": 0.21890547263681592
+        },
+        {
+          "metric": "realized_vol",
+          "window": "post_7",
+          "mean": 0.027282521434952637,
+          "baseline": NaN,
+          "n_events": 24,
+          "two_sided_p": 0.04975124378109453
+        },
+        {
+          "metric": "volume_ratio",
+          "window": "post_1",
+          "mean": 0.9139390685502234,
+          "baseline": 1.0081296847949517,
+          "n_events": 24,
+          "two_sided_p": 0.417910447761194
+        },
+        {
+          "metric": "volume_ratio",
+          "window": "post_3",
+          "mean": 0.9998103078950654,
+          "baseline": 1.0081296847949517,
+          "n_events": 24,
+          "two_sided_p": 0.945273631840796
+        },
+        {
+          "metric": "volume_ratio",
+          "window": "post_7",
+          "mean": 1.1475687391854381,
+          "baseline": 1.0081296847949517,
+          "n_events": 24,
+          "two_sided_p": 0.14925373134328357
+        }
+      ],
+      "placebo_notes": {
+        "random_bootstrap": "200 reps, seed 20300519 (uniform random candles)",
+        "same_weekday": "200 reps, random candles sharing event weekday in UTC",
+        "shifted_calendar": "200 reps, random +14..+60d shift aligned to candles"
+      },
+      "placebo_same_weekday_return_post_7_p": 0.3482587064676617,
+      "placebo_shifted_calendar_return_post_7_p": 0.8059701492537313,
+      "ticker": "BTC",
+      "window_days": 730,
+      "bh_rejected": 0,
+      "bh_q_values": [
+        1.0,
+        0.9419568822553898,
+        0.764179104477612,
+        0.5837479270315091,
+        0.39800995024875624,
+        0.764179104477612,
+        1.0,
+        0.5837479270315091
+      ],
+      "bh_rejected_mask": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "economic_overlay": {
+        "gross_avg_return_pct": -0.0047031552583671815,
+        "round_trip_cost_pct": 0.01,
+        "net_avg_return_pct": -0.01470315525836718,
+        "turnover_proxy": 0.033967391304347824,
+        "cost_dominated": true,
+        "tradeability_verdict": "economically impossible",
+        "economic_reject": true,
+        "economic_reject_reason": "gross mean -0.4703% below suspect threshold 0.5000% per trade",
+        "reference_cell": "return/post_7",
+        "concentration_verdict": "not_assessed"
+      },
+      "rejection_reason": "gross mean -0.4703% below suspect threshold 0.5000% per trade"
+    }
+  ]
+}

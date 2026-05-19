@@ -1,0 +1,1299 @@
+{
+  "phase": 11,
+  "agent": "exchange_status_deep_dive",
+  "generated_at": "2026-05-19T18:27:18.805110+00:00",
+  "hypothesis_family": "Exchange Statuspage incidents \u2192 forward BTC realized volatility (primary post_1/post_3) and return (secondary); never tradable.",
+  "verdict_overall": "kill",
+  "tradable": false,
+  "rules": {
+    "min_events_g0": 5,
+    "min_events_exchange_doc": 10,
+    "few_events_large_effect": "weak evidence only",
+    "tradability": "never"
+  },
+  "ticker": "BTC",
+  "window_days": 365,
+  "incident_rows_total": 100,
+  "incident_rows_in_ohlc_window": 96,
+  "candles_count": 371,
+  "n_placebos": 200,
+  "seed": 20260519,
+  "alpha": 0.05,
+  "variants": [
+    {
+      "diagnostics": {
+        "variant_id": "unscheduled_incidents",
+        "label": "Unscheduled incidents only (minor+)",
+        "filters": {
+          "incident_kind": "unscheduled",
+          "min_impact": "minor",
+          "venue": "all"
+        },
+        "rows_in_ohlc_window": 96,
+        "rows_by_impact": {
+          "none": 39,
+          "minor": 55,
+          "major": 1,
+          "critical": 1
+        },
+        "rows_by_kind": {
+          "scheduled": 1,
+          "unscheduled": 95
+        },
+        "duration_minutes": {
+          "parseable": 96,
+          "gt_30": 81,
+          "median": 192.09626666666665
+        },
+        "raw_events": 56,
+        "aligned_events": 29,
+        "g0_insufficient": false,
+        "exchange_doc_insufficient": false
+      },
+      "verdict": "kill",
+      "tradable": false,
+      "primary": {
+        "metrics": [
+          "realized_vol"
+        ],
+        "windows": [
+          "post_1",
+          "post_3"
+        ],
+        "report": {
+          "hypothesis": "Phase11 unscheduled_incidents: Unscheduled incidents only (minor+) \u2192 abnormal forward BTC realized_vol (primary) / return (secondary)",
+          "verdict": "not supported, move on",
+          "events_count": 29,
+          "events_used": 29,
+          "events_skipped_oob": 0,
+          "candles_count": 371,
+          "n_placebos": 200,
+          "seed": 20260519,
+          "alpha": 0.05,
+          "baseline": {},
+          "cells": [
+            {
+              "metric": "realized_vol",
+              "window": "post_3",
+              "mean": 0.013174799203721683,
+              "baseline": NaN,
+              "n_events": 28,
+              "two_sided_p": 0.44776119402985076
+            }
+          ],
+          "bh_rejected": 0,
+          "bh_q_values": [
+            0.44776119402985076
+          ],
+          "bh_rejected_mask": [
+            false
+          ]
+        }
+      },
+      "secondary": {
+        "metrics": [
+          "return"
+        ],
+        "windows": [
+          "post_1",
+          "post_3"
+        ],
+        "report": {
+          "hypothesis": "Phase11 unscheduled_incidents: Unscheduled incidents only (minor+) \u2192 abnormal forward BTC realized_vol (primary) / return (secondary) [secondary return]",
+          "verdict": "not supported, move on",
+          "events_count": 29,
+          "events_used": 29,
+          "events_skipped_oob": 0,
+          "candles_count": 371,
+          "n_placebos": 200,
+          "seed": 20310519,
+          "alpha": 0.05,
+          "baseline": {
+            "return": 0.0
+          },
+          "cells": [
+            {
+              "metric": "return",
+              "window": "post_1",
+              "mean": 0.0,
+              "baseline": 0.0,
+              "n_events": 29,
+              "two_sided_p": 1.0
+            },
+            {
+              "metric": "return",
+              "window": "post_3",
+              "mean": 0.003736070658537051,
+              "baseline": 0.0,
+              "n_events": 28,
+              "two_sided_p": 0.3681592039800995
+            }
+          ],
+          "bh_rejected": 0,
+          "bh_q_values": [
+            1.0,
+            0.736318407960199
+          ],
+          "bh_rejected_mask": [
+            false,
+            false
+          ]
+        }
+      },
+      "placebos": {
+        "random_timestamps": {
+          "n_replicates": 200,
+          "bh_rejected_primary": 0,
+          "cells": [
+            {
+              "metric": "realized_vol",
+              "window": "post_3",
+              "mean": 0.013174799203721683,
+              "baseline": NaN,
+              "n_events": 28,
+              "two_sided_p": 0.44776119402985076
+            }
+          ]
+        },
+        "shift_plus_14d": {
+          "delta_days": 14,
+          "two_sided_p": {
+            "realized_vol_post_1": null,
+            "realized_vol_post_3": null
+          }
+        }
+      }
+    },
+    {
+      "diagnostics": {
+        "variant_id": "scheduled_maintenance",
+        "label": "Scheduled maintenance separate (minor+)",
+        "filters": {
+          "incident_kind": "scheduled",
+          "min_impact": "minor",
+          "venue": "all"
+        },
+        "rows_in_ohlc_window": 96,
+        "rows_by_impact": {
+          "none": 39,
+          "minor": 55,
+          "major": 1,
+          "critical": 1
+        },
+        "rows_by_kind": {
+          "scheduled": 1,
+          "unscheduled": 95
+        },
+        "duration_minutes": {
+          "parseable": 96,
+          "gt_30": 81,
+          "median": 192.09626666666665
+        },
+        "raw_events": 1,
+        "aligned_events": 1,
+        "g0_insufficient": true,
+        "exchange_doc_insufficient": true
+      },
+      "verdict": "weak evidence",
+      "tradable": false,
+      "primary": {
+        "metrics": [
+          "realized_vol"
+        ],
+        "windows": [
+          "post_1",
+          "post_3"
+        ],
+        "report": {
+          "hypothesis": "Phase11 scheduled_maintenance: Scheduled maintenance separate (minor+) \u2192 abnormal forward BTC realized_vol (primary) / return (secondary)",
+          "verdict": "weak evidence",
+          "events_count": 1,
+          "events_used": 1,
+          "events_skipped_oob": 0,
+          "candles_count": 371,
+          "n_placebos": 200,
+          "seed": 20260519,
+          "alpha": 0.05,
+          "baseline": {},
+          "cells": []
+        }
+      },
+      "secondary": {
+        "metrics": [
+          "return"
+        ],
+        "windows": [
+          "post_1",
+          "post_3"
+        ],
+        "report": {
+          "hypothesis": "Phase11 scheduled_maintenance: Scheduled maintenance separate (minor+) \u2192 abnormal forward BTC realized_vol (primary) / return (secondary) [secondary return]",
+          "verdict": "weak evidence",
+          "events_count": 1,
+          "events_used": 1,
+          "events_skipped_oob": 0,
+          "candles_count": 371,
+          "n_placebos": 200,
+          "seed": 20310519,
+          "alpha": 0.05,
+          "baseline": {
+            "return": 0.0
+          },
+          "cells": [
+            {
+              "metric": "return",
+              "window": "post_1",
+              "mean": 0.0,
+              "baseline": 0.0,
+              "n_events": 1,
+              "two_sided_p": 1.0
+            }
+          ],
+          "bh_rejected": 0,
+          "bh_q_values": [
+            1.0
+          ],
+          "bh_rejected_mask": [
+            false
+          ]
+        }
+      },
+      "placebos": {
+        "random_timestamps": {
+          "n_replicates": 200,
+          "bh_rejected_primary": 0,
+          "cells": []
+        },
+        "shift_plus_14d": {
+          "delta_days": 14,
+          "two_sided_p": {
+            "realized_vol_post_1": null,
+            "realized_vol_post_3": null
+          }
+        }
+      }
+    },
+    {
+      "diagnostics": {
+        "variant_id": "impact_minor",
+        "label": "Impact tier: minor only",
+        "filters": {
+          "incident_kind": "all",
+          "impact_exact": "minor",
+          "venue": "all"
+        },
+        "rows_in_ohlc_window": 96,
+        "rows_by_impact": {
+          "none": 39,
+          "minor": 55,
+          "major": 1,
+          "critical": 1
+        },
+        "rows_by_kind": {
+          "scheduled": 1,
+          "unscheduled": 95
+        },
+        "duration_minutes": {
+          "parseable": 96,
+          "gt_30": 81,
+          "median": 192.09626666666665
+        },
+        "raw_events": 55,
+        "aligned_events": 29,
+        "g0_insufficient": false,
+        "exchange_doc_insufficient": false
+      },
+      "verdict": "kill",
+      "tradable": false,
+      "primary": {
+        "metrics": [
+          "realized_vol"
+        ],
+        "windows": [
+          "post_1",
+          "post_3"
+        ],
+        "report": {
+          "hypothesis": "Phase11 impact_minor: Impact tier: minor only \u2192 abnormal forward BTC realized_vol (primary) / return (secondary)",
+          "verdict": "not supported, move on",
+          "events_count": 29,
+          "events_used": 29,
+          "events_skipped_oob": 0,
+          "candles_count": 371,
+          "n_placebos": 200,
+          "seed": 20260519,
+          "alpha": 0.05,
+          "baseline": {},
+          "cells": [
+            {
+              "metric": "realized_vol",
+              "window": "post_3",
+              "mean": 0.012529613609630482,
+              "baseline": NaN,
+              "n_events": 27,
+              "two_sided_p": 0.3283582089552239
+            }
+          ],
+          "bh_rejected": 0,
+          "bh_q_values": [
+            0.3283582089552239
+          ],
+          "bh_rejected_mask": [
+            false
+          ]
+        }
+      },
+      "secondary": {
+        "metrics": [
+          "return"
+        ],
+        "windows": [
+          "post_1",
+          "post_3"
+        ],
+        "report": {
+          "hypothesis": "Phase11 impact_minor: Impact tier: minor only \u2192 abnormal forward BTC realized_vol (primary) / return (secondary) [secondary return]",
+          "verdict": "not supported, move on",
+          "events_count": 29,
+          "events_used": 29,
+          "events_skipped_oob": 0,
+          "candles_count": 371,
+          "n_placebos": 200,
+          "seed": 20310519,
+          "alpha": 0.05,
+          "baseline": {
+            "return": 0.0
+          },
+          "cells": [
+            {
+              "metric": "return",
+              "window": "post_1",
+              "mean": 0.0,
+              "baseline": 0.0,
+              "n_events": 29,
+              "two_sided_p": 1.0
+            },
+            {
+              "metric": "return",
+              "window": "post_3",
+              "mean": 0.0036095712574172245,
+              "baseline": 0.0,
+              "n_events": 27,
+              "two_sided_p": 0.3582089552238806
+            }
+          ],
+          "bh_rejected": 0,
+          "bh_q_values": [
+            1.0,
+            0.7164179104477612
+          ],
+          "bh_rejected_mask": [
+            false,
+            false
+          ]
+        }
+      },
+      "placebos": {
+        "random_timestamps": {
+          "n_replicates": 200,
+          "bh_rejected_primary": 0,
+          "cells": [
+            {
+              "metric": "realized_vol",
+              "window": "post_3",
+              "mean": 0.012529613609630482,
+              "baseline": NaN,
+              "n_events": 27,
+              "two_sided_p": 0.3283582089552239
+            }
+          ]
+        },
+        "shift_plus_14d": {
+          "delta_days": 14,
+          "two_sided_p": {
+            "realized_vol_post_1": null,
+            "realized_vol_post_3": null
+          }
+        }
+      }
+    },
+    {
+      "diagnostics": {
+        "variant_id": "impact_major",
+        "label": "Impact tier: major only",
+        "filters": {
+          "incident_kind": "all",
+          "impact_exact": "major",
+          "venue": "all"
+        },
+        "rows_in_ohlc_window": 96,
+        "rows_by_impact": {
+          "none": 39,
+          "minor": 55,
+          "major": 1,
+          "critical": 1
+        },
+        "rows_by_kind": {
+          "scheduled": 1,
+          "unscheduled": 95
+        },
+        "duration_minutes": {
+          "parseable": 96,
+          "gt_30": 81,
+          "median": 192.09626666666665
+        },
+        "raw_events": 1,
+        "aligned_events": 1,
+        "g0_insufficient": true,
+        "exchange_doc_insufficient": true
+      },
+      "verdict": "weak evidence",
+      "tradable": false,
+      "primary": {
+        "metrics": [
+          "realized_vol"
+        ],
+        "windows": [
+          "post_1",
+          "post_3"
+        ],
+        "report": {
+          "hypothesis": "Phase11 impact_major: Impact tier: major only \u2192 abnormal forward BTC realized_vol (primary) / return (secondary)",
+          "verdict": "weak evidence",
+          "events_count": 1,
+          "events_used": 1,
+          "events_skipped_oob": 0,
+          "candles_count": 371,
+          "n_placebos": 200,
+          "seed": 20260519,
+          "alpha": 0.05,
+          "baseline": {},
+          "cells": [
+            {
+              "metric": "realized_vol",
+              "window": "post_3",
+              "mean": 0.033113418827325734,
+              "baseline": NaN,
+              "n_events": 1,
+              "two_sided_p": 0.24
+            }
+          ],
+          "bh_rejected": 0,
+          "bh_q_values": [
+            0.24
+          ],
+          "bh_rejected_mask": [
+            false
+          ]
+        }
+      },
+      "secondary": {
+        "metrics": [
+          "return"
+        ],
+        "windows": [
+          "post_1",
+          "post_3"
+        ],
+        "report": {
+          "hypothesis": "Phase11 impact_major: Impact tier: major only \u2192 abnormal forward BTC realized_vol (primary) / return (secondary) [secondary return]",
+          "verdict": "weak evidence",
+          "events_count": 1,
+          "events_used": 1,
+          "events_skipped_oob": 0,
+          "candles_count": 371,
+          "n_placebos": 200,
+          "seed": 20310519,
+          "alpha": 0.05,
+          "baseline": {
+            "return": 0.0
+          },
+          "cells": [
+            {
+              "metric": "return",
+              "window": "post_1",
+              "mean": 0.0,
+              "baseline": 0.0,
+              "n_events": 1,
+              "two_sided_p": 1.0
+            },
+            {
+              "metric": "return",
+              "window": "post_3",
+              "mean": -0.002526678586436731,
+              "baseline": 0.0,
+              "n_events": 1,
+              "two_sided_p": 1.0
+            }
+          ],
+          "bh_rejected": 0,
+          "bh_q_values": [
+            1.0,
+            1.0
+          ],
+          "bh_rejected_mask": [
+            false,
+            false
+          ]
+        }
+      },
+      "placebos": {
+        "random_timestamps": {
+          "n_replicates": 200,
+          "bh_rejected_primary": 0,
+          "cells": [
+            {
+              "metric": "realized_vol",
+              "window": "post_3",
+              "mean": 0.033113418827325734,
+              "baseline": NaN,
+              "n_events": 1,
+              "two_sided_p": 0.24
+            }
+          ]
+        },
+        "shift_plus_14d": {
+          "delta_days": 14,
+          "two_sided_p": {
+            "realized_vol_post_1": null,
+            "realized_vol_post_3": null
+          }
+        }
+      }
+    },
+    {
+      "diagnostics": {
+        "variant_id": "impact_critical",
+        "label": "Impact tier: critical only",
+        "filters": {
+          "incident_kind": "all",
+          "impact_exact": "critical",
+          "venue": "all"
+        },
+        "rows_in_ohlc_window": 96,
+        "rows_by_impact": {
+          "none": 39,
+          "minor": 55,
+          "major": 1,
+          "critical": 1
+        },
+        "rows_by_kind": {
+          "scheduled": 1,
+          "unscheduled": 95
+        },
+        "duration_minutes": {
+          "parseable": 96,
+          "gt_30": 81,
+          "median": 192.09626666666665
+        },
+        "raw_events": 1,
+        "aligned_events": 1,
+        "g0_insufficient": true,
+        "exchange_doc_insufficient": true
+      },
+      "verdict": "weak evidence",
+      "tradable": false,
+      "primary": {
+        "metrics": [
+          "realized_vol"
+        ],
+        "windows": [
+          "post_1",
+          "post_3"
+        ],
+        "report": {
+          "hypothesis": "Phase11 impact_critical: Impact tier: critical only \u2192 abnormal forward BTC realized_vol (primary) / return (secondary)",
+          "verdict": "weak evidence",
+          "events_count": 1,
+          "events_used": 1,
+          "events_skipped_oob": 0,
+          "candles_count": 371,
+          "n_placebos": 200,
+          "seed": 20260519,
+          "alpha": 0.05,
+          "baseline": {},
+          "cells": [
+            {
+              "metric": "realized_vol",
+              "window": "post_3",
+              "mean": 0.03059481024418415,
+              "baseline": NaN,
+              "n_events": 1,
+              "two_sided_p": 0.26
+            }
+          ],
+          "bh_rejected": 0,
+          "bh_q_values": [
+            0.26
+          ],
+          "bh_rejected_mask": [
+            false
+          ]
+        }
+      },
+      "secondary": {
+        "metrics": [
+          "return"
+        ],
+        "windows": [
+          "post_1",
+          "post_3"
+        ],
+        "report": {
+          "hypothesis": "Phase11 impact_critical: Impact tier: critical only \u2192 abnormal forward BTC realized_vol (primary) / return (secondary) [secondary return]",
+          "verdict": "weak evidence",
+          "events_count": 1,
+          "events_used": 1,
+          "events_skipped_oob": 0,
+          "candles_count": 371,
+          "n_placebos": 200,
+          "seed": 20310519,
+          "alpha": 0.05,
+          "baseline": {
+            "return": 0.0
+          },
+          "cells": [
+            {
+              "metric": "return",
+              "window": "post_1",
+              "mean": 0.0,
+              "baseline": 0.0,
+              "n_events": 1,
+              "two_sided_p": 1.0
+            },
+            {
+              "metric": "return",
+              "window": "post_3",
+              "mean": 0.00715155448877238,
+              "baseline": 0.0,
+              "n_events": 1,
+              "two_sided_p": 0.76
+            }
+          ],
+          "bh_rejected": 0,
+          "bh_q_values": [
+            1.0,
+            1.0
+          ],
+          "bh_rejected_mask": [
+            false,
+            false
+          ]
+        }
+      },
+      "placebos": {
+        "random_timestamps": {
+          "n_replicates": 200,
+          "bh_rejected_primary": 0,
+          "cells": [
+            {
+              "metric": "realized_vol",
+              "window": "post_3",
+              "mean": 0.03059481024418415,
+              "baseline": NaN,
+              "n_events": 1,
+              "two_sided_p": 0.26
+            }
+          ]
+        },
+        "shift_plus_14d": {
+          "delta_days": 14,
+          "two_sided_p": {
+            "realized_vol_post_1": null,
+            "realized_vol_post_3": 0.9191919191919192
+          }
+        }
+      }
+    },
+    {
+      "diagnostics": {
+        "variant_id": "duration_gt_30m",
+        "label": "Duration > 30 minutes (minor+, parseable span)",
+        "filters": {
+          "incident_kind": "all",
+          "min_impact": "minor",
+          "min_duration_minutes": 30.0,
+          "venue": "all"
+        },
+        "rows_in_ohlc_window": 96,
+        "rows_by_impact": {
+          "none": 39,
+          "minor": 55,
+          "major": 1,
+          "critical": 1
+        },
+        "rows_by_kind": {
+          "scheduled": 1,
+          "unscheduled": 95
+        },
+        "duration_minutes": {
+          "parseable": 96,
+          "gt_30": 81,
+          "median": 192.09626666666665
+        },
+        "raw_events": 49,
+        "aligned_events": 25,
+        "g0_insufficient": false,
+        "exchange_doc_insufficient": false
+      },
+      "verdict": "kill",
+      "tradable": false,
+      "primary": {
+        "metrics": [
+          "realized_vol"
+        ],
+        "windows": [
+          "post_1",
+          "post_3"
+        ],
+        "report": {
+          "hypothesis": "Phase11 duration_gt_30m: Duration > 30 minutes (minor+, parseable span) \u2192 abnormal forward BTC realized_vol (primary) / return (secondary)",
+          "verdict": "not supported, move on",
+          "events_count": 25,
+          "events_used": 25,
+          "events_skipped_oob": 0,
+          "candles_count": 371,
+          "n_placebos": 200,
+          "seed": 20260519,
+          "alpha": 0.05,
+          "baseline": {},
+          "cells": [
+            {
+              "metric": "realized_vol",
+              "window": "post_3",
+              "mean": 0.011241470757971885,
+              "baseline": NaN,
+              "n_events": 23,
+              "two_sided_p": 0.15920398009950248
+            }
+          ],
+          "bh_rejected": 0,
+          "bh_q_values": [
+            0.15920398009950248
+          ],
+          "bh_rejected_mask": [
+            false
+          ]
+        }
+      },
+      "secondary": {
+        "metrics": [
+          "return"
+        ],
+        "windows": [
+          "post_1",
+          "post_3"
+        ],
+        "report": {
+          "hypothesis": "Phase11 duration_gt_30m: Duration > 30 minutes (minor+, parseable span) \u2192 abnormal forward BTC realized_vol (primary) / return (secondary) [secondary return]",
+          "verdict": "not supported, move on",
+          "events_count": 25,
+          "events_used": 25,
+          "events_skipped_oob": 0,
+          "candles_count": 371,
+          "n_placebos": 200,
+          "seed": 20310519,
+          "alpha": 0.05,
+          "baseline": {
+            "return": 0.0
+          },
+          "cells": [
+            {
+              "metric": "return",
+              "window": "post_1",
+              "mean": 0.0,
+              "baseline": 0.0,
+              "n_events": 25,
+              "two_sided_p": 1.0
+            },
+            {
+              "metric": "return",
+              "window": "post_3",
+              "mean": 0.003438705042033223,
+              "baseline": 0.0,
+              "n_events": 23,
+              "two_sided_p": 0.4975124378109453
+            }
+          ],
+          "bh_rejected": 0,
+          "bh_q_values": [
+            1.0,
+            0.9950248756218906
+          ],
+          "bh_rejected_mask": [
+            false,
+            false
+          ]
+        }
+      },
+      "placebos": {
+        "random_timestamps": {
+          "n_replicates": 200,
+          "bh_rejected_primary": 0,
+          "cells": [
+            {
+              "metric": "realized_vol",
+              "window": "post_3",
+              "mean": 0.011241470757971885,
+              "baseline": NaN,
+              "n_events": 23,
+              "two_sided_p": 0.15920398009950248
+            }
+          ]
+        },
+        "shift_plus_14d": {
+          "delta_days": 14,
+          "two_sided_p": {
+            "realized_vol_post_1": null,
+            "realized_vol_post_3": null
+          }
+        }
+      }
+    },
+    {
+      "diagnostics": {
+        "variant_id": "venue_kraken",
+        "label": "Kraken only (minor+)",
+        "filters": {
+          "incident_kind": "all",
+          "min_impact": "minor",
+          "venue": "kraken"
+        },
+        "rows_in_ohlc_window": 96,
+        "rows_by_impact": {
+          "none": 39,
+          "minor": 55,
+          "major": 1,
+          "critical": 1
+        },
+        "rows_by_kind": {
+          "scheduled": 1,
+          "unscheduled": 95
+        },
+        "duration_minutes": {
+          "parseable": 96,
+          "gt_30": 81,
+          "median": 192.09626666666665
+        },
+        "raw_events": 41,
+        "aligned_events": 23,
+        "g0_insufficient": false,
+        "exchange_doc_insufficient": false
+      },
+      "verdict": "kill",
+      "tradable": false,
+      "primary": {
+        "metrics": [
+          "realized_vol"
+        ],
+        "windows": [
+          "post_1",
+          "post_3"
+        ],
+        "report": {
+          "hypothesis": "Phase11 venue_kraken: Kraken only (minor+) \u2192 abnormal forward BTC realized_vol (primary) / return (secondary)",
+          "verdict": "not supported, move on",
+          "events_count": 23,
+          "events_used": 23,
+          "events_skipped_oob": 0,
+          "candles_count": 371,
+          "n_placebos": 200,
+          "seed": 20260519,
+          "alpha": 0.05,
+          "baseline": {},
+          "cells": [
+            {
+              "metric": "realized_vol",
+              "window": "post_3",
+              "mean": 0.01179272921980363,
+              "baseline": NaN,
+              "n_events": 21,
+              "two_sided_p": 0.25870646766169153
+            }
+          ],
+          "bh_rejected": 0,
+          "bh_q_values": [
+            0.25870646766169153
+          ],
+          "bh_rejected_mask": [
+            false
+          ]
+        }
+      },
+      "secondary": {
+        "metrics": [
+          "return"
+        ],
+        "windows": [
+          "post_1",
+          "post_3"
+        ],
+        "report": {
+          "hypothesis": "Phase11 venue_kraken: Kraken only (minor+) \u2192 abnormal forward BTC realized_vol (primary) / return (secondary) [secondary return]",
+          "verdict": "not supported, move on",
+          "events_count": 23,
+          "events_used": 23,
+          "events_skipped_oob": 0,
+          "candles_count": 371,
+          "n_placebos": 200,
+          "seed": 20310519,
+          "alpha": 0.05,
+          "baseline": {
+            "return": 0.0
+          },
+          "cells": [
+            {
+              "metric": "return",
+              "window": "post_1",
+              "mean": 0.0,
+              "baseline": 0.0,
+              "n_events": 23,
+              "two_sided_p": 1.0
+            },
+            {
+              "metric": "return",
+              "window": "post_3",
+              "mean": 0.0036753389208079323,
+              "baseline": 0.0,
+              "n_events": 21,
+              "two_sided_p": 0.48756218905472637
+            }
+          ],
+          "bh_rejected": 0,
+          "bh_q_values": [
+            1.0,
+            0.9751243781094527
+          ],
+          "bh_rejected_mask": [
+            false,
+            false
+          ]
+        }
+      },
+      "placebos": {
+        "random_timestamps": {
+          "n_replicates": 200,
+          "bh_rejected_primary": 0,
+          "cells": [
+            {
+              "metric": "realized_vol",
+              "window": "post_3",
+              "mean": 0.01179272921980363,
+              "baseline": NaN,
+              "n_events": 21,
+              "two_sided_p": 0.25870646766169153
+            }
+          ]
+        },
+        "shift_plus_14d": {
+          "delta_days": 14,
+          "two_sided_p": {
+            "realized_vol_post_1": null,
+            "realized_vol_post_3": null
+          }
+        }
+      }
+    },
+    {
+      "diagnostics": {
+        "variant_id": "venue_coinbase",
+        "label": "Coinbase only (minor+)",
+        "filters": {
+          "incident_kind": "all",
+          "min_impact": "minor",
+          "venue": "coinbase"
+        },
+        "rows_in_ohlc_window": 96,
+        "rows_by_impact": {
+          "none": 39,
+          "minor": 55,
+          "major": 1,
+          "critical": 1
+        },
+        "rows_by_kind": {
+          "scheduled": 1,
+          "unscheduled": 95
+        },
+        "duration_minutes": {
+          "parseable": 96,
+          "gt_30": 81,
+          "median": 192.09626666666665
+        },
+        "raw_events": 16,
+        "aligned_events": 15,
+        "g0_insufficient": false,
+        "exchange_doc_insufficient": false
+      },
+      "verdict": "kill",
+      "tradable": false,
+      "primary": {
+        "metrics": [
+          "realized_vol"
+        ],
+        "windows": [
+          "post_1",
+          "post_3"
+        ],
+        "report": {
+          "hypothesis": "Phase11 venue_coinbase: Coinbase only (minor+) \u2192 abnormal forward BTC realized_vol (primary) / return (secondary)",
+          "verdict": "not supported, move on",
+          "events_count": 15,
+          "events_used": 15,
+          "events_skipped_oob": 0,
+          "candles_count": 371,
+          "n_placebos": 200,
+          "seed": 20260519,
+          "alpha": 0.05,
+          "baseline": {},
+          "cells": [
+            {
+              "metric": "realized_vol",
+              "window": "post_3",
+              "mean": 0.017134509949827945,
+              "baseline": NaN,
+              "n_events": 14,
+              "two_sided_p": 0.527363184079602
+            }
+          ],
+          "bh_rejected": 0,
+          "bh_q_values": [
+            0.527363184079602
+          ],
+          "bh_rejected_mask": [
+            false
+          ]
+        }
+      },
+      "secondary": {
+        "metrics": [
+          "return"
+        ],
+        "windows": [
+          "post_1",
+          "post_3"
+        ],
+        "report": {
+          "hypothesis": "Phase11 venue_coinbase: Coinbase only (minor+) \u2192 abnormal forward BTC realized_vol (primary) / return (secondary) [secondary return]",
+          "verdict": "not supported, move on",
+          "events_count": 15,
+          "events_used": 15,
+          "events_skipped_oob": 0,
+          "candles_count": 371,
+          "n_placebos": 200,
+          "seed": 20310519,
+          "alpha": 0.05,
+          "baseline": {
+            "return": 0.0
+          },
+          "cells": [
+            {
+              "metric": "return",
+              "window": "post_1",
+              "mean": 0.0,
+              "baseline": 0.0,
+              "n_events": 15,
+              "two_sided_p": 1.0
+            },
+            {
+              "metric": "return",
+              "window": "post_3",
+              "mean": 0.0033087385300948446,
+              "baseline": 0.0,
+              "n_events": 14,
+              "two_sided_p": 0.5970149253731343
+            }
+          ],
+          "bh_rejected": 0,
+          "bh_q_values": [
+            1.0,
+            1.0
+          ],
+          "bh_rejected_mask": [
+            false,
+            false
+          ]
+        }
+      },
+      "placebos": {
+        "random_timestamps": {
+          "n_replicates": 200,
+          "bh_rejected_primary": 0,
+          "cells": [
+            {
+              "metric": "realized_vol",
+              "window": "post_3",
+              "mean": 0.017134509949827945,
+              "baseline": NaN,
+              "n_events": 14,
+              "two_sided_p": 0.527363184079602
+            }
+          ]
+        },
+        "shift_plus_14d": {
+          "delta_days": 14,
+          "two_sided_p": {
+            "realized_vol_post_1": null,
+            "realized_vol_post_3": null
+          }
+        }
+      }
+    },
+    {
+      "diagnostics": {
+        "variant_id": "basket_combined",
+        "label": "Combined Kraken + Coinbase basket (minor+)",
+        "filters": {
+          "incident_kind": "all",
+          "min_impact": "minor",
+          "venue": "all"
+        },
+        "rows_in_ohlc_window": 96,
+        "rows_by_impact": {
+          "none": 39,
+          "minor": 55,
+          "major": 1,
+          "critical": 1
+        },
+        "rows_by_kind": {
+          "scheduled": 1,
+          "unscheduled": 95
+        },
+        "duration_minutes": {
+          "parseable": 96,
+          "gt_30": 81,
+          "median": 192.09626666666665
+        },
+        "raw_events": 57,
+        "aligned_events": 30,
+        "g0_insufficient": false,
+        "exchange_doc_insufficient": false
+      },
+      "verdict": "kill",
+      "tradable": false,
+      "primary": {
+        "metrics": [
+          "realized_vol"
+        ],
+        "windows": [
+          "post_1",
+          "post_3"
+        ],
+        "report": {
+          "hypothesis": "Phase11 basket_combined: Combined Kraken + Coinbase basket (minor+) \u2192 abnormal forward BTC realized_vol (primary) / return (secondary)",
+          "verdict": "not supported, move on",
+          "events_count": 30,
+          "events_used": 30,
+          "events_skipped_oob": 0,
+          "candles_count": 371,
+          "n_placebos": 200,
+          "seed": 20260519,
+          "alpha": 0.05,
+          "baseline": {},
+          "cells": [
+            {
+              "metric": "realized_vol",
+              "window": "post_3",
+              "mean": 0.013174799203721683,
+              "baseline": NaN,
+              "n_events": 28,
+              "two_sided_p": 0.44776119402985076
+            }
+          ],
+          "bh_rejected": 0,
+          "bh_q_values": [
+            0.44776119402985076
+          ],
+          "bh_rejected_mask": [
+            false
+          ]
+        }
+      },
+      "secondary": {
+        "metrics": [
+          "return"
+        ],
+        "windows": [
+          "post_1",
+          "post_3"
+        ],
+        "report": {
+          "hypothesis": "Phase11 basket_combined: Combined Kraken + Coinbase basket (minor+) \u2192 abnormal forward BTC realized_vol (primary) / return (secondary) [secondary return]",
+          "verdict": "not supported, move on",
+          "events_count": 30,
+          "events_used": 30,
+          "events_skipped_oob": 0,
+          "candles_count": 371,
+          "n_placebos": 200,
+          "seed": 20310519,
+          "alpha": 0.05,
+          "baseline": {
+            "return": 0.0
+          },
+          "cells": [
+            {
+              "metric": "return",
+              "window": "post_1",
+              "mean": 0.0,
+              "baseline": 0.0,
+              "n_events": 30,
+              "two_sided_p": 1.0
+            },
+            {
+              "metric": "return",
+              "window": "post_3",
+              "mean": 0.003736070658537051,
+              "baseline": 0.0,
+              "n_events": 28,
+              "two_sided_p": 0.3681592039800995
+            }
+          ],
+          "bh_rejected": 0,
+          "bh_q_values": [
+            1.0,
+            0.736318407960199
+          ],
+          "bh_rejected_mask": [
+            false,
+            false
+          ]
+        }
+      },
+      "placebos": {
+        "random_timestamps": {
+          "n_replicates": 200,
+          "bh_rejected_primary": 0,
+          "cells": [
+            {
+              "metric": "realized_vol",
+              "window": "post_3",
+              "mean": 0.013174799203721683,
+              "baseline": NaN,
+              "n_events": 28,
+              "two_sided_p": 0.44776119402985076
+            }
+          ]
+        },
+        "shift_plus_14d": {
+          "delta_days": 14,
+          "two_sided_p": {
+            "realized_vol_post_1": null,
+            "realized_vol_post_3": null
+          }
+        }
+      }
+    }
+  ],
+  "placebo_scheduled_vs_unscheduled": {
+    "scheduled": {
+      "aligned_events": 1,
+      "means": {}
+    },
+    "unscheduled": {
+      "aligned_events": 29,
+      "means": {
+        "post_1": 0.0,
+        "post_3": 0.013174799203721683
+      }
+    }
+  }
+}

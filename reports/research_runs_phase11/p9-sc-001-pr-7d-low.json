@@ -1,0 +1,132 @@
+{
+  "phase": "11",
+  "preregistration_id": "P9-SC-001-PR-7d-low",
+  "preregistration_frozen_at": "2026-05-19",
+  "pre_registered_threshold": {
+    "metric": "supply_change_7d",
+    "supply_lag_days": 7,
+    "z_threshold": 1.0,
+    "direction": "low",
+    "lookback": 180,
+    "note": "Frozen before run \u2014 no grid search."
+  },
+  "hypothesis": "supply_change_7d z <= -1.0 -> forward return 3d/7d + realized_vol 7d",
+  "verdict": "weak evidence",
+  "events_count_raw": 36,
+  "events_count_aligned_btc": 36,
+  "supply_rows": 366,
+  "window_days": 365,
+  "n_placebos": 200,
+  "seed": 20260519,
+  "alpha": 0.05,
+  "targets": {
+    "return_windows": [
+      "post_3",
+      "post_7"
+    ],
+    "realized_vol_window": "post_7",
+    "tickers": [
+      "BTC",
+      "ETH"
+    ]
+  },
+  "placebos": {
+    "reference_metric": "return",
+    "reference_window": "post_7",
+    "observed_mean": -0.034549604771190075,
+    "n_events_used": 36,
+    "random_bootstrap": {
+      "p_two_sided": 0.009950248756218905,
+      "n_replicates": 200,
+      "pass": true
+    },
+    "shift_30d": {
+      "delta_seconds": 2592000,
+      "survives": true,
+      "pass": false
+    },
+    "wrong_direction_lag": {
+      "delta_seconds": -604800,
+      "survives": true,
+      "pass": false
+    },
+    "placebo_pass": false
+  },
+  "tickers": {
+    "BTC": {
+      "events_aligned": 36,
+      "candles_count": 371,
+      "cells": [
+        {
+          "metric": "return",
+          "window": "post_3",
+          "mean": -0.009001270569831098,
+          "baseline": -0.0011618210342103795,
+          "n_events": 36,
+          "two_sided_p": 0.09950248756218906,
+          "bh_q": 0.09950248756218906,
+          "bh_rejected": false
+        },
+        {
+          "metric": "return",
+          "window": "post_7",
+          "mean": -0.034549604771190075,
+          "baseline": -0.0036335854808763946,
+          "n_events": 36,
+          "two_sided_p": 0.009950248756218905,
+          "bh_q": 0.014925373134328358,
+          "bh_rejected": true
+        },
+        {
+          "metric": "realized_vol",
+          "window": "post_7",
+          "mean": 0.028833654961077402,
+          "baseline": 0.01963614047559703,
+          "n_events": 36,
+          "two_sided_p": 0.009950248756218905,
+          "bh_q": 0.014925373134328358,
+          "bh_rejected": true
+        }
+      ],
+      "bh_rejected": 2
+    },
+    "ETH": {
+      "events_aligned": 36,
+      "candles_count": 371,
+      "cells": [
+        {
+          "metric": "return",
+          "window": "post_3",
+          "mean": -0.011617187459924391,
+          "baseline": 0.00028108359103579827,
+          "n_events": 36,
+          "two_sided_p": 0.19900497512437812,
+          "bh_q": 0.19900497512437812,
+          "bh_rejected": false
+        },
+        {
+          "metric": "return",
+          "window": "post_7",
+          "mean": -0.04896442551590274,
+          "baseline": 0.0008647320079247339,
+          "n_events": 36,
+          "two_sided_p": 0.009950248756218905,
+          "bh_q": 0.014925373134328358,
+          "bh_rejected": true
+        },
+        {
+          "metric": "realized_vol",
+          "window": "post_7",
+          "mean": 0.03654411033066404,
+          "baseline": 0.03191427012778553,
+          "n_events": 36,
+          "two_sided_p": 0.009950248756218905,
+          "bh_q": 0.014925373134328358,
+          "bh_rejected": true
+        }
+      ],
+      "bh_rejected": 2
+    }
+  },
+  "disclaimer": "Research artifact only \u2014 not tradable, no profitability claim."
+}
