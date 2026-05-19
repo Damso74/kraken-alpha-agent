@@ -1,4 +1,5 @@
-import backtest from "../../public/data/backtest_xstocks_30d.json";
+import backtest from "../../public/data/backtest_xstocks_hackathon_window.json";
+import backtest30d from "../../public/data/backtest_xstocks_30d.json";
 
 export type EquityPoint = {
   ts: string;
@@ -91,6 +92,7 @@ export type BacktestPayload = {
 };
 
 export const data = backtest as unknown as BacktestPayload;
+export const data30d = backtest30d as unknown as BacktestPayload;
 
 export function fmtUsd(value: number, opts: { signed?: boolean; decimals?: number } = {}): string {
   const decimals = opts.decimals ?? 2;

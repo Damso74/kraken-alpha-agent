@@ -15,6 +15,7 @@
 
 | Asset | Link |
 |---|---|
+| **Quickstart for jury (5-10 min read)** | [`SUBMISSION_QUICKSTART.md`](./SUBMISSION_QUICKSTART.md) |
 | Live dashboard (Vercel, public) | <https://kraken-alpha-agent-damso74s-projects.vercel.app> |
 | Submission narrative | [`docs/SUBMISSION.md`](./docs/SUBMISSION.md) |
 | Methodology (walk-forward audit) | [`docs/METHODOLOGY.md`](./docs/METHODOLOGY.md) |

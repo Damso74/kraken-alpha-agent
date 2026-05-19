@@ -1,6 +1,6 @@
 # Script vidéo de démo — Kraken Alpha Agent
 
-> **Cible** : 3 à 4 minutes, vidéo de submission lablab pour le track
+> **Cible** : 2 à 3 minutes, vidéo de submission lablab pour le track
 > **AI Agent Olympics → Kraken Challenge (Kraken Trading
 > Performance)**. La modératrice lablab **Inaam** a explicitement
 > confirmé (Discord, 15/05/2026 20:29) : *« you need to show that [le
@@ -10,13 +10,21 @@
 > Le script est rédigé en français (préférence utilisateur) ; le texte
 > narré est en anglais pour matcher le public lablab international —
 > les **didascalies** (italique + crochets) restent en français.
+>
+> **Mise à jour finale (19/05/2026)** : la session shadow VPS a été
+> arrêtée le 19/05 après 17h22 d'uptime sans erreur ni violation live ;
+> le metric principal montré dans la vidéo est désormais le **backtest
+> hackathon-window** (13 → 19 mai 2026, +19.18 USD, 10 trades, 80% win
+> rate, 0.06% MDD) — le baseline 30j (+33.56 USD, 138 trades) reste
+> affiché en complément. Toutes les références à la session shadow
+> "live dry-run" ont été retirées du storyboard.
 
 ## Préflight — à exécuter une fois avant l'enregistrement
 
 ```powershell
 # 1. Activer le venv et vérifier que tout est vert
 .venv\Scripts\Activate.ps1
-pytest                                          # attendu: 232/232 en ~5s
+pytest -q                                       # attendu: 330+/0 en ~5s
 
 # 2. Snapshot du ranking et d'un cycle dry_run
 python scripts/rank_xstocks.py --top 8
@@ -25,7 +33,8 @@ python scripts/dry_run_once.py
 # 3. Lancer le dashboard FastAPI local (terminal dédié)
 uvicorn src.dashboard.app:app --reload
 
-# 4. Vérifier que le dashboard Vercel répond
+# 4. Vérifier que le dashboard Vercel répond (la card primary doit montrer
+#    "Hackathon-window PnL +19.18 USD" et le hint "30d baseline +33.56 USD")
 #   https://kraken-alpha-agent-damso74s-projects.vercel.app
 ```
 
@@ -48,20 +57,20 @@ Fenêtres terminal à pré-ouvrir :
 - **T3** : éditeur sur `docs/HACKATHON_DISCORD_CONTEXT.md` (preuve
   écrite du blocage transverse).
 
-## Storyboard (3 min 45 s cible — total flexible 3:30 à 4:00)
+## Storyboard (2 min 30 s cible — total flexible 2:00 à 3:00)
 
 ### Scène 1 — Accroche (0:00 → 0:15) — 15 s
 
 - **À l'écran** : dashboard Vercel
   (<https://kraken-alpha-agent-damso74s-projects.vercel.app>) en plein
-  écran. Curseur survole la carte « 30-day backtest +33.56 USD ».
-- **Narration (EN, ~38 mots)** :
+  écran. Curseur survole la carte « Hackathon-window PnL +19.18 USD ».
+- **Narration (EN, ~40 mots)** :
   > "Kraken Alpha Agent — an autonomous, fully audited xStocks
-  > trading agent for the lablab Kraken Challenge. Two hundred and
-  > thirty-two tests green, a live Vercel dashboard, a thirty-day
-  > backtest with a hundred and thirty-eight trades. Let me show you
-  > what's under the hood — and the honest blocker that capped our
-  > live PnL."
+  > trading agent for the lablab Kraken Challenge. Three hundred plus
+  > tests green, a live Vercel dashboard, a hackathon-window backtest
+  > delivering plus nineteen dollars at eighty percent win rate. Let
+  > me show you what's under the hood — and the honest blocker that
+  > capped our live PnL."
 
 ### Scène 2 — Architecture en 30 s (0:15 → 0:45) — 30 s
 
@@ -101,20 +110,22 @@ Fenêtres terminal à pré-ouvrir :
 - **Cue éditeur (1 s overlay)** : montrer un row de
   `data/decisions.jsonl` à l'écran.
 
-### Scène 4 — Backtest 30 jours (1:15 → 1:45) — 30 s
+### Scène 4 — Backtest hackathon-window + baseline 30j (1:15 → 1:45) — 30 s
 
-- **À l'écran** : carte *30-day backtest* du dashboard Vercel.
-  Curseur survole le top 3 par symbole (`CRCLx`, `HOODx`,
-  `NVDAx`). Bascule sur les onglets *15d / 30m* et *7d / 15m* pour
-  montrer les trois résolutions.
-- **Narration (EN, ~65 mots)** :
+- **À l'écran** : carte *Backtest run · hackathon window* du dashboard
+  Vercel. Curseur survole d'abord la card "Hackathon-window PnL
+  +19.18 USD", puis le hint "30d baseline +33.56 USD". Bascule sur la
+  table per-symbol pour montrer `CRCLx` et `HOODx` en tête.
+- **Narration (EN, ~70 mots)** :
   > "Because the live xStocks venue is blocked on this account —
-  > more on that in a second — the engine is audited on a
-  > deterministic backtest. Thirty days, sixty-minute bars, nine
-  > ranked xStocks: a hundred and thirty-eight trades, fifty-three
-  > percent win rate, plus thirty-three dollars net PnL, max
-  > drawdown one point seven percent. CRCLx and HOODx carry the
-  > book — exactly the symbols our ranking pass surfaces."
+  > more on that in a second — the engine is audited on two
+  > deterministic backtests against real Kraken OHLC. The primary
+  > snapshot covers the lablab submission window, May thirteenth to
+  > nineteenth: ten trades, eighty percent win rate, plus nineteen
+  > dollars net PnL, max drawdown six basis points. The thirty-day
+  > baseline reports plus thirty-three dollars over a hundred and
+  > thirty-eight trades. Same profile, no curve-fit, walk-forward
+  > audit linked in the docs."
 
 ### Scène 5 — Le moment honnêteté (1:45 → 2:30) — **45 s — clé**
 
@@ -169,44 +180,33 @@ Fenêtres terminal à pré-ouvrir :
   > twenty-two crypto fills — a controlled diagnostic that the rest
   > of the engine works end to end on a real Kraken venue."
 
-### Scène 6 — Audit & repro (2:30 → 3:15) — 45 s
+### Scène 6 — Audit jury (2:30 → 3:00) — 30 s
 
 - **À l'écran** :
-  1. Kraken Pro → page *API* avec les permissions de la clé
-     read-only qui sera transmise au jury (Query Funds, Query Open
-     & Closed Orders & Trades activés ; Place Orders / Withdraw
-     DÉSACTIVÉS). **Flouter** la valeur de la clé.
-  2. `docs/JURY_ACCESS_TEMPLATE.md` — scroll sur la table des
-     permissions et sur la séquence
-     `kraken balance / trades-history / futures fills`.
-  3. `docs/SUBMISSION.md` — section *Submission checklist*.
+  1. `SUBMISSION_QUICKSTART.md` (à la racine du repo) — scroll sur la
+     section "How to verify the live PnL via the read-only Kraken
+     API key" + table des permissions.
+  2. Terminal T2 :
 
-- **Narration (EN, ~95 mots)** :
-  > "The submission packet is jury-auditable end to end. The
-  > read-only Kraken API key — Query Funds, Query Orders & Trades,
-  > everything else disabled — is shared with the jury via lablab
-  > DM and never committed. Three commands give the jury access to
-  > the full account state: `kraken balance`, `kraken
-  > trades-history`, `kraken futures fills`. Local audit logs in
-  > SQLite plus JSONL plus a secret-redacted export bundle make
-  > every decision, every order, every cancel cross-checkable. The
-  > full submission narrative — repo, dashboard, Discord evidence,
-  > backtest — is one click away from the README."
+     ```bash
+     kraken balance -o json
+     kraken trades-history -o json
+     ```
 
-### Scène 7 — Take-home (3:15 → 3:45) — 30 s
+  3. `docs/JURY_ACCESS_TEMPLATE.md` — scroll sur la liste de
+     permissions read-only à activer.
 
-- **À l'écran** : dashboard Vercel — vue d'ensemble avec les KPI
-  cards. Curseur termine sur l'URL GitHub.
-- **Narration (EN, ~70 mots)** :
-  > "Take-home: an engine that's correct end to end, audited with
-  > two hundred and thirty-two tests, with a deterministic
-  > thirty-day backtest and a transparent live PnL line. The
-  > xStocks block is a hackathon-wide regulatory issue documented in
-  > the Discord. If you give me one unrestricted week of live
-  > xStocks trading on a non-EU account, the roadmap is in the
-  > submission doc — but every safeguard described here, including
-  > the triple opt-in and the leverage cap, ships in production
-  > already. Thanks, Kraken. Thanks, lablab."
+- **Narration (EN, ~85 mots)** :
+  > "Auditing this submission takes thirty seconds. There's a
+  > Submission Quickstart at the root of the repo with two copy-paste
+  > sections: one to reproduce the backtest in sixty seconds, one to
+  > verify the live PnL via the read-only Kraken API key I share via
+  > lablab DM. The key has Query Funds and Query Orders and Trades
+  > only — no Place Orders, no Withdraw, no Modify Settings. Three
+  > commands return everything the jury needs: balance,
+  > trades-history, futures fills. Three hundred plus tests green.
+  > Backtest snapshots in the web UI. Done. Thanks Kraken, thanks
+  > lablab."
 
 ## Conseils de tournage
 
@@ -222,7 +222,7 @@ Fenêtres terminal à pré-ouvrir :
   compte (utile pour le jury et déjà documenté dans
   `JURY_ACCESS_TEMPLATE.md`).
 - **Variantes courtes** :
-  - 90 s "social cut" : scènes 1 + 4 + 5 + 7 uniquement.
+  - 90 s "social cut" : scènes 1 + 4 + 5 + 6 uniquement.
   - 15 s "teaser" : narration de la backup pitch dans `DEMO_SCRIPT.md`.
 
 ## Take-home summary à imprimer sous la vidéo (description YouTube/lablab)
@@ -231,13 +231,15 @@ Fenêtres terminal à pré-ouvrir :
 Kraken Alpha Agent — Kraken Challenge submission (AI Agent Olympics, lablab.ai)
 
 → Repo: https://github.com/Damso74/kraken-alpha-agent
+→ Quickstart for jury: ./SUBMISSION_QUICKSTART.md
 → Dashboard: https://kraken-alpha-agent-damso74s-projects.vercel.app
-→ Backtest: 30 days, 138 trades, +33.56 USD, 1.68% max DD
+→ Hackathon-window backtest (May 13 → 19 2026): +19.18 USD, 10 trades, 80% win rate, 0.06% MDD
+→ 30-day baseline backtest: +33.56 USD, 138 trades, 53% win rate, 1.68% MDD
 → Live xStocks PnL: 0 USD (venue-blocked on PEDSL-CY — see docs/HACKATHON_DISCORD_CONTEXT.md)
 → Live crypto diagnostic: -0.55 USD on 22 fills (engine end-to-end validation, out-of-track)
 → Read-only Kraken API key delivered via lablab DM (see docs/JURY_ACCESS_TEMPLATE.md)
 
-Tests: 232/232 green. Default mode: dry_run. Triple opt-in required for live.
+Tests: 330+ green. Default mode: dry_run. Triple opt-in required for live. Leverage cap 1.0x. Shorting disabled.
 ```
 
 ## Notes pour l'enregistrement final

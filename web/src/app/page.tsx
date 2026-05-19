@@ -24,7 +24,7 @@ import { Section, CheckRow } from "@/components/Section";
 import { Sidebar } from "@/components/Sidebar";
 import { SystemDiagram } from "@/components/SystemDiagram";
 import { TradesTable } from "@/components/TradesTable";
-import { data, fmtPct, fmtUsd, topTradesByAbsPnl, fmtDate } from "@/lib/data";
+import { data, data30d, fmtPct, fmtUsd, topTradesByAbsPnl, fmtDate } from "@/lib/data";
 
 const REPO_URL_REAL = "https://github.com/Damso74/kraken-alpha-agent";
 
@@ -58,7 +58,7 @@ export default function Page() {
                 Kraken Alpha Agent
               </h1>
               <p className="mt-1 text-[12.5px] sm:text-[13px] text-[var(--text-secondary)] max-w-[680px] leading-relaxed">
-                Production-grade trading agent with deterministic signal stack, defence-in-depth risk engine, and a fully audited 30-day xStocks backtest on real Kraken OHLC data.
+                Production-grade trading agent with deterministic signal stack, defence-in-depth risk engine, and a fully audited xStocks backtest on real Kraken OHLC data — primary snapshot on the hackathon window (May 13 → May 19, 2026), 30-day baseline reported alongside.
               </p>
             </div>
 
@@ -73,7 +73,7 @@ export default function Page() {
               <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-3 py-2 flex items-center justify-between sm:justify-start gap-3 w-full lg:w-auto">
                 <div className="min-w-0">
                   <div className="text-[10.5px] uppercase tracking-[0.12em] text-[var(--text-tertiary)] font-medium">
-                    Equity curve · {period.days ?? 30}d
+                    Equity curve · hackathon window
                   </div>
                   <div
                     className={`text-[14px] font-semibold tabular ${
@@ -110,16 +110,16 @@ export default function Page() {
               icon={CheckCircle2}
             />
             <KPICard
-              label="xStocks backtest trades"
+              label="Hackathon-window trades"
               value={summary.total_trades.toString()}
               hint={`${summary.buy_count} BUY · ${summary.sell_count} SELL · win rate ${(summary.win_rate * 100).toFixed(1)}%`}
               tone="info"
               icon={Layers}
             />
             <KPICard
-              label="xStocks backtest PnL"
+              label="Hackathon-window PnL"
               value={fmtUsd(summary.total_pnl_usd, { signed: true })}
-              hint={`${fmtPct(summary.total_pnl_pct, { signed: true, decimals: 4 })} on $${summary.starting_capital_usd.toLocaleString("en-US")} · max DD ${summary.max_drawdown_pct.toFixed(2)}%`}
+              hint={`${fmtPct(summary.total_pnl_pct, { signed: true, decimals: 4 })} on $${summary.starting_capital_usd.toLocaleString("en-US")} · max DD ${summary.max_drawdown_pct.toFixed(2)}% · 30d baseline ${fmtUsd(data30d.summary.total_pnl_usd, { signed: true })}`}
               tone={positive ? "success" : "warning"}
               icon={positive ? TrendingUp : TrendingDown}
             />
@@ -159,7 +159,10 @@ export default function Page() {
                   BTC Perp control order on the same Futures key validated — <code className="text-[11px] text-[var(--text-secondary)]">status: placed</code>.
                 </CheckRow>
                 <CheckRow tone="success">
-                  <strong className="font-semibold">Backtest 30 days</strong> on real xStocks OHLC — PnL {fmtUsd(summary.total_pnl_usd, { signed: true })}, win rate {(summary.win_rate * 100).toFixed(1)}%.
+                  <strong className="font-semibold">Hackathon-window backtest</strong> (May 13 → May 19, 2026) — PnL {fmtUsd(summary.total_pnl_usd, { signed: true })}, win rate {(summary.win_rate * 100).toFixed(1)}%, max DD {summary.max_drawdown_pct.toFixed(2)}%.
+                </CheckRow>
+                <CheckRow tone="success">
+                  <strong className="font-semibold">30-day baseline</strong> on real xStocks OHLC — PnL {fmtUsd(data30d.summary.total_pnl_usd, { signed: true })}, win rate {(data30d.summary.win_rate * 100).toFixed(1)}%, {data30d.summary.total_trades} trades.
                 </CheckRow>
               </ul>
             </Section>
@@ -295,8 +298,8 @@ export default function Page() {
 
           {/* Backtest Run */}
           <Section
-            title={`Backtest run · ${periodLabel}`}
-            description={`Universe: ${universe.join(" · ")} — hourly OHLC replayed through the deterministic engine. No live or paper orders placed.`}
+            title={`Backtest run · hackathon window · ${periodLabel}`}
+            description={`Universe: ${universe.join(" · ")} — hourly OHLC replayed through the deterministic engine over the lablab AI Agent Olympics submission window. No live or paper orders placed. 30-day baseline (${fmtUsd(data30d.summary.total_pnl_usd, { signed: true })}, ${data30d.summary.total_trades} trades) reported alongside in the KPI card and in docs/SUBMISSION.md.`}
             tone="info"
             icon={PlayCircle}
           >
