@@ -1,13 +1,18 @@
-"""Phase 15 pre-declared strategy presets per timeframe (no post-hoc tuning)."""
+"""Phase 15/16 pre-declared strategy presets per timeframe (no post-hoc tuning)."""
 
 from __future__ import annotations
 
 from copy import deepcopy
 from typing import Any
 
+from src.strategies.atr_breakout import AtrBreakoutStrategy
+from src.strategies.bollinger_mean_reversion import BollingerMeanReversionStrategy
 from src.strategies.breakout import BreakoutStrategy
+from src.strategies.donchian_breakout import DonchianBreakoutStrategy
+from src.strategies.ema_crossover import EmaCrossoverStrategy
 from src.strategies.grid import GridStrategy
 from src.strategies.mean_reversion import MeanReversionStrategy
+from src.strategies.rsi_mean_reversion import RsiMeanReversionStrategy
 from src.strategies.trend_following import TrendFollowingStrategy
 
 # Locked before tournament — do not change after seeing results.
@@ -92,12 +97,140 @@ TIMEFRAME_TO_PRESET_KEY: dict[str, str] = {
     "1h": "phase15_1h",
 }
 
+# Phase 16 zoo — locked before tournament.
+PHASE16_ZOO_PRESETS: dict[str, dict[str, dict[str, Any]]] = {
+    "phase15_1d": {
+        "ema_crossover": {
+            "fast_period": 12,
+            "slow_period": 26,
+            "max_position_fraction": 0.25,
+        },
+        "donchian_breakout": {
+            "channel_period": 20,
+            "max_position_fraction": 0.25,
+        },
+        "rsi_mean_reversion": {
+            "rsi_period": 14,
+            "oversold": 30.0,
+            "exit_rsi": 55.0,
+            "max_holding_bars": 7,
+            "max_position_fraction": 0.25,
+        },
+        "bollinger_mean_reversion": {
+            "period": 20,
+            "num_std": 2.0,
+            "max_holding_bars": 7,
+            "max_position_fraction": 0.25,
+        },
+        "atr_breakout": {
+            "atr_period": 14,
+            "lookback": 20,
+            "atr_multiplier": 1.5,
+            "max_position_fraction": 0.25,
+        },
+    },
+    "phase15_4h": {
+        "ema_crossover": {
+            "fast_period": 18,
+            "slow_period": 50,
+            "max_position_fraction": 0.20,
+        },
+        "donchian_breakout": {
+            "channel_period": 24,
+            "max_position_fraction": 0.20,
+        },
+        "rsi_mean_reversion": {
+            "rsi_period": 14,
+            "oversold": 30.0,
+            "exit_rsi": 55.0,
+            "max_holding_bars": 42,
+            "max_position_fraction": 0.20,
+        },
+        "bollinger_mean_reversion": {
+            "period": 20,
+            "num_std": 2.0,
+            "max_holding_bars": 42,
+            "max_position_fraction": 0.20,
+        },
+        "atr_breakout": {
+            "atr_period": 14,
+            "lookback": 24,
+            "atr_multiplier": 1.5,
+            "max_position_fraction": 0.20,
+        },
+    },
+    "phase15_1h": {
+        "ema_crossover": {
+            "fast_period": 36,
+            "slow_period": 100,
+            "max_position_fraction": 0.15,
+        },
+        "donchian_breakout": {
+            "channel_period": 48,
+            "max_position_fraction": 0.15,
+        },
+        "rsi_mean_reversion": {
+            "rsi_period": 14,
+            "oversold": 30.0,
+            "exit_rsi": 55.0,
+            "max_holding_bars": 168,
+            "max_position_fraction": 0.15,
+        },
+        "bollinger_mean_reversion": {
+            "period": 20,
+            "num_std": 2.0,
+            "max_holding_bars": 168,
+            "max_position_fraction": 0.15,
+        },
+        "atr_breakout": {
+            "atr_period": 14,
+            "lookback": 48,
+            "atr_multiplier": 1.5,
+            "max_position_fraction": 0.15,
+        },
+    },
+}
+
+PHASE16_VOL_TARGET_PRESETS: dict[str, dict[str, Any]] = {
+    "1d": {
+        "vol_lookback": 20,
+        "target_vol_daily": 0.02,
+        "min_scale": 0.25,
+        "max_scale": 1.0,
+    },
+    "4h": {
+        "vol_lookback": 30,
+        "target_vol_daily": 0.015,
+        "min_scale": 0.25,
+        "max_scale": 1.0,
+    },
+    "1h": {
+        "vol_lookback": 48,
+        "target_vol_daily": 0.012,
+        "min_scale": 0.20,
+        "max_scale": 1.0,
+    },
+}
+
 STRATEGY_CLASSES = {
     "trend_following": TrendFollowingStrategy,
     "breakout": BreakoutStrategy,
     "mean_reversion": MeanReversionStrategy,
     "grid": GridStrategy,
+    "ema_crossover": EmaCrossoverStrategy,
+    "donchian_breakout": DonchianBreakoutStrategy,
+    "rsi_mean_reversion": RsiMeanReversionStrategy,
+    "bollinger_mean_reversion": BollingerMeanReversionStrategy,
+    "atr_breakout": AtrBreakoutStrategy,
 }
+
+PHASE16_ZOO_STRATEGIES = (
+    "ema_crossover",
+    "donchian_breakout",
+    "rsi_mean_reversion",
+    "bollinger_mean_reversion",
+    "atr_breakout",
+)
 
 
 def list_presets() -> list[str]:
@@ -109,7 +242,13 @@ def validate_preset(preset_key: str, strategy_name: str | None = None) -> bool:
         return False
     if strategy_name is None:
         return True
-    return strategy_name in PHASE15_PRESETS[preset_key]
+    return strategy_name in _merged_preset_bucket(preset_key)
+
+
+def _merged_preset_bucket(preset_key: str) -> dict[str, dict[str, Any]]:
+    merged = deepcopy(PHASE15_PRESETS[preset_key])
+    merged.update(PHASE16_ZOO_PRESETS.get(preset_key, {}))
+    return merged
 
 
 def get_strategy_preset(strategy_name: str, timeframe: str) -> dict[str, Any]:
@@ -118,10 +257,17 @@ def get_strategy_preset(strategy_name: str, timeframe: str) -> dict[str, Any]:
     preset_key = TIMEFRAME_TO_PRESET_KEY.get(tf)
     if preset_key is None:
         raise KeyError(f"unsupported timeframe: {timeframe}")
-    bucket = PHASE15_PRESETS[preset_key]
+    bucket = _merged_preset_bucket(preset_key)
     if strategy_name not in bucket:
         raise KeyError(f"unknown strategy {strategy_name!r} for {preset_key}")
     return deepcopy(bucket[strategy_name])
+
+
+def get_vol_targeting_preset(timeframe: str) -> dict[str, Any]:
+    tf = timeframe.strip().lower()
+    if tf not in PHASE16_VOL_TARGET_PRESETS:
+        raise KeyError(f"unsupported timeframe: {timeframe}")
+    return deepcopy(PHASE16_VOL_TARGET_PRESETS[tf])
 
 
 def build_strategy(strategy_name: str, timeframe: str):

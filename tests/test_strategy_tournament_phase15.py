@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.run_strategy_tournament import STRATEGIES, _load_candles
+from scripts.run_strategy_tournament import STRATEGIES, _load_candles, _strategy_names
 from src.bot.metrics import MIN_TRADES_BY_TIMEFRAME
 from src.strategies.presets import build_strategy
 from tests.conftest_bot import synthetic_uptrend
@@ -61,6 +61,8 @@ def test_tournament_writes_matrix(tmp_path: Path) -> None:
             str(out),
             "--cache-root",
             str(cache),
+            "--phase",
+            "15",
         ],
         capture_output=True,
         text=True,
@@ -91,9 +93,10 @@ def test_load_candles_missing() -> None:
 
 
 def test_strategies_registry() -> None:
-    assert set(STRATEGIES) == {
+    assert set(_strategy_names(15)) == {
         "trend_following",
         "breakout",
         "mean_reversion",
         "grid",
     }
+    assert len(STRATEGIES) == 9

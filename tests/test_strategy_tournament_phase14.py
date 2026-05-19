@@ -66,6 +66,8 @@ def test_tournament_writes_results(tmp_path: Path) -> None:
             "BTC",
             "--output-dir",
             str(out),
+            "--phase",
+            "15",
         ],
         capture_output=True,
         text=True,

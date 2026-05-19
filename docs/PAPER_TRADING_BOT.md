@@ -49,3 +49,12 @@ Voir `src/bot/metrics.py`. `micro_live_candidate` nécessite `allow_micro_live=T
 - Tournoi V2 : `python scripts/run_strategy_tournament.py --timeframes 1d 4h 1h --cache-only`.
 - Verdict centralisé : `classify_strategy_verdict()` — inclut `insufficient_candles`, `weak` ; pas de `micro_live_candidate`.
 - Rapport : `reports/STRATEGY_TOURNAMENT_PHASE15.md`.
+
+## Phase 16 — strategy zoo (addendum)
+
+- Nouvelles stratégies : `ema_crossover`, `donchian_breakout`, `rsi_mean_reversion`, `bollinger_mean_reversion`, `atr_breakout`.
+- Overlay vol : `src/strategies/volatility_targeting.py` — flag tournoi `--vol-targeting on|off` (défaut `off`).
+- Presets Phase 16 : `PHASE16_ZOO_PRESETS` + `PHASE16_VOL_TARGET_PRESETS` dans `src/strategies/presets.py`.
+- Tournoi zoo : `python scripts/run_strategy_tournament.py --phase 16 --timeframes 1d 4h 1h --cache-only`.
+- Cache manquant → `blocked_data` (manifest : `reports/data_manifests_phase16/ohlcv_intraday_readiness.json`).
+- Rapport : `reports/STRATEGY_ZOO_PHASE16.md`.

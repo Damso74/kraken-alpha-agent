@@ -21,8 +21,20 @@ from src.bot.paper_engine import run_paper_backtest
 from src.bot.portfolio import PaperPortfolio
 from src.bot.risk_manager import RiskManager
 from src.strategies.presets import STRATEGY_CLASSES, build_strategy
+from src.strategies.volatility_targeting import wrap_with_vol_targeting
 
 STRATEGIES = STRATEGY_CLASSES
+PHASE16_STRATEGY_NAMES = (
+    "trend_following",
+    "breakout",
+    "mean_reversion",
+    "grid",
+    "ema_crossover",
+    "donchian_breakout",
+    "rsi_mean_reversion",
+    "bollinger_mean_reversion",
+    "atr_breakout",
+)
 
 
 def _load_candles(asset: str, min_rows: int = 60) -> tuple[list[dict], bool]:
@@ -44,9 +56,22 @@ def _parse_args() -> argparse.Namespace:
     p.add_argument(
         "--output-dir",
         type=Path,
-        default=REPO_ROOT / "reports" / "strategy_tournament_phase15",
+        default=REPO_ROOT / "reports" / "strategy_tournament_phase16",
     )
     p.add_argument("--cache-only", action="store_true", default=True)
+    p.add_argument(
+        "--vol-targeting",
+        choices=["off", "on"],
+        default="off",
+        help="Scale buy size_fraction by realized vol overlay (Phase 16)",
+    )
+    p.add_argument(
+        "--phase",
+        type=int,
+        default=16,
+        choices=[15, 16],
+        help="Tournament phase label (15 legacy 4-strat, 16 zoo 9-strat)",
+    )
     p.add_argument("--min-rows", type=int, default=0, help="legacy; ignored if 0")
     p.add_argument(
         "--cache-root",
@@ -64,19 +89,41 @@ def _resolve_timeframes(args: argparse.Namespace) -> list[str]:
     return ["1d"]
 
 
+def _strategy_names(phase: int) -> tuple[str, ...]:
+    if phase <= 15:
+        return ("trend_following", "breakout", "mean_reversion", "grid")
+    return PHASE16_STRATEGY_NAMES
+
+
+def _instantiate_strategy(
+    strat_name: str,
+    tf: str,
+    *,
+    vol_targeting: bool,
+):
+    strategy = build_strategy(strat_name, tf)
+    if vol_targeting:
+        return wrap_with_vol_targeting(strategy, tf)
+    return strategy
+
+
 def main() -> int:
     args = _parse_args()
     timeframes = _resolve_timeframes(args)
     args.output_dir.mkdir(parents=True, exist_ok=True)
+    strategy_names = _strategy_names(args.phase)
+    vol_on = args.vol_targeting == "on"
 
     exec_cfg = ExecutionConfig(fee_bps=args.fees_bps, slippage_bps=args.slippage_bps)
     results: dict = {
-        "phase": 15,
+        "phase": args.phase,
         "timeframes": timeframes,
         "cash": args.cash,
         "fee_bps": args.fees_bps,
         "slippage_bps": args.slippage_bps,
         "cache_only": bool(args.cache_only),
+        "vol_targeting": args.vol_targeting,
+        "strategies": list(strategy_names),
         "runs": [],
     }
     all_trades: list[dict] = []
@@ -88,8 +135,10 @@ def main() -> int:
         sym = asset.upper()
         for tf in timeframes:
             warmup = 0
-            for strat_name in STRATEGIES:
-                strategy = build_strategy(strat_name, tf)
+            for strat_name in strategy_names:
+                strategy = _instantiate_strategy(
+                    strat_name, tf, vol_targeting=vol_on
+                )
                 warmup = max(warmup, strategy.warmup_bars())
 
             candles, summary = load_ohlcv_candles(
@@ -101,8 +150,10 @@ def main() -> int:
             )
             data_ok = summary.status == "available"
 
-            for strat_name in STRATEGIES:
-                strategy = build_strategy(strat_name, tf)
+            for strat_name in strategy_names:
+                strategy = _instantiate_strategy(
+                    strat_name, tf, vol_targeting=vol_on
+                )
                 journal = BotJournal()
                 portfolio = PaperPortfolio(cash_usd=args.cash)
                 result = run_paper_backtest(
@@ -136,6 +187,7 @@ def main() -> int:
                     "asset": sym,
                     "timeframe": tf,
                     "strategy": strat_name,
+                    "vol_targeting": args.vol_targeting,
                     "verdict": verdict.verdict,
                     "verdict_reasons": verdict.reasons,
                     "data_ok": data_ok,
