@@ -1,0 +1,19 @@
+{
+  "phase": 24,
+  "axis": "walkforward_holdout_sensitivity",
+  "overlay": "off",
+  "fee_bps": 40.0,
+  "runs_total": 432,
+  "validation_candidate_count": 1,
+  "paper_candidate_count": 0,
+  "unstable_count": 431,
+  "holdout_pcts": [
+    0.2,
+    0.3,
+    0.4
+  ],
+  "window_modes": [
+    "rolling",
+    "expanding"
+  ]
+}
