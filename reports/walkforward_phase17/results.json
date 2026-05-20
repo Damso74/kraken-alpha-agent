@@ -1,0 +1,1082 @@
+{
+  "phase": 17,
+  "timeframes": [
+    "1d",
+    "4h",
+    "1h"
+  ],
+  "strategies": [
+    "trend_following",
+    "breakout",
+    "mean_reversion",
+    "grid",
+    "ema_crossover",
+    "donchian_breakout",
+    "rsi_mean_reversion",
+    "bollinger_mean_reversion",
+    "atr_breakout"
+  ],
+  "cash": 1000.0,
+  "fee_bps": 40.0,
+  "slippage_bps": 5.0,
+  "cache_only": true,
+  "vol_targeting": "off",
+  "runs": [
+    {
+      "run_id": "BTC_1d_trend_following",
+      "asset": "BTC",
+      "timeframe": "1d",
+      "strategy": "trend_following",
+      "verdict": "weak",
+      "verdict_reasons": [
+        "positive_window_rate=14.29%",
+        "median_net_return=-2.81%"
+      ],
+      "data_ok": true,
+      "plan_status": "ok",
+      "candle_count": 736,
+      "status": "ok",
+      "blocked_reason": null,
+      "train_bars": 365,
+      "validation_bars": 90,
+      "holdout_bars": 90,
+      "step_bars": 30,
+      "embargo_bars": 0,
+      "windows_total": 7,
+      "min_candles_required": 545,
+      "first_window_train_start": 0,
+      "last_window_holdout_end": 725,
+      "first_timestamp": null,
+      "last_timestamp": null,
+      "windows_passed": 7,
+      "windows_failed": 0,
+      "median_net_return": -2.8122,
+      "mean_net_return": -1.9515,
+      "worst_window_return": -4.2747,
+      "max_window_drawdown": 6.661,
+      "positive_window_rate": 0.1429,
+      "consistency_score": 0.3207,
+      "parameter_stability": 0.7143,
+      "turnover_stability": 0.7085,
+      "cost_drag_stability": 1.0,
+      "holdout_pass_rate": 1.0
+    },
+    {
+      "run_id": "BTC_1d_breakout",
+      "asset": "BTC",
+      "timeframe": "1d",
+      "strategy": "breakout",
+      "verdict": "weak",
+      "verdict_reasons": [
+        "positive_window_rate=14.29%",
+        "median_net_return=-3.09%"
+      ],
+      "data_ok": true,
+      "plan_status": "ok",
+      "candle_count": 736,
+      "status": "ok",
+      "blocked_reason": null,
+      "train_bars": 365,
+      "validation_bars": 90,
+      "holdout_bars": 90,
+      "step_bars": 30,
+      "embargo_bars": 0,
+      "windows_total": 7,
+      "min_candles_required": 545,
+      "first_window_train_start": 0,
+      "last_window_holdout_end": 725,
+      "first_timestamp": null,
+      "last_timestamp": null,
+      "windows_passed": 5,
+      "windows_failed": 2,
+      "median_net_return": -3.0914,
+      "mean_net_return": -2.7476,
+      "worst_window_return": -8.2107,
+      "max_window_drawdown": 8.2107,
+      "positive_window_rate": 0.1429,
+      "consistency_score": 0.1402,
+      "parameter_stability": 0.7143,
+      "turnover_stability": 0.4255,
+      "cost_drag_stability": 1.0,
+      "holdout_pass_rate": 0.7143
+    },
+    {
+      "run_id": "BTC_1d_mean_reversion",
+      "asset": "BTC",
+      "timeframe": "1d",
+      "strategy": "mean_reversion",
+      "verdict": "weak",
+      "verdict_reasons": [
+        "positive_window_rate=14.29%",
+        "median_net_return=-3.64%"
+      ],
+      "data_ok": true,
+      "plan_status": "ok",
+      "candle_count": 736,
+      "status": "ok",
+      "blocked_reason": null,
+      "train_bars": 365,
+      "validation_bars": 90,
+      "holdout_bars": 90,
+      "step_bars": 30,
+      "embargo_bars": 0,
+      "windows_total": 7,
+      "min_candles_required": 545,
+      "first_window_train_start": 0,
+      "last_window_holdout_end": 725,
+      "first_timestamp": null,
+      "last_timestamp": null,
+      "windows_passed": 6,
+      "windows_failed": 1,
+      "median_net_return": -3.638,
+      "mean_net_return": -2.578,
+      "worst_window_return": -7.9385,
+      "max_window_drawdown": 10.0364,
+      "positive_window_rate": 0.1429,
+      "consistency_score": 0.0,
+      "parameter_stability": 0.5714,
+      "turnover_stability": 0.6389,
+      "cost_drag_stability": 1.0,
+      "holdout_pass_rate": 0.8571
+    },
+    {
+      "run_id": "BTC_1d_grid",
+      "asset": "BTC",
+      "timeframe": "1d",
+      "strategy": "grid",
+      "verdict": "weak",
+      "verdict_reasons": [
+        "holdout_pass_rate=14.29%",
+        "positive_window_rate=0.00%",
+        "median_net_return=0.00%",
+        "cost_drag_unstable=0.00"
+      ],
+      "data_ok": true,
+      "plan_status": "ok",
+      "candle_count": 736,
+      "status": "ok",
+      "blocked_reason": null,
+      "train_bars": 365,
+      "validation_bars": 90,
+      "holdout_bars": 90,
+      "step_bars": 30,
+      "embargo_bars": 0,
+      "windows_total": 7,
+      "min_candles_required": 545,
+      "first_window_train_start": 0,
+      "last_window_holdout_end": 725,
+      "first_timestamp": null,
+      "last_timestamp": null,
+      "windows_passed": 1,
+      "windows_failed": 6,
+      "median_net_return": 0.0,
+      "mean_net_return": -0.1057,
+      "worst_window_return": -0.74,
+      "max_window_drawdown": 1.6774,
+      "positive_window_rate": 0.0,
+      "consistency_score": 0.7658,
+      "parameter_stability": 0.8571,
+      "turnover_stability": 0.0,
+      "cost_drag_stability": 0.0,
+      "holdout_pass_rate": 0.1429
+    },
+    {
+      "run_id": "BTC_1d_ema_crossover",
+      "asset": "BTC",
+      "timeframe": "1d",
+      "strategy": "ema_crossover",
+      "verdict": "weak",
+      "verdict_reasons": [
+        "positive_window_rate=0.00%",
+        "median_net_return=-2.11%"
+      ],
+      "data_ok": true,
+      "plan_status": "ok",
+      "candle_count": 736,
+      "status": "ok",
+      "blocked_reason": null,
+      "train_bars": 365,
+      "validation_bars": 90,
+      "holdout_bars": 90,
+      "step_bars": 30,
+      "embargo_bars": 0,
+      "windows_total": 7,
+      "min_candles_required": 545,
+      "first_window_train_start": 0,
+      "last_window_holdout_end": 725,
+      "first_timestamp": null,
+      "last_timestamp": null,
+      "windows_passed": 6,
+      "windows_failed": 1,
+      "median_net_return": -2.1053,
+      "mean_net_return": -2.7969,
+      "worst_window_return": -5.7962,
+      "max_window_drawdown": 5.7962,
+      "positive_window_rate": 0.0,
+      "consistency_score": 0.5714,
+      "parameter_stability": 0.7143,
+      "turnover_stability": 0.6768,
+      "cost_drag_stability": 1.0,
+      "holdout_pass_rate": 0.8571
+    },
+    {
+      "run_id": "BTC_1d_donchian_breakout",
+      "asset": "BTC",
+      "timeframe": "1d",
+      "strategy": "donchian_breakout",
+      "verdict": "weak",
+      "verdict_reasons": [
+        "positive_window_rate=14.29%",
+        "median_net_return=-3.09%"
+      ],
+      "data_ok": true,
+      "plan_status": "ok",
+      "candle_count": 736,
+      "status": "ok",
+      "blocked_reason": null,
+      "train_bars": 365,
+      "validation_bars": 90,
+      "holdout_bars": 90,
+      "step_bars": 30,
+      "embargo_bars": 0,
+      "windows_total": 7,
+      "min_candles_required": 545,
+      "first_window_train_start": 0,
+      "last_window_holdout_end": 725,
+      "first_timestamp": null,
+      "last_timestamp": null,
+      "windows_passed": 5,
+      "windows_failed": 2,
+      "median_net_return": -3.0914,
+      "mean_net_return": -2.7888,
+      "worst_window_return": -8.3527,
+      "max_window_drawdown": 8.3527,
+      "positive_window_rate": 0.1429,
+      "consistency_score": 0.1358,
+      "parameter_stability": 0.7143,
+      "turnover_stability": 0.4255,
+      "cost_drag_stability": 1.0,
+      "holdout_pass_rate": 0.7143
+    },
+    {
+      "run_id": "BTC_1d_rsi_mean_reversion",
+      "asset": "BTC",
+      "timeframe": "1d",
+      "strategy": "rsi_mean_reversion",
+      "verdict": "weak",
+      "verdict_reasons": [
+        "positive_window_rate=14.29%",
+        "median_net_return=-2.32%"
+      ],
+      "data_ok": true,
+      "plan_status": "ok",
+      "candle_count": 736,
+      "status": "ok",
+      "blocked_reason": null,
+      "train_bars": 365,
+      "validation_bars": 90,
+      "holdout_bars": 90,
+      "step_bars": 30,
+      "embargo_bars": 0,
+      "windows_total": 7,
+      "min_candles_required": 545,
+      "first_window_train_start": 0,
+      "last_window_holdout_end": 725,
+      "first_timestamp": null,
+      "last_timestamp": null,
+      "windows_passed": 5,
+      "windows_failed": 2,
+      "median_net_return": -2.3172,
+      "mean_net_return": -2.2454,
+      "worst_window_return": -6.0888,
+      "max_window_drawdown": 9.7867,
+      "positive_window_rate": 0.1429,
+      "consistency_score": 0.0546,
+      "parameter_stability": 0.7143,
+      "turnover_stability": 0.7167,
+      "cost_drag_stability": 1.0,
+      "holdout_pass_rate": 0.7143
+    },
+    {
+      "run_id": "BTC_1d_bollinger_mean_reversion",
+      "asset": "BTC",
+      "timeframe": "1d",
+      "strategy": "bollinger_mean_reversion",
+      "verdict": "weak",
+      "verdict_reasons": [
+        "positive_window_rate=0.00%",
+        "median_net_return=-3.21%"
+      ],
+      "data_ok": true,
+      "plan_status": "ok",
+      "candle_count": 736,
+      "status": "ok",
+      "blocked_reason": null,
+      "train_bars": 365,
+      "validation_bars": 90,
+      "holdout_bars": 90,
+      "step_bars": 30,
+      "embargo_bars": 0,
+      "windows_total": 7,
+      "min_candles_required": 545,
+      "first_window_train_start": 0,
+      "last_window_holdout_end": 725,
+      "first_timestamp": null,
+      "last_timestamp": null,
+      "windows_passed": 5,
+      "windows_failed": 2,
+      "median_net_return": -3.2124,
+      "mean_net_return": -2.8084,
+      "worst_window_return": -6.4397,
+      "max_window_drawdown": 8.535,
+      "positive_window_rate": 0.0,
+      "consistency_score": 0.4487,
+      "parameter_stability": 0.7143,
+      "turnover_stability": 0.4825,
+      "cost_drag_stability": 0.5965,
+      "holdout_pass_rate": 0.7143
+    },
+    {
+      "run_id": "BTC_1d_atr_breakout",
+      "asset": "BTC",
+      "timeframe": "1d",
+      "strategy": "atr_breakout",
+      "verdict": "weak",
+      "verdict_reasons": [
+        "holdout_pass_rate=0.00%",
+        "positive_window_rate=0.00%",
+        "median_net_return=0.00%"
+      ],
+      "data_ok": true,
+      "plan_status": "ok",
+      "candle_count": 736,
+      "status": "ok",
+      "blocked_reason": null,
+      "train_bars": 365,
+      "validation_bars": 90,
+      "holdout_bars": 90,
+      "step_bars": 30,
+      "embargo_bars": 0,
+      "windows_total": 7,
+      "min_candles_required": 545,
+      "first_window_train_start": 0,
+      "last_window_holdout_end": 725,
+      "first_timestamp": null,
+      "last_timestamp": null,
+      "windows_passed": 0,
+      "windows_failed": 7,
+      "median_net_return": 0.0,
+      "mean_net_return": 0.0,
+      "worst_window_return": 0.0,
+      "max_window_drawdown": 0.0,
+      "positive_window_rate": 0.0,
+      "consistency_score": 1.0,
+      "parameter_stability": 0.7143,
+      "turnover_stability": 0.0,
+      "cost_drag_stability": 1.0,
+      "holdout_pass_rate": 0.0
+    },
+    {
+      "run_id": "BTC_4h_trend_following",
+      "asset": "BTC",
+      "timeframe": "4h",
+      "strategy": "trend_following",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_4h_BTC.json"
+    },
+    {
+      "run_id": "BTC_4h_breakout",
+      "asset": "BTC",
+      "timeframe": "4h",
+      "strategy": "breakout",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_4h_BTC.json"
+    },
+    {
+      "run_id": "BTC_4h_mean_reversion",
+      "asset": "BTC",
+      "timeframe": "4h",
+      "strategy": "mean_reversion",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_4h_BTC.json"
+    },
+    {
+      "run_id": "BTC_4h_grid",
+      "asset": "BTC",
+      "timeframe": "4h",
+      "strategy": "grid",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_4h_BTC.json"
+    },
+    {
+      "run_id": "BTC_4h_ema_crossover",
+      "asset": "BTC",
+      "timeframe": "4h",
+      "strategy": "ema_crossover",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_4h_BTC.json"
+    },
+    {
+      "run_id": "BTC_4h_donchian_breakout",
+      "asset": "BTC",
+      "timeframe": "4h",
+      "strategy": "donchian_breakout",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_4h_BTC.json"
+    },
+    {
+      "run_id": "BTC_4h_rsi_mean_reversion",
+      "asset": "BTC",
+      "timeframe": "4h",
+      "strategy": "rsi_mean_reversion",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_4h_BTC.json"
+    },
+    {
+      "run_id": "BTC_4h_bollinger_mean_reversion",
+      "asset": "BTC",
+      "timeframe": "4h",
+      "strategy": "bollinger_mean_reversion",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_4h_BTC.json"
+    },
+    {
+      "run_id": "BTC_4h_atr_breakout",
+      "asset": "BTC",
+      "timeframe": "4h",
+      "strategy": "atr_breakout",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_4h_BTC.json"
+    },
+    {
+      "run_id": "BTC_1h_trend_following",
+      "asset": "BTC",
+      "timeframe": "1h",
+      "strategy": "trend_following",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_1h_BTC.json"
+    },
+    {
+      "run_id": "BTC_1h_breakout",
+      "asset": "BTC",
+      "timeframe": "1h",
+      "strategy": "breakout",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_1h_BTC.json"
+    },
+    {
+      "run_id": "BTC_1h_mean_reversion",
+      "asset": "BTC",
+      "timeframe": "1h",
+      "strategy": "mean_reversion",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_1h_BTC.json"
+    },
+    {
+      "run_id": "BTC_1h_grid",
+      "asset": "BTC",
+      "timeframe": "1h",
+      "strategy": "grid",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_1h_BTC.json"
+    },
+    {
+      "run_id": "BTC_1h_ema_crossover",
+      "asset": "BTC",
+      "timeframe": "1h",
+      "strategy": "ema_crossover",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_1h_BTC.json"
+    },
+    {
+      "run_id": "BTC_1h_donchian_breakout",
+      "asset": "BTC",
+      "timeframe": "1h",
+      "strategy": "donchian_breakout",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_1h_BTC.json"
+    },
+    {
+      "run_id": "BTC_1h_rsi_mean_reversion",
+      "asset": "BTC",
+      "timeframe": "1h",
+      "strategy": "rsi_mean_reversion",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_1h_BTC.json"
+    },
+    {
+      "run_id": "BTC_1h_bollinger_mean_reversion",
+      "asset": "BTC",
+      "timeframe": "1h",
+      "strategy": "bollinger_mean_reversion",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_1h_BTC.json"
+    },
+    {
+      "run_id": "BTC_1h_atr_breakout",
+      "asset": "BTC",
+      "timeframe": "1h",
+      "strategy": "atr_breakout",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_1h_BTC.json"
+    },
+    {
+      "run_id": "ETH_1d_trend_following",
+      "asset": "ETH",
+      "timeframe": "1d",
+      "strategy": "trend_following",
+      "verdict": "insufficient_candles",
+      "verdict_reasons": [
+        "candle_count=371 < min_required=545"
+      ],
+      "data_ok": true,
+      "plan_status": "insufficient_candles",
+      "candle_count": 371,
+      "status": "insufficient_candles",
+      "blocked_reason": "candle_count=371 < min_required=545",
+      "train_bars": 365,
+      "validation_bars": 90,
+      "holdout_bars": 90,
+      "step_bars": 30,
+      "embargo_bars": 0,
+      "windows_total": 0,
+      "min_candles_required": 545,
+      "first_window_train_start": null,
+      "last_window_holdout_end": null,
+      "first_timestamp": null,
+      "last_timestamp": null
+    },
+    {
+      "run_id": "ETH_1d_breakout",
+      "asset": "ETH",
+      "timeframe": "1d",
+      "strategy": "breakout",
+      "verdict": "insufficient_candles",
+      "verdict_reasons": [
+        "candle_count=371 < min_required=545"
+      ],
+      "data_ok": true,
+      "plan_status": "insufficient_candles",
+      "candle_count": 371,
+      "status": "insufficient_candles",
+      "blocked_reason": "candle_count=371 < min_required=545",
+      "train_bars": 365,
+      "validation_bars": 90,
+      "holdout_bars": 90,
+      "step_bars": 30,
+      "embargo_bars": 0,
+      "windows_total": 0,
+      "min_candles_required": 545,
+      "first_window_train_start": null,
+      "last_window_holdout_end": null,
+      "first_timestamp": null,
+      "last_timestamp": null
+    },
+    {
+      "run_id": "ETH_1d_mean_reversion",
+      "asset": "ETH",
+      "timeframe": "1d",
+      "strategy": "mean_reversion",
+      "verdict": "insufficient_candles",
+      "verdict_reasons": [
+        "candle_count=371 < min_required=545"
+      ],
+      "data_ok": true,
+      "plan_status": "insufficient_candles",
+      "candle_count": 371,
+      "status": "insufficient_candles",
+      "blocked_reason": "candle_count=371 < min_required=545",
+      "train_bars": 365,
+      "validation_bars": 90,
+      "holdout_bars": 90,
+      "step_bars": 30,
+      "embargo_bars": 0,
+      "windows_total": 0,
+      "min_candles_required": 545,
+      "first_window_train_start": null,
+      "last_window_holdout_end": null,
+      "first_timestamp": null,
+      "last_timestamp": null
+    },
+    {
+      "run_id": "ETH_1d_grid",
+      "asset": "ETH",
+      "timeframe": "1d",
+      "strategy": "grid",
+      "verdict": "insufficient_candles",
+      "verdict_reasons": [
+        "candle_count=371 < min_required=545"
+      ],
+      "data_ok": true,
+      "plan_status": "insufficient_candles",
+      "candle_count": 371,
+      "status": "insufficient_candles",
+      "blocked_reason": "candle_count=371 < min_required=545",
+      "train_bars": 365,
+      "validation_bars": 90,
+      "holdout_bars": 90,
+      "step_bars": 30,
+      "embargo_bars": 0,
+      "windows_total": 0,
+      "min_candles_required": 545,
+      "first_window_train_start": null,
+      "last_window_holdout_end": null,
+      "first_timestamp": null,
+      "last_timestamp": null
+    },
+    {
+      "run_id": "ETH_1d_ema_crossover",
+      "asset": "ETH",
+      "timeframe": "1d",
+      "strategy": "ema_crossover",
+      "verdict": "insufficient_candles",
+      "verdict_reasons": [
+        "candle_count=371 < min_required=545"
+      ],
+      "data_ok": true,
+      "plan_status": "insufficient_candles",
+      "candle_count": 371,
+      "status": "insufficient_candles",
+      "blocked_reason": "candle_count=371 < min_required=545",
+      "train_bars": 365,
+      "validation_bars": 90,
+      "holdout_bars": 90,
+      "step_bars": 30,
+      "embargo_bars": 0,
+      "windows_total": 0,
+      "min_candles_required": 545,
+      "first_window_train_start": null,
+      "last_window_holdout_end": null,
+      "first_timestamp": null,
+      "last_timestamp": null
+    },
+    {
+      "run_id": "ETH_1d_donchian_breakout",
+      "asset": "ETH",
+      "timeframe": "1d",
+      "strategy": "donchian_breakout",
+      "verdict": "insufficient_candles",
+      "verdict_reasons": [
+        "candle_count=371 < min_required=545"
+      ],
+      "data_ok": true,
+      "plan_status": "insufficient_candles",
+      "candle_count": 371,
+      "status": "insufficient_candles",
+      "blocked_reason": "candle_count=371 < min_required=545",
+      "train_bars": 365,
+      "validation_bars": 90,
+      "holdout_bars": 90,
+      "step_bars": 30,
+      "embargo_bars": 0,
+      "windows_total": 0,
+      "min_candles_required": 545,
+      "first_window_train_start": null,
+      "last_window_holdout_end": null,
+      "first_timestamp": null,
+      "last_timestamp": null
+    },
+    {
+      "run_id": "ETH_1d_rsi_mean_reversion",
+      "asset": "ETH",
+      "timeframe": "1d",
+      "strategy": "rsi_mean_reversion",
+      "verdict": "insufficient_candles",
+      "verdict_reasons": [
+        "candle_count=371 < min_required=545"
+      ],
+      "data_ok": true,
+      "plan_status": "insufficient_candles",
+      "candle_count": 371,
+      "status": "insufficient_candles",
+      "blocked_reason": "candle_count=371 < min_required=545",
+      "train_bars": 365,
+      "validation_bars": 90,
+      "holdout_bars": 90,
+      "step_bars": 30,
+      "embargo_bars": 0,
+      "windows_total": 0,
+      "min_candles_required": 545,
+      "first_window_train_start": null,
+      "last_window_holdout_end": null,
+      "first_timestamp": null,
+      "last_timestamp": null
+    },
+    {
+      "run_id": "ETH_1d_bollinger_mean_reversion",
+      "asset": "ETH",
+      "timeframe": "1d",
+      "strategy": "bollinger_mean_reversion",
+      "verdict": "insufficient_candles",
+      "verdict_reasons": [
+        "candle_count=371 < min_required=545"
+      ],
+      "data_ok": true,
+      "plan_status": "insufficient_candles",
+      "candle_count": 371,
+      "status": "insufficient_candles",
+      "blocked_reason": "candle_count=371 < min_required=545",
+      "train_bars": 365,
+      "validation_bars": 90,
+      "holdout_bars": 90,
+      "step_bars": 30,
+      "embargo_bars": 0,
+      "windows_total": 0,
+      "min_candles_required": 545,
+      "first_window_train_start": null,
+      "last_window_holdout_end": null,
+      "first_timestamp": null,
+      "last_timestamp": null
+    },
+    {
+      "run_id": "ETH_1d_atr_breakout",
+      "asset": "ETH",
+      "timeframe": "1d",
+      "strategy": "atr_breakout",
+      "verdict": "insufficient_candles",
+      "verdict_reasons": [
+        "candle_count=371 < min_required=545"
+      ],
+      "data_ok": true,
+      "plan_status": "insufficient_candles",
+      "candle_count": 371,
+      "status": "insufficient_candles",
+      "blocked_reason": "candle_count=371 < min_required=545",
+      "train_bars": 365,
+      "validation_bars": 90,
+      "holdout_bars": 90,
+      "step_bars": 30,
+      "embargo_bars": 0,
+      "windows_total": 0,
+      "min_candles_required": 545,
+      "first_window_train_start": null,
+      "last_window_holdout_end": null,
+      "first_timestamp": null,
+      "last_timestamp": null
+    },
+    {
+      "run_id": "ETH_4h_trend_following",
+      "asset": "ETH",
+      "timeframe": "4h",
+      "strategy": "trend_following",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_4h_ETH.json"
+    },
+    {
+      "run_id": "ETH_4h_breakout",
+      "asset": "ETH",
+      "timeframe": "4h",
+      "strategy": "breakout",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_4h_ETH.json"
+    },
+    {
+      "run_id": "ETH_4h_mean_reversion",
+      "asset": "ETH",
+      "timeframe": "4h",
+      "strategy": "mean_reversion",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_4h_ETH.json"
+    },
+    {
+      "run_id": "ETH_4h_grid",
+      "asset": "ETH",
+      "timeframe": "4h",
+      "strategy": "grid",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_4h_ETH.json"
+    },
+    {
+      "run_id": "ETH_4h_ema_crossover",
+      "asset": "ETH",
+      "timeframe": "4h",
+      "strategy": "ema_crossover",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_4h_ETH.json"
+    },
+    {
+      "run_id": "ETH_4h_donchian_breakout",
+      "asset": "ETH",
+      "timeframe": "4h",
+      "strategy": "donchian_breakout",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_4h_ETH.json"
+    },
+    {
+      "run_id": "ETH_4h_rsi_mean_reversion",
+      "asset": "ETH",
+      "timeframe": "4h",
+      "strategy": "rsi_mean_reversion",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_4h_ETH.json"
+    },
+    {
+      "run_id": "ETH_4h_bollinger_mean_reversion",
+      "asset": "ETH",
+      "timeframe": "4h",
+      "strategy": "bollinger_mean_reversion",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_4h_ETH.json"
+    },
+    {
+      "run_id": "ETH_4h_atr_breakout",
+      "asset": "ETH",
+      "timeframe": "4h",
+      "strategy": "atr_breakout",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_4h_ETH.json"
+    },
+    {
+      "run_id": "ETH_1h_trend_following",
+      "asset": "ETH",
+      "timeframe": "1h",
+      "strategy": "trend_following",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_1h_ETH.json"
+    },
+    {
+      "run_id": "ETH_1h_breakout",
+      "asset": "ETH",
+      "timeframe": "1h",
+      "strategy": "breakout",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_1h_ETH.json"
+    },
+    {
+      "run_id": "ETH_1h_mean_reversion",
+      "asset": "ETH",
+      "timeframe": "1h",
+      "strategy": "mean_reversion",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_1h_ETH.json"
+    },
+    {
+      "run_id": "ETH_1h_grid",
+      "asset": "ETH",
+      "timeframe": "1h",
+      "strategy": "grid",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_1h_ETH.json"
+    },
+    {
+      "run_id": "ETH_1h_ema_crossover",
+      "asset": "ETH",
+      "timeframe": "1h",
+      "strategy": "ema_crossover",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_1h_ETH.json"
+    },
+    {
+      "run_id": "ETH_1h_donchian_breakout",
+      "asset": "ETH",
+      "timeframe": "1h",
+      "strategy": "donchian_breakout",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_1h_ETH.json"
+    },
+    {
+      "run_id": "ETH_1h_rsi_mean_reversion",
+      "asset": "ETH",
+      "timeframe": "1h",
+      "strategy": "rsi_mean_reversion",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_1h_ETH.json"
+    },
+    {
+      "run_id": "ETH_1h_bollinger_mean_reversion",
+      "asset": "ETH",
+      "timeframe": "1h",
+      "strategy": "bollinger_mean_reversion",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_1h_ETH.json"
+    },
+    {
+      "run_id": "ETH_1h_atr_breakout",
+      "asset": "ETH",
+      "timeframe": "1h",
+      "strategy": "atr_breakout",
+      "verdict": "blocked_data",
+      "verdict_reasons": [
+        "cache file missing"
+      ],
+      "data_ok": false,
+      "cache_status": "blocked_data",
+      "cache_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\ohlc_1h_ETH.json"
+    }
+  ]
+}
