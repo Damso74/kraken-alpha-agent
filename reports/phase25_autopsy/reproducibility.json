@@ -1,0 +1,31 @@
+{
+  "test_id": "reproducibility",
+  "verdict": "pass",
+  "summary": "Phase 24 metrics reproduced",
+  "details": {
+    "mismatches": [],
+    "baseline": {
+      "total_return_pct": 4.239252645567672,
+      "bh_return_pct": 4.100476971273065,
+      "excess_vs_bh_pct": 0.1388,
+      "max_drawdown_pct": 26.66325718745734,
+      "bh_max_drawdown_pct": 29.217413920343134,
+      "trade_count": 55,
+      "sharpe_ratio": 0.16809361887050273,
+      "turnover_ratio": 11.1484,
+      "fee_bps": 40.0,
+      "slippage_bps": 5.0,
+      "holdout_beats_bh": 11,
+      "windows_total": 15,
+      "bars": 6603,
+      "calmar_like": 0.15899230224437313,
+      "bh_calmar_like": 0.14034359722774906,
+      "ulcer_index": 10.5618,
+      "drawdown_reduction_vs_bh": 2.5541567328857937,
+      "max_dd_duration_bars": 2915,
+      "time_under_water_pct": 97.15,
+      "wf_verdict": "validation_candidate",
+      "wf_reason": "consistency_score=0.00; phase24_bh_holdout_gates_pass"
+    }
+  }
+}

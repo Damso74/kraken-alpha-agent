@@ -1,0 +1,14 @@
+{
+  "test_id": "trade_concentration",
+  "verdict": "pass",
+  "summary": "top3 share 34.4% OK",
+  "details": {
+    "top1_pct": 13.9,
+    "top3_pct": 34.35,
+    "trade_count": 27,
+    "best_trade_pnl": 54.7084,
+    "worst_trade_pnl": -21.5962,
+    "gross_profit": 197.9602,
+    "gross_loss": 195.6193
+  }
+}

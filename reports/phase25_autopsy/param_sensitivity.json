@@ -1,0 +1,57 @@
+{
+  "test_id": "param_sensitivity",
+  "verdict": "fail",
+  "summary": "edge fragile to params",
+  "details": {
+    "variants": [
+      {
+        "label": "fast_m10",
+        "fast_mult": 0.9,
+        "slow_mult": 1.0,
+        "excess_vs_bh_pct": 2.4405,
+        "max_drawdown_pct": 19.567557038736894,
+        "trade_count": 74,
+        "pass": true
+      },
+      {
+        "label": "fast_p10",
+        "fast_mult": 1.1,
+        "slow_mult": 1.0,
+        "excess_vs_bh_pct": 1.1448,
+        "max_drawdown_pct": 26.81983153768595,
+        "trade_count": 53,
+        "pass": true
+      },
+      {
+        "label": "slow_m10",
+        "fast_mult": 1.0,
+        "slow_mult": 0.9,
+        "excess_vs_bh_pct": 4.3497,
+        "max_drawdown_pct": 26.95062806305476,
+        "trade_count": 59,
+        "pass": true
+      },
+      {
+        "label": "slow_p10",
+        "fast_mult": 1.0,
+        "slow_mult": 1.1,
+        "excess_vs_bh_pct": -0.113,
+        "max_drawdown_pct": 26.56885519947989,
+        "trade_count": 51,
+        "pass": false
+      },
+      {
+        "label": "baseline",
+        "fast_mult": 1.0,
+        "slow_mult": 1.0,
+        "excess_vs_bh_pct": 0.1388,
+        "max_drawdown_pct": 26.66325718745734,
+        "trade_count": 55,
+        "pass": true
+      }
+    ],
+    "failures": [
+      "slow_p10"
+    ]
+  }
+}

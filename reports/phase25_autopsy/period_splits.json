@@ -1,0 +1,39 @@
+{
+  "test_id": "period_splits",
+  "verdict": "fail",
+  "summary": "1 periods beat B&H (need 2)",
+  "details": {
+    "periods": [
+      {
+        "period": "2021_2022",
+        "bars": 0,
+        "skipped": true
+      },
+      {
+        "period": "2023",
+        "bars": 1380,
+        "excess_vs_bh_pct": -5.5731,
+        "trade_count": 19,
+        "pass": false,
+        "skipped": false
+      },
+      {
+        "period": "2024",
+        "bars": 2196,
+        "excess_vs_bh_pct": -6.3111,
+        "trade_count": 26,
+        "pass": false,
+        "skipped": false
+      },
+      {
+        "period": "2025_2026",
+        "bars": 3027,
+        "excess_vs_bh_pct": 10.3337,
+        "trade_count": 7,
+        "pass": true,
+        "skipped": false
+      }
+    ],
+    "positive_periods": 1
+  }
+}

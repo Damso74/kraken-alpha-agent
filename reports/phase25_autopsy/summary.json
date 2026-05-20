@@ -1,0 +1,18 @@
+{
+  "phase": 25,
+  "candidate_run_id": "ETH_4h_trend_following_slow_off_h40_rolling",
+  "final_verdict": "kill",
+  "paper_candidate_count": 0,
+  "paper_observation_candidate_count": 0,
+  "micro_live": "NO-GO",
+  "baseline_excess_vs_bh_pct": 0.1388,
+  "tests": {
+    "reproducibility": "pass",
+    "param_sensitivity": "fail",
+    "fee_sensitivity": "pass",
+    "period_splits": "fail",
+    "asset_placebo": "pass",
+    "trade_concentration": "pass",
+    "drawdown_acceptability": "fail"
+  }
+}

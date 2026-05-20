@@ -1,0 +1,29 @@
+{
+  "test_id": "asset_placebo",
+  "verdict": "pass",
+  "summary": "1 placebo cell(s) also beat B&H",
+  "details": {
+    "cells": [
+      {
+        "asset": "BTC",
+        "timeframe": "4h",
+        "excess_vs_bh_pct": -15.0366,
+        "pass": false
+      },
+      {
+        "asset": "SOL",
+        "timeframe": "4h",
+        "excess_vs_bh_pct": -23.3241,
+        "pass": false
+      },
+      {
+        "asset": "ETH",
+        "timeframe": "1d",
+        "excess_vs_bh_pct": 4.906,
+        "pass": true
+      }
+    ],
+    "eth_4h_pass": true,
+    "placebo_positive": 1
+  }
+}

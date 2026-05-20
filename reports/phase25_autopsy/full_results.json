@@ -1,0 +1,313 @@
+{
+  "phase": 25,
+  "candidate_run_id": "ETH_4h_trend_following_slow_off_h40_rolling",
+  "spec": {
+    "asset": "ETH",
+    "timeframe": "4h",
+    "strategy": "trend_following",
+    "variant": "slow",
+    "overlay": "off",
+    "holdout_pct": 0.4,
+    "window_mode": "rolling"
+  },
+  "baseline": {
+    "total_return_pct": 4.239252645567672,
+    "bh_return_pct": 4.100476971273065,
+    "excess_vs_bh_pct": 0.1388,
+    "max_drawdown_pct": 26.66325718745734,
+    "bh_max_drawdown_pct": 29.217413920343134,
+    "trade_count": 55,
+    "sharpe_ratio": 0.16809361887050273,
+    "turnover_ratio": 11.1484,
+    "fee_bps": 40.0,
+    "slippage_bps": 5.0,
+    "holdout_beats_bh": 11,
+    "windows_total": 15,
+    "bars": 6603,
+    "calmar_like": 0.15899230224437313,
+    "bh_calmar_like": 0.14034359722774906,
+    "ulcer_index": 10.5618,
+    "drawdown_reduction_vs_bh": 2.5541567328857937,
+    "max_dd_duration_bars": 2915,
+    "time_under_water_pct": 97.15,
+    "wf_verdict": "validation_candidate",
+    "wf_reason": "consistency_score=0.00; phase24_bh_holdout_gates_pass"
+  },
+  "tests": [
+    {
+      "test_id": "reproducibility",
+      "verdict": "pass",
+      "summary": "Phase 24 metrics reproduced",
+      "details": {
+        "mismatches": [],
+        "baseline": {
+          "total_return_pct": 4.239252645567672,
+          "bh_return_pct": 4.100476971273065,
+          "excess_vs_bh_pct": 0.1388,
+          "max_drawdown_pct": 26.66325718745734,
+          "bh_max_drawdown_pct": 29.217413920343134,
+          "trade_count": 55,
+          "sharpe_ratio": 0.16809361887050273,
+          "turnover_ratio": 11.1484,
+          "fee_bps": 40.0,
+          "slippage_bps": 5.0,
+          "holdout_beats_bh": 11,
+          "windows_total": 15,
+          "bars": 6603,
+          "calmar_like": 0.15899230224437313,
+          "bh_calmar_like": 0.14034359722774906,
+          "ulcer_index": 10.5618,
+          "drawdown_reduction_vs_bh": 2.5541567328857937,
+          "max_dd_duration_bars": 2915,
+          "time_under_water_pct": 97.15,
+          "wf_verdict": "validation_candidate",
+          "wf_reason": "consistency_score=0.00; phase24_bh_holdout_gates_pass"
+        }
+      }
+    },
+    {
+      "test_id": "param_sensitivity",
+      "verdict": "fail",
+      "summary": "edge fragile to params",
+      "details": {
+        "variants": [
+          {
+            "label": "fast_m10",
+            "fast_mult": 0.9,
+            "slow_mult": 1.0,
+            "excess_vs_bh_pct": 2.4405,
+            "max_drawdown_pct": 19.567557038736894,
+            "trade_count": 74,
+            "pass": true
+          },
+          {
+            "label": "fast_p10",
+            "fast_mult": 1.1,
+            "slow_mult": 1.0,
+            "excess_vs_bh_pct": 1.1448,
+            "max_drawdown_pct": 26.81983153768595,
+            "trade_count": 53,
+            "pass": true
+          },
+          {
+            "label": "slow_m10",
+            "fast_mult": 1.0,
+            "slow_mult": 0.9,
+            "excess_vs_bh_pct": 4.3497,
+            "max_drawdown_pct": 26.95062806305476,
+            "trade_count": 59,
+            "pass": true
+          },
+          {
+            "label": "slow_p10",
+            "fast_mult": 1.0,
+            "slow_mult": 1.1,
+            "excess_vs_bh_pct": -0.113,
+            "max_drawdown_pct": 26.56885519947989,
+            "trade_count": 51,
+            "pass": false
+          },
+          {
+            "label": "baseline",
+            "fast_mult": 1.0,
+            "slow_mult": 1.0,
+            "excess_vs_bh_pct": 0.1388,
+            "max_drawdown_pct": 26.66325718745734,
+            "trade_count": 55,
+            "pass": true
+          }
+        ],
+        "failures": [
+          "slow_p10"
+        ]
+      }
+    },
+    {
+      "test_id": "fee_sensitivity",
+      "verdict": "pass",
+      "summary": "survives default 40bps/5bps slippage (marginal at high fees)",
+      "details": {
+        "grid": [
+          {
+            "fee_bps": 0.0,
+            "slippage_bps": 0.0,
+            "excess_vs_bh_pct": 5.322,
+            "pass": true
+          },
+          {
+            "fee_bps": 0.0,
+            "slippage_bps": 5.0,
+            "excess_vs_bh_pct": 4.7335,
+            "pass": true
+          },
+          {
+            "fee_bps": 0.0,
+            "slippage_bps": 10.0,
+            "excess_vs_bh_pct": 4.1482,
+            "pass": true
+          },
+          {
+            "fee_bps": 10.0,
+            "slippage_bps": 0.0,
+            "excess_vs_bh_pct": 4.1482,
+            "pass": true
+          },
+          {
+            "fee_bps": 10.0,
+            "slippage_bps": 5.0,
+            "excess_vs_bh_pct": 3.5661,
+            "pass": true
+          },
+          {
+            "fee_bps": 10.0,
+            "slippage_bps": 10.0,
+            "excess_vs_bh_pct": 2.9871,
+            "pass": true
+          },
+          {
+            "fee_bps": 25.0,
+            "slippage_bps": 0.0,
+            "excess_vs_bh_pct": 2.4112,
+            "pass": true
+          },
+          {
+            "fee_bps": 25.0,
+            "slippage_bps": 5.0,
+            "excess_vs_bh_pct": 1.8385,
+            "pass": true
+          },
+          {
+            "fee_bps": 25.0,
+            "slippage_bps": 10.0,
+            "excess_vs_bh_pct": 1.2688,
+            "pass": true
+          },
+          {
+            "fee_bps": 40.0,
+            "slippage_bps": 0.0,
+            "excess_vs_bh_pct": 0.7023,
+            "pass": true
+          },
+          {
+            "fee_bps": 40.0,
+            "slippage_bps": 5.0,
+            "excess_vs_bh_pct": 0.1388,
+            "pass": true
+          },
+          {
+            "fee_bps": 40.0,
+            "slippage_bps": 10.0,
+            "excess_vs_bh_pct": -0.4217,
+            "pass": false
+          }
+        ],
+        "default_pass": true,
+        "only_low_fee_edge": false
+      }
+    },
+    {
+      "test_id": "period_splits",
+      "verdict": "fail",
+      "summary": "1 periods beat B&H (need 2)",
+      "details": {
+        "periods": [
+          {
+            "period": "2021_2022",
+            "bars": 0,
+            "skipped": true
+          },
+          {
+            "period": "2023",
+            "bars": 1380,
+            "excess_vs_bh_pct": -5.5731,
+            "trade_count": 19,
+            "pass": false,
+            "skipped": false
+          },
+          {
+            "period": "2024",
+            "bars": 2196,
+            "excess_vs_bh_pct": -6.3111,
+            "trade_count": 26,
+            "pass": false,
+            "skipped": false
+          },
+          {
+            "period": "2025_2026",
+            "bars": 3027,
+            "excess_vs_bh_pct": 10.3337,
+            "trade_count": 7,
+            "pass": true,
+            "skipped": false
+          }
+        ],
+        "positive_periods": 1
+      }
+    },
+    {
+      "test_id": "asset_placebo",
+      "verdict": "pass",
+      "summary": "1 placebo cell(s) also beat B&H",
+      "details": {
+        "cells": [
+          {
+            "asset": "BTC",
+            "timeframe": "4h",
+            "excess_vs_bh_pct": -15.0366,
+            "pass": false
+          },
+          {
+            "asset": "SOL",
+            "timeframe": "4h",
+            "excess_vs_bh_pct": -23.3241,
+            "pass": false
+          },
+          {
+            "asset": "ETH",
+            "timeframe": "1d",
+            "excess_vs_bh_pct": 4.906,
+            "pass": true
+          }
+        ],
+        "eth_4h_pass": true,
+        "placebo_positive": 1
+      }
+    },
+    {
+      "test_id": "trade_concentration",
+      "verdict": "pass",
+      "summary": "top3 share 34.4% OK",
+      "details": {
+        "top1_pct": 13.9,
+        "top3_pct": 34.35,
+        "trade_count": 27,
+        "best_trade_pnl": 54.7084,
+        "worst_trade_pnl": -21.5962,
+        "gross_profit": 197.9602,
+        "gross_loss": 195.6193
+      }
+    },
+    {
+      "test_id": "drawdown_acceptability",
+      "verdict": "fail",
+      "summary": "DD benefit insufficient",
+      "details": {
+        "drawdown_reduction_vs_bh_pp": 2.5541567328857937,
+        "calmar_like": 0.15899230224437313,
+        "bh_calmar_like": 0.14034359722774906,
+        "ulcer_index": 10.5618,
+        "max_dd_duration_bars": 2915,
+        "time_under_water_pct": 97.15,
+        "excess_vs_bh_pct": 0.1388,
+        "failures": [
+          "dd_reduction=2.55pp < 5.0",
+          "excess_too_small_for_dd_benefit"
+        ]
+      }
+    }
+  ],
+  "final_verdict": "kill",
+  "paper_candidate_count": 0,
+  "paper_observation_candidate_count": 0,
+  "micro_live": "NO-GO"
+}

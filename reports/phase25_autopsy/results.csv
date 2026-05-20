@@ -1,0 +1,8 @@
+summary,test_id,verdict
+Phase 24 metrics reproduced,reproducibility,pass
+edge fragile to params,param_sensitivity,fail
+survives default 40bps/5bps slippage (marginal at high fees),fee_sensitivity,pass
+1 periods beat B&H (need 2),period_splits,fail
+1 placebo cell(s) also beat B&H,asset_placebo,pass
+top3 share 34.4% OK,trade_concentration,pass
+DD benefit insufficient,drawdown_acceptability,fail
