@@ -51,6 +51,11 @@ def _parse_args() -> argparse.Namespace:
         default="trend_following",
         help="Best single strategy label from Phase 17 for comparison",
     )
+    p.add_argument(
+        "--fast",
+        action="store_true",
+        help="Phase 22: BTC 4h only, regime_router mode (smoke/benchmark)",
+    )
     return p.parse_args()
 
 
@@ -66,7 +71,11 @@ def _run_mode(
     best_single: str,
 ):
     if mode == "regime_router":
-        strategy = RegimeRouterStrategy(tf, available_strategies=PHASE16_STRATEGY_NAMES)
+        strategy = RegimeRouterStrategy(
+            tf,
+            available_strategies=PHASE16_STRATEGY_NAMES,
+            cache_regime_features=True,
+        )
     elif mode == "best_single":
         strategy = _instantiate_strategy(best_single, tf, vol_targeting=False)
     elif mode == "buy_and_hold":
@@ -92,6 +101,9 @@ def _run_mode(
 
 def main() -> int:
     args = _parse_args()
+    if args.fast:
+        args.assets = ["BTC"]
+        args.timeframes = ["4h"]
     args.output_dir.mkdir(parents=True, exist_ok=True)
     exec_cfg = ExecutionConfig(fee_bps=args.fees_bps, slippage_bps=args.slippage_bps)
 

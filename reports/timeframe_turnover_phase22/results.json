@@ -1,0 +1,113 @@
+{
+  "source": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\reports\\strategy_tournament_phase21_rerun\\results.json",
+  "by_timeframe": {
+    "1d": {
+      "runs": 27,
+      "median_return_pct": 29.593631449828173,
+      "median_trades": 2,
+      "median_cost_drag_pct": 100.00000000000078,
+      "median_turnover_ratio": 0.2501,
+      "paper_candidate_count": 0,
+      "blocked_costs_count": 0,
+      "blocked_risk_count": 6,
+      "insufficient_trades_count": 21
+    },
+    "1h": {
+      "runs": 27,
+      "median_return_pct": -9.604982333930456,
+      "median_trades": 172,
+      "median_cost_drag_pct": 99.99999999999996,
+      "median_turnover_ratio": 25.4614,
+      "paper_candidate_count": 0,
+      "blocked_costs_count": 12,
+      "blocked_risk_count": 14,
+      "insufficient_trades_count": 1
+    },
+    "4h": {
+      "runs": 27,
+      "median_return_pct": -3.38125956196925,
+      "median_trades": 100,
+      "median_cost_drag_pct": 100.00000000000011,
+      "median_turnover_ratio": 18.9382,
+      "paper_candidate_count": 0,
+      "blocked_costs_count": 4,
+      "blocked_risk_count": 19,
+      "insufficient_trades_count": 4
+    }
+  },
+  "by_family_timeframe": {
+    "trend_ema_donchian": {
+      "1d": {
+        "median_trades": 1,
+        "median_return_pct": 23.45016690438938,
+        "median_cost_drag_pct": 100.00000000000104
+      },
+      "4h": {
+        "median_trades": 64,
+        "median_return_pct": 8.050199948175532,
+        "median_cost_drag_pct": 100.00000000000009
+      },
+      "1h": {
+        "median_trades": 172,
+        "median_return_pct": -8.996404019255237,
+        "median_cost_drag_pct": 99.99999999999979
+      }
+    },
+    "breakout_atr": {
+      "1d": {
+        "median_trades": 1.0,
+        "median_return_pct": 22.081847631192694,
+        "median_cost_drag_pct": 100.00000000000104
+      },
+      "4h": {
+        "median_trades": 70.0,
+        "median_return_pct": -0.68606393321233,
+        "median_cost_drag_pct": 100.00000000000014
+      },
+      "1h": {
+        "median_trades": 143.5,
+        "median_return_pct": -7.019168023620102,
+        "median_cost_drag_pct": 99.9999999999998
+      }
+    },
+    "rsi_bollinger_mr": {
+      "1d": {
+        "median_trades": 3,
+        "median_return_pct": 39.29766283257257,
+        "median_cost_drag_pct": 99.99999999999953
+      },
+      "4h": {
+        "median_trades": 185,
+        "median_return_pct": -13.657438543237765,
+        "median_cost_drag_pct": 100.00000000000007
+      },
+      "1h": {
+        "median_trades": 250,
+        "median_return_pct": -14.874416030799717,
+        "median_cost_drag_pct": 99.99999999999996
+      }
+    },
+    "grid": {
+      "1d": {
+        "median_trades": 10,
+        "median_return_pct": 32.431857916047576,
+        "median_cost_drag_pct": 100.00000000000078
+      },
+      "4h": {
+        "median_trades": 8,
+        "median_return_pct": 1.4333479274415482,
+        "median_cost_drag_pct": 100.00000000000453
+      },
+      "1h": {
+        "median_trades": 23,
+        "median_return_pct": -1.2731889497108113,
+        "median_cost_drag_pct": 100.00000000000082
+      }
+    }
+  },
+  "interpretation": {
+    "1d": "Low turnover, often insufficient_trades \u2014 signals too sparse",
+    "4h": "Higher activity; mix of blocked_risk and blocked_costs",
+    "1h": "Highest turnover; cost drag dominates, negative median returns"
+  }
+}

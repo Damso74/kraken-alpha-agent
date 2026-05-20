@@ -141,3 +141,25 @@ def summarize_regime_features(features: RegimeFeatures) -> dict[str, float]:
         "close": round(features.close, 4),
         "long_ma": round(features.long_ma, 4),
     }
+
+
+def precompute_regime_features(
+    candles: Sequence[Any],
+    *,
+    ma_window: int = 50,
+    vol_lookback: int = 20,
+    range_lookback: int = 20,
+    vol_history: int = 60,
+) -> list[RegimeFeatures | None]:
+    """Precompute regime features for every bar (Phase 22 router perf cache)."""
+    return [
+        compute_regime_features(
+            candles,
+            index,
+            ma_window=ma_window,
+            vol_lookback=vol_lookback,
+            range_lookback=range_lookback,
+            vol_history=vol_history,
+        )
+        for index in range(len(candles))
+    ]

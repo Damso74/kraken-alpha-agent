@@ -6,7 +6,11 @@ from dataclasses import dataclass
 from typing import Any, Mapping, Sequence
 
 from src.bot.regime_classifier import RegimeClassification, RegimeLabel, classify_regime
-from src.bot.regime_features import RegimeFeatures, compute_regime_features
+from src.bot.regime_features import (
+    RegimeFeatures,
+    compute_regime_features,
+    precompute_regime_features,
+)
 from src.strategies.base import StrategySignal
 from src.strategies.presets import build_strategy
 
@@ -63,6 +67,8 @@ class RegimeRouterStrategy:
         *,
         available_strategies: Sequence[str] | None = None,
         ma_window: int = 50,
+        precomputed_features: Sequence[RegimeFeatures | None] | None = None,
+        cache_regime_features: bool = False,
     ) -> None:
         self.timeframe = timeframe
         self.available = tuple(available_strategies or (*TREND_STRATEGIES, *RANGE_STRATEGIES))
@@ -71,6 +77,23 @@ class RegimeRouterStrategy:
         self._last_regime: RegimeLabel = "unknown"
         self._active_name: str = "cash"
         self.decision_log: list[dict[str, Any]] = []
+        self._precomputed: list[RegimeFeatures | None] | None = (
+            list(precomputed_features) if precomputed_features is not None else None
+        )
+        self._cache_regime_features = cache_regime_features
+        self._candles_id: int | None = None
+
+    def bind_candles(self, candles: Sequence[Any]) -> None:
+        """Optional warmup: precompute features once per candle series."""
+        if self._precomputed is not None:
+            return
+        if not self._cache_regime_features:
+            return
+        cid = id(candles)
+        if self._candles_id == cid and self._precomputed is not None:
+            return
+        self._precomputed = precompute_regime_features(candles, ma_window=self.ma_window)
+        self._candles_id = cid
 
     def warmup_bars(self) -> int:
         return self.ma_window + 5
@@ -83,7 +106,11 @@ class RegimeRouterStrategy:
         return self._strategies[name]
 
     def on_bar(self, index, candles, portfolio, symbol) -> StrategySignal | None:
-        features = compute_regime_features(candles, index, ma_window=self.ma_window)
+        self.bind_candles(candles)
+        if self._precomputed is not None and index < len(self._precomputed):
+            features = self._precomputed[index]
+        else:
+            features = compute_regime_features(candles, index, ma_window=self.ma_window)
         classification = classify_regime(features)
         decision = route_regime(classification, available_strategies=self.available)
 
