@@ -1,0 +1,386 @@
+{
+  "phase": 18,
+  "modes": [
+    "regime_router",
+    "best_single",
+    "buy_and_hold",
+    "cash"
+  ],
+  "best_single_reference": "trend_following",
+  "runs": [
+    {
+      "run_id": "BTC_1d_regime_router",
+      "asset": "BTC",
+      "timeframe": "1d",
+      "mode": "regime_router",
+      "verdict": "blocked_risk",
+      "verdict_reasons": [
+        "max_drawdown_pct=19.14",
+        "risk_denial_rate=98.48%",
+        "safety_stop"
+      ],
+      "data_ok": true,
+      "total_return_pct": 3.3431843629216473,
+      "sharpe_ratio": 0.16048335289885293,
+      "max_drawdown_pct": 19.14017104814084,
+      "win_rate_pct": 0.0,
+      "trade_count": 5,
+      "fees_usd": 3.77914864003843,
+      "slippage_drag_usd": 0.47233077590000505,
+      "cost_drag_pct": 99.99999999999737,
+      "final_equity": 1033.4318436292165,
+      "starting_equity": 1000.0,
+      "candle_count": 736,
+      "usable_bars": 681,
+      "risk_denials_count": 323,
+      "risk_denial_rate": 0.9848,
+      "risk_rules_triggered": [
+        "max_drawdown_pct",
+        "max_position_fraction"
+      ],
+      "stopped_by_risk": true
+    },
+    {
+      "run_id": "BTC_1d_best_single",
+      "asset": "BTC",
+      "timeframe": "1d",
+      "mode": "best_single",
+      "verdict": "insufficient_trades",
+      "verdict_reasons": [
+        "trade_count=3 < 5"
+      ],
+      "data_ok": true,
+      "total_return_pct": 1.384947851395259,
+      "sharpe_ratio": 0.0977557991376487,
+      "max_drawdown_pct": 19.67582095769621,
+      "win_rate_pct": 0.0,
+      "trade_count": 3,
+      "fees_usd": 2.8232483889993505,
+      "slippage_drag_usd": 0.35283710899557263,
+      "cost_drag_pct": 100.00000000000058,
+      "final_equity": 1013.8494785139526,
+      "starting_equity": 1000.0,
+      "candle_count": 736,
+      "usable_bars": 685,
+      "risk_denials_count": 253,
+      "risk_denial_rate": 0.9883,
+      "risk_rules_triggered": [
+        "max_drawdown_pct",
+        "max_position_fraction"
+      ],
+      "stopped_by_risk": true
+    },
+    {
+      "run_id": "BTC_1d_buy_and_hold",
+      "asset": "BTC",
+      "timeframe": "1d",
+      "mode": "buy_and_hold",
+      "verdict": "insufficient_trades",
+      "verdict_reasons": [
+        "trade_count=1 < 5"
+      ],
+      "data_ok": true,
+      "total_return_pct": 3.8921512000332315,
+      "sharpe_ratio": 0.17305995572451222,
+      "max_drawdown_pct": 19.11842347564062,
+      "win_rate_pct": 0.0,
+      "trade_count": 1,
+      "fees_usd": 1.0005,
+      "slippage_drag_usd": 0.125,
+      "cost_drag_pct": 100.00000000000104,
+      "final_equity": 1038.9215120003323,
+      "starting_equity": 1000.0,
+      "candle_count": 736,
+      "usable_bars": 735,
+      "risk_denials_count": 0,
+      "risk_denial_rate": 0.0,
+      "risk_rules_triggered": [],
+      "stopped_by_risk": false
+    },
+    {
+      "run_id": "BTC_1d_cash",
+      "asset": "BTC",
+      "timeframe": "1d",
+      "mode": "cash",
+      "verdict": "insufficient_trades",
+      "verdict_reasons": [
+        "trade_count=0 < 5"
+      ],
+      "data_ok": true,
+      "total_return_pct": 0.0,
+      "sharpe_ratio": 0.0,
+      "max_drawdown_pct": 0.0,
+      "win_rate_pct": 0.0,
+      "trade_count": 0,
+      "fees_usd": 0.0,
+      "slippage_drag_usd": 0.0,
+      "cost_drag_pct": 0.0,
+      "final_equity": 1000.0,
+      "starting_equity": 1000.0,
+      "candle_count": 736,
+      "usable_bars": 735,
+      "risk_denials_count": 0,
+      "risk_denial_rate": 0.0,
+      "risk_rules_triggered": [],
+      "stopped_by_risk": false
+    },
+    {
+      "run_id": "BTC_4h_regime_router",
+      "asset": "BTC",
+      "timeframe": "4h",
+      "mode": "regime_router",
+      "verdict": "blocked_data",
+      "data_ok": false,
+      "blocked_reason": "cache file missing"
+    },
+    {
+      "run_id": "BTC_4h_best_single",
+      "asset": "BTC",
+      "timeframe": "4h",
+      "mode": "best_single",
+      "verdict": "blocked_data",
+      "data_ok": false,
+      "blocked_reason": "cache file missing"
+    },
+    {
+      "run_id": "BTC_4h_buy_and_hold",
+      "asset": "BTC",
+      "timeframe": "4h",
+      "mode": "buy_and_hold",
+      "verdict": "blocked_data",
+      "data_ok": false,
+      "blocked_reason": "cache file missing"
+    },
+    {
+      "run_id": "BTC_4h_cash",
+      "asset": "BTC",
+      "timeframe": "4h",
+      "mode": "cash",
+      "verdict": "blocked_data",
+      "data_ok": false,
+      "blocked_reason": "cache file missing"
+    },
+    {
+      "run_id": "BTC_1h_regime_router",
+      "asset": "BTC",
+      "timeframe": "1h",
+      "mode": "regime_router",
+      "verdict": "blocked_data",
+      "data_ok": false,
+      "blocked_reason": "cache file missing"
+    },
+    {
+      "run_id": "BTC_1h_best_single",
+      "asset": "BTC",
+      "timeframe": "1h",
+      "mode": "best_single",
+      "verdict": "blocked_data",
+      "data_ok": false,
+      "blocked_reason": "cache file missing"
+    },
+    {
+      "run_id": "BTC_1h_buy_and_hold",
+      "asset": "BTC",
+      "timeframe": "1h",
+      "mode": "buy_and_hold",
+      "verdict": "blocked_data",
+      "data_ok": false,
+      "blocked_reason": "cache file missing"
+    },
+    {
+      "run_id": "BTC_1h_cash",
+      "asset": "BTC",
+      "timeframe": "1h",
+      "mode": "cash",
+      "verdict": "blocked_data",
+      "data_ok": false,
+      "blocked_reason": "cache file missing"
+    },
+    {
+      "run_id": "ETH_1d_regime_router",
+      "asset": "ETH",
+      "timeframe": "1d",
+      "mode": "regime_router",
+      "verdict": "insufficient_trades",
+      "verdict_reasons": [
+        "trade_count=4 < 5"
+      ],
+      "data_ok": true,
+      "total_return_pct": -1.4753443236968338,
+      "sharpe_ratio": -0.035839088193237834,
+      "max_drawdown_pct": 15.014173612337455,
+      "win_rate_pct": 0.0,
+      "trade_count": 4,
+      "fees_usd": 2.7441809158698516,
+      "slippage_drag_usd": 0.3430196979230544,
+      "cost_drag_pct": 100.00000000000382,
+      "final_equity": 985.2465567630317,
+      "starting_equity": 1000.0,
+      "candle_count": 371,
+      "usable_bars": 316,
+      "risk_denials_count": 142,
+      "risk_denial_rate": 0.9726,
+      "risk_rules_triggered": [
+        "max_drawdown_pct",
+        "max_position_fraction"
+      ],
+      "stopped_by_risk": true
+    },
+    {
+      "run_id": "ETH_1d_best_single",
+      "asset": "ETH",
+      "timeframe": "1d",
+      "mode": "best_single",
+      "verdict": "insufficient_trades",
+      "verdict_reasons": [
+        "trade_count=3 < 5"
+      ],
+      "data_ok": true,
+      "total_return_pct": -9.481746190870535,
+      "sharpe_ratio": -0.4609463533904245,
+      "max_drawdown_pct": 23.85449598832216,
+      "win_rate_pct": 0.0,
+      "trade_count": 3,
+      "fees_usd": 2.951987084340934,
+      "slippage_drag_usd": 0.3689342866618972,
+      "cost_drag_pct": 100.00000000000146,
+      "final_equity": 905.1825380912946,
+      "starting_equity": 1000.0,
+      "candle_count": 371,
+      "usable_bars": 320,
+      "risk_denials_count": 103,
+      "risk_denial_rate": 0.9717,
+      "risk_rules_triggered": [
+        "max_drawdown_pct",
+        "max_position_fraction"
+      ],
+      "stopped_by_risk": true
+    },
+    {
+      "run_id": "ETH_1d_buy_and_hold",
+      "asset": "ETH",
+      "timeframe": "1d",
+      "mode": "buy_and_hold",
+      "verdict": "insufficient_trades",
+      "verdict_reasons": [
+        "trade_count=1 < 5"
+      ],
+      "data_ok": true,
+      "total_return_pct": -4.373170161730138,
+      "sharpe_ratio": -0.11100761551822805,
+      "max_drawdown_pct": 24.10620488899066,
+      "win_rate_pct": 0.0,
+      "trade_count": 1,
+      "fees_usd": 1.0005,
+      "slippage_drag_usd": 0.12499999999997158,
+      "cost_drag_pct": 99.99999999999852,
+      "final_equity": 956.2682983826986,
+      "starting_equity": 1000.0,
+      "candle_count": 371,
+      "usable_bars": 370,
+      "risk_denials_count": 0,
+      "risk_denial_rate": 0.0,
+      "risk_rules_triggered": [],
+      "stopped_by_risk": false
+    },
+    {
+      "run_id": "ETH_1d_cash",
+      "asset": "ETH",
+      "timeframe": "1d",
+      "mode": "cash",
+      "verdict": "insufficient_trades",
+      "verdict_reasons": [
+        "trade_count=0 < 5"
+      ],
+      "data_ok": true,
+      "total_return_pct": 0.0,
+      "sharpe_ratio": 0.0,
+      "max_drawdown_pct": 0.0,
+      "win_rate_pct": 0.0,
+      "trade_count": 0,
+      "fees_usd": 0.0,
+      "slippage_drag_usd": 0.0,
+      "cost_drag_pct": 0.0,
+      "final_equity": 1000.0,
+      "starting_equity": 1000.0,
+      "candle_count": 371,
+      "usable_bars": 370,
+      "risk_denials_count": 0,
+      "risk_denial_rate": 0.0,
+      "risk_rules_triggered": [],
+      "stopped_by_risk": false
+    },
+    {
+      "run_id": "ETH_4h_regime_router",
+      "asset": "ETH",
+      "timeframe": "4h",
+      "mode": "regime_router",
+      "verdict": "blocked_data",
+      "data_ok": false,
+      "blocked_reason": "cache file missing"
+    },
+    {
+      "run_id": "ETH_4h_best_single",
+      "asset": "ETH",
+      "timeframe": "4h",
+      "mode": "best_single",
+      "verdict": "blocked_data",
+      "data_ok": false,
+      "blocked_reason": "cache file missing"
+    },
+    {
+      "run_id": "ETH_4h_buy_and_hold",
+      "asset": "ETH",
+      "timeframe": "4h",
+      "mode": "buy_and_hold",
+      "verdict": "blocked_data",
+      "data_ok": false,
+      "blocked_reason": "cache file missing"
+    },
+    {
+      "run_id": "ETH_4h_cash",
+      "asset": "ETH",
+      "timeframe": "4h",
+      "mode": "cash",
+      "verdict": "blocked_data",
+      "data_ok": false,
+      "blocked_reason": "cache file missing"
+    },
+    {
+      "run_id": "ETH_1h_regime_router",
+      "asset": "ETH",
+      "timeframe": "1h",
+      "mode": "regime_router",
+      "verdict": "blocked_data",
+      "data_ok": false,
+      "blocked_reason": "cache file missing"
+    },
+    {
+      "run_id": "ETH_1h_best_single",
+      "asset": "ETH",
+      "timeframe": "1h",
+      "mode": "best_single",
+      "verdict": "blocked_data",
+      "data_ok": false,
+      "blocked_reason": "cache file missing"
+    },
+    {
+      "run_id": "ETH_1h_buy_and_hold",
+      "asset": "ETH",
+      "timeframe": "1h",
+      "mode": "buy_and_hold",
+      "verdict": "blocked_data",
+      "data_ok": false,
+      "blocked_reason": "cache file missing"
+    },
+    {
+      "run_id": "ETH_1h_cash",
+      "asset": "ETH",
+      "timeframe": "1h",
+      "mode": "cash",
+      "verdict": "blocked_data",
+      "data_ok": false,
+      "blocked_reason": "cache file missing"
+    }
+  ]
+}

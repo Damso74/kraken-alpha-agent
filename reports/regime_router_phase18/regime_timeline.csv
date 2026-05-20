@@ -1,0 +1,283 @@
+bar_index,breakout_pressure,close,drawdown_from_high,long_ma,moving_average_slope,position_scale,range_score,realized_vol,reason,regime,run_id,selected_strategy,trend_strength,volatility_percentile,volume_zscore
+55,,,,,,0.0,,,panic_cash,panic,BTC_1d_regime_router,cash,,,
+62,,,,,,0.25,,,reduce_exposure_high_vol,high_vol,BTC_1d_regime_router,cash,,,
+71,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+80,,,,,,0.0,,,panic_cash,panic,BTC_1d_regime_router,cash,,,
+82,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+83,,,,,,0.0,,,panic_cash,panic,BTC_1d_regime_router,cash,,,
+101,,,,,,0.25,,,reduce_exposure_high_vol,high_vol,BTC_1d_regime_router,cash,,,
+105,,,,,,0.0,,,panic_cash,panic,BTC_1d_regime_router,cash,,,
+106,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+118,,,,,,0.0,,,panic_cash,panic,BTC_1d_regime_router,cash,,,
+119,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+122,,,,,,1.0,,,range_score=0.1695,range,BTC_1d_regime_router,grid,,,
+125,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+130,,,,,,1.0,,,slope=0.0006 trend=0.0652,trend_up,BTC_1d_regime_router,trend_following,,,
+140,,,,,,1.0,,,range_score=0.1271,range,BTC_1d_regime_router,grid,,,
+143,,,,,,1.0,,,slope=0.0015 trend=0.0262,trend_up,BTC_1d_regime_router,trend_following,,,
+148,,,,,,1.0,,,range_score=0.0861,range,BTC_1d_regime_router,grid,,,
+150,,,,,,1.0,,,slope=0.0007 trend=0.0282,trend_up,BTC_1d_regime_router,trend_following,,,
+151,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+153,,,,,,1.0,,,slope=0.0006 trend=0.0804,trend_up,BTC_1d_regime_router,trend_following,,,
+176,,,,,,0.25,,,reduce_exposure_high_vol,high_vol,BTC_1d_regime_router,cash,,,
+177,,,,,,1.0,,,slope=0.0043 trend=0.1300,trend_up,BTC_1d_regime_router,trend_following,,,
+180,,,,,,0.25,,,reduce_exposure_high_vol,high_vol,BTC_1d_regime_router,cash,,,
+201,,,,,,1.0,,,slope=0.0086 trend=0.1796,trend_up,BTC_1d_regime_router,trend_following,,,
+223,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+224,,,,,,1.0,,,slope=0.0066 trend=0.0470,trend_up,BTC_1d_regime_router,trend_following,,,
+226,,,,,,1.0,,,range_score=0.1175,range,BTC_1d_regime_router,grid,,,
+229,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+233,,,,,,1.0,,,range_score=0.1376,range,BTC_1d_regime_router,grid,,,
+237,,,,,,1.0,,,slope=0.0025 trend=0.0464,trend_up,BTC_1d_regime_router,trend_following,,,
+238,,,,,,1.0,,,range_score=0.0974,range,BTC_1d_regime_router,grid,,,
+239,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+245,,,,,,1.0,,,range_score=0.1003,range,BTC_1d_regime_router,grid,,,
+246,,,,,,1.0,,,slope=0.0018 trend=0.0288,trend_up,BTC_1d_regime_router,trend_following,,,
+263,,,,,,1.0,,,range_score=0.1153,range,BTC_1d_regime_router,grid,,,
+264,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+266,,,,,,1.0,,,range_score=0.0864,range,BTC_1d_regime_router,grid,,,
+267,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+272,,,,,,1.0,,,range_score=0.0865,range,BTC_1d_regime_router,grid,,,
+273,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+274,,,,,,1.0,,,range_score=0.0929,range,BTC_1d_regime_router,grid,,,
+275,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+276,,,,,,1.0,,,range_score=0.0917,range,BTC_1d_regime_router,grid,,,
+278,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+282,,,,,,1.0,,,range_score=0.0575,range,BTC_1d_regime_router,grid,,,
+283,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+292,,,,,,0.0,,,panic_cash,panic,BTC_1d_regime_router,cash,,,
+319,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+330,,,,,,0.0,,,panic_cash,panic,BTC_1d_regime_router,cash,,,
+333,,,,,,0.25,,,reduce_exposure_high_vol,high_vol,BTC_1d_regime_router,cash,,,
+334,,,,,,0.0,,,panic_cash,panic,BTC_1d_regime_router,cash,,,
+335,,,,,,0.25,,,reduce_exposure_high_vol,high_vol,BTC_1d_regime_router,cash,,,
+336,,,,,,0.0,,,panic_cash,panic,BTC_1d_regime_router,cash,,,
+338,,,,,,0.25,,,reduce_exposure_high_vol,high_vol,BTC_1d_regime_router,cash,,,
+347,,,,,,1.0,,,slope=0.0019 trend=0.1052,trend_up,BTC_1d_regime_router,trend_following,,,
+348,,,,,,0.25,,,reduce_exposure_high_vol,high_vol,BTC_1d_regime_router,cash,,,
+349,,,,,,1.0,,,slope=0.0034 trend=0.1042,trend_up,BTC_1d_regime_router,trend_following,,,
+387,,,,,,1.0,,,range_score=0.1004,range,BTC_1d_regime_router,grid,,,
+388,,,,,,1.0,,,slope=0.0039 trend=0.0354,trend_up,BTC_1d_regime_router,trend_following,,,
+396,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+398,,,,,,1.0,,,slope=0.0025 trend=0.0274,trend_up,BTC_1d_regime_router,trend_following,,,
+399,,,,,,1.0,,,range_score=0.0838,range,BTC_1d_regime_router,grid,,,
+403,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+405,,,,,,1.0,,,range_score=0.0884,range,BTC_1d_regime_router,grid,,,
+407,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+408,,,,,,1.0,,,range_score=0.0871,range,BTC_1d_regime_router,grid,,,
+411,,,,,,1.0,,,slope=0.0007 trend=0.0225,trend_up,BTC_1d_regime_router,trend_following,,,
+412,,,,,,1.0,,,range_score=0.0717,range,BTC_1d_regime_router,grid,,,
+414,,,,,,1.0,,,slope=0.0009 trend=0.0250,trend_up,BTC_1d_regime_router,trend_following,,,
+416,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+418,,,,,,1.0,,,slope=0.0011 trend=0.0243,trend_up,BTC_1d_regime_router,trend_following,,,
+419,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+420,,,,,,1.0,,,slope=0.0006 trend=0.0208,trend_up,BTC_1d_regime_router,trend_following,,,
+444,,,,,,1.0,,,range_score=0.0588,range,BTC_1d_regime_router,grid,,,
+446,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+447,,,,,,1.0,,,slope=0.0017 trend=0.0242,trend_up,BTC_1d_regime_router,trend_following,,,
+448,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+449,,,,,,1.0,,,slope=0.0019 trend=0.0206,trend_up,BTC_1d_regime_router,trend_following,,,
+458,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+461,,,,,,1.0,,,range_score=0.0926,range,BTC_1d_regime_router,grid,,,
+462,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+465,,,,,,1.0,,,range_score=0.0924,range,BTC_1d_regime_router,grid,,,
+467,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+484,,,,,,1.0,,,range_score=0.0763,range,BTC_1d_regime_router,grid,,,
+490,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+493,,,,,,1.0,,,range_score=0.0763,range,BTC_1d_regime_router,grid,,,
+496,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+498,,,,,,1.0,,,range_score=0.0608,range,BTC_1d_regime_router,grid,,,
+499,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+502,,,,,,1.0,,,range_score=0.0720,range,BTC_1d_regime_router,grid,,,
+505,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+507,,,,,,1.0,,,slope=0.0007 trend=0.0705,trend_up,BTC_1d_regime_router,trend_following,,,
+514,,,,,,1.0,,,range_score=0.1389,range,BTC_1d_regime_router,grid,,,
+515,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+516,,,,,,0.25,,,reduce_exposure_high_vol,high_vol,BTC_1d_regime_router,cash,,,
+518,,,,,,0.0,,,panic_cash,panic,BTC_1d_regime_router,cash,,,
+519,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+520,,,,,,0.0,,,panic_cash,panic,BTC_1d_regime_router,cash,,,
+522,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+530,,,,,,1.0,,,range_score=0.1473,range,BTC_1d_regime_router,grid,,,
+533,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+567,,,,,,0.0,,,panic_cash,panic,BTC_1d_regime_router,cash,,,
+575,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+597,,,,,,1.0,,,range_score=0.0532,range,BTC_1d_regime_router,grid,,,
+600,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+602,,,,,,1.0,,,slope=0.0003 trend=0.0478,trend_up,BTC_1d_regime_router,trend_following,,,
+603,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+605,,,,,,1.0,,,range_score=0.0732,range,BTC_1d_regime_router,grid,,,
+607,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+609,,,,,,1.0,,,slope=0.0016 trend=0.0591,trend_up,BTC_1d_regime_router,trend_following,,,
+616,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+617,,,,,,1.0,,,range_score=0.0953,range,BTC_1d_regime_router,grid,,,
+621,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+623,,,,,,1.0,,,range_score=0.1152,range,BTC_1d_regime_router,grid,,,
+625,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+627,,,,,,0.0,,,panic_cash,panic,BTC_1d_regime_router,cash,,,
+629,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+632,,,,,,0.0,,,panic_cash,panic,BTC_1d_regime_router,cash,,,
+653,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+657,,,,,,0.0,,,panic_cash,panic,BTC_1d_regime_router,cash,,,
+658,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+659,,,,,,0.0,,,panic_cash,panic,BTC_1d_regime_router,cash,,,
+670,,,,,,0.25,,,reduce_exposure_high_vol,high_vol,BTC_1d_regime_router,cash,,,
+674,,,,,,0.0,,,panic_cash,panic,BTC_1d_regime_router,cash,,,
+675,,,,,,0.25,,,reduce_exposure_high_vol,high_vol,BTC_1d_regime_router,cash,,,
+676,,,,,,0.0,,,panic_cash,panic,BTC_1d_regime_router,cash,,,
+677,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+678,,,,,,0.25,,,reduce_exposure_high_vol,high_vol,BTC_1d_regime_router,cash,,,
+679,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+681,,,,,,1.0,,,range_score=0.1295,range,BTC_1d_regime_router,grid,,,
+682,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+686,,,,,,1.0,,,range_score=0.1300,range,BTC_1d_regime_router,grid,,,
+688,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+691,,,,,,1.0,,,range_score=0.1144,range,BTC_1d_regime_router,grid,,,
+693,,,,,,1.0,,,slope=0.0009 trend=0.0447,trend_up,BTC_1d_regime_router,trend_following,,,
+734,,,,,,0.0,,,unknown_hold,unknown,BTC_1d_regime_router,cash,,,
+735,,,,,,1.0,,,range_score=0.0763,range,BTC_1d_regime_router,grid,,,
+55,-0.14918,56714.62,0.206196,65482.46,-0.002911,,0.160744,0.02312,dd=20.62% vol_pct=1.00,panic,BTC_1d_regime_router,cash,0.154596,1.0,1.1299
+69,-0.009378,67532.01,0.05029,63809.5952,-7.3e-05,,0.182247,0.026966,vol_pct=0.96,high_vol,BTC_1d_regime_router,cash,0.055121,0.9592,-0.637
+83,-0.263447,54018.81,0.224404,62571.3516,-0.00403,,0.263447,0.026621,dd=22.44% vol_pct=0.90,panic,BTC_1d_regime_router,cash,0.158325,0.9048,4.2303
+97,-0.113554,59438.5,0.129105,61445.5524,-0.001084,,0.190705,0.039478,dd=12.91% vol_pct=1.00,panic,BTC_1d_regime_router,cash,0.033767,1.0,-0.4394
+111,-0.086042,59132.13,0.133594,61993.605,-0.000537,,0.116995,0.025666,no_clear_regime,unknown,BTC_1d_regime_router,cash,0.048391,0.6044,-0.1449
+125,-0.039235,58213.99,0.147046,59475.8062,-0.003363,,0.112259,0.021809,no_clear_regime,unknown,BTC_1d_regime_router,cash,0.021675,0.3524,0.0437
+139,-0.039957,63327.59,0.038422,60295.604,0.001533,,0.134539,0.018769,slope=0.0015 trend=0.0479,trend_up,BTC_1d_regime_router,trend_following,0.047878,0.2521,0.7691
+153,0.00342,66083.99,0.0,60772.9682,0.000614,,0.087125,0.021933,slope=0.0006 trend=0.0804,trend_up,BTC_1d_regime_router,trend_following,0.080368,0.4511,1.6549
+167,0.013296,69962.21,0.0,63564.8094,0.004771,,0.137729,0.019168,slope=0.0048 trend=0.0914,trend_up,BTC_1d_regime_router,trend_following,0.091441,0.3333,0.5945
+181,0.09338,88647.99,0.0,67379.629,0.007497,,0.24794,0.033455,vol_pct=0.88,high_vol,BTC_1d_regime_router,cash,0.239919,0.8758,1.9968
+195,-0.06324,93010.01,0.059479,75666.0862,0.008044,,0.250726,0.035747,vol_pct=0.90,high_vol,BTC_1d_regime_router,cash,0.186474,0.8971,-0.0402
+209,-0.039404,97276.47,0.037911,84700.2166,0.006714,,0.094005,0.023443,slope=0.0067 trend=0.1293,trend_up,BTC_1d_regime_router,trend_following,0.129284,0.5344,0.6222
+223,-0.118593,94881.47,0.10602,93411.9892,0.005621,,0.118593,0.024108,no_clear_regime,unknown,BTC_1d_regime_router,cash,0.015488,0.6108,-0.2672
+237,-0.038129,102235.6,0.036729,97495.5014,0.002546,,0.09237,0.023003,slope=0.0025 trend=0.0464,trend_up,BTC_1d_regime_router,trend_following,0.046364,0.4793,0.0543
+251,-0.022455,102260.01,0.036499,98192.8484,0.001035,,0.117384,0.023653,slope=0.0010 trend=0.0398,trend_up,BTC_1d_regime_router,trend_following,0.039773,0.5671,3.3864
+265,-0.047522,101328.52,0.045366,99187.9352,-0.000632,,0.083325,0.022907,no_clear_regime,unknown,BTC_1d_regime_router,cash,0.021125,0.4857,2.0114
+279,-0.09337,95780.0,0.097639,98843.0184,0.000413,,0.093388,0.017683,no_clear_regime,unknown,BTC_1d_regime_router,cash,0.03198,0.1544,-0.487
+293,-0.140157,86220.61,0.1877,97569.6532,-0.001703,,0.163011,0.034737,dd=18.77% vol_pct=0.92,panic,BTC_1d_regime_router,cash,0.131628,0.9231,1.2065
+307,-0.122128,84010.03,0.208526,92629.7398,-0.004002,,0.186575,0.040624,dd=20.85% vol_pct=0.98,panic,BTC_1d_regime_router,cash,0.102603,0.9826,-1.1686
+321,-0.059941,82550.01,0.19408,88520.3062,-0.003134,,0.077315,0.021454,no_clear_regime,unknown,BTC_1d_regime_router,cash,0.072323,0.3721,0.182
+335,-0.033115,84591.58,0.139499,84465.0776,-0.002755,,0.128968,0.031679,vol_pct=0.81,high_vol,BTC_1d_regime_router,cash,0.001495,0.8063,-0.0504
+349,0.003921,95011.18,0.0,85111.791,0.003366,,0.162127,0.027172,slope=0.0034 trend=0.1042,trend_up,BTC_1d_regime_router,trend_following,0.104192,0.7264,-0.1455
+363,-0.019634,102791.32,0.019256,89301.0582,0.003756,,0.108165,0.017455,slope=0.0038 trend=0.1312,trend_up,BTC_1d_regime_router,trend_following,0.131239,0.1283,1.6988
+377,-0.020665,109434.79,0.020246,95579.3076,0.00653,,0.134013,0.020088,slope=0.0065 trend=0.1266,trend_up,BTC_1d_regime_router,trend_following,0.126609,0.2913,-0.9745
+391,-0.012998,110263.02,0.012831,101933.1936,0.004946,,0.092393,0.019125,slope=0.0049 trend=0.0755,trend_up,BTC_1d_regime_router,trend_following,0.075545,0.2642,0.1392
+405,-0.046903,105333.93,0.056961,105046.7038,0.002109,,0.088391,0.019508,range_score=0.0884,range,BTC_1d_regime_router,grid,0.002727,0.3195,1.8363
+419,-0.01221,108262.94,0.030738,106586.952,0.000339,,0.079629,0.014474,no_clear_regime,unknown,BTC_1d_regime_router,cash,0.015481,0.0451,-0.4947
+433,-0.020964,117380.36,0.020534,109231.0668,0.002154,,0.101013,0.014152,slope=0.0022 trend=0.0694,trend_up,BTC_1d_regime_router,trend_following,0.069426,0.0412,0.2405
+447,-0.042583,115055.03,0.040844,112266.713,0.001688,,0.064387,0.010482,slope=0.0017 trend=0.0242,trend_up,BTC_1d_regime_router,trend_following,0.024235,0.0094,-0.8361
+461,-0.06091,116227.05,0.057413,115709.1646,0.001362,,0.092578,0.015798,range_score=0.0926,range,BTC_1d_regime_router,grid,0.004456,0.1565,0.4841
+475,-0.128793,109237.42,0.114098,115924.7844,-0.001696,,0.137866,0.020143,no_clear_regime,unknown,BTC_1d_regime_router,cash,0.061219,0.4352,-0.0074
+489,-0.005893,115349.71,0.064528,114394.0404,-0.00071,,0.067474,0.012107,range_score=0.0675,range,BTC_1d_regime_router,grid,0.008285,0.0299,0.0478
+503,-0.024158,114311.96,0.072944,113710.366,-0.000876,,0.070675,0.014285,range_score=0.0707,range,BTC_1d_regime_router,grid,0.005263,0.1201,0.7107
+517,-0.082425,115166.0,0.076148,114340.2458,0.000293,,0.136013,0.025556,vol_pct=0.76,high_vol,BTC_1d_regime_router,cash,0.00717,0.7646,0.1291
+531,-0.080611,114107.65,0.084638,114260.151,0.00052,,0.147881,0.023866,range_score=0.1479,range,BTC_1d_regime_router,grid,0.001336,0.6791,-0.2877
+545,-0.080636,106011.13,0.149588,111834.2882,-0.001646,,0.124641,0.02056,no_clear_regime,unknown,BTC_1d_regime_router,cash,0.05493,0.4933,0.1254
+559,-0.200579,88300.01,0.291665,105499.0746,-0.006625,,0.240899,0.022997,no_clear_regime,unknown,BTC_1d_regime_router,cash,0.19478,0.6308,-0.3608
+573,-0.030845,90634.34,0.213011,98802.2884,-0.003632,,0.095882,0.025539,dd=21.30% vol_pct=0.78,panic,BTC_1d_regime_router,cash,0.09012,0.7758,-0.5222
+587,-0.054267,88620.79,0.226421,92731.0438,-0.004705,,0.089297,0.016631,no_clear_regime,unknown,BTC_1d_regime_router,cash,0.04638,0.2011,-0.2715
+601,0.024824,93859.71,0.114624,89236.0004,-9e-05,,0.088891,0.012004,no_clear_regime,unknown,BTC_1d_regime_router,cash,0.049262,0.0379,1.2293
+615,-0.046645,92631.0,0.044566,90336.6598,0.000503,,0.100437,0.01536,slope=0.0005 trend=0.0248,trend_up,BTC_1d_regime_router,trend_following,0.024769,0.1798,0.1528
+629,-0.231312,78738.61,0.187858,89029.4022,-0.002115,,0.253796,0.023111,no_clear_regime,unknown,BTC_1d_regime_router,cash,0.130696,0.6519,2.1626
+643,-0.296224,68892.43,0.289416,83936.7862,-0.004521,,0.383063,0.047994,dd=28.94% vol_pct=0.99,panic,BTC_1d_regime_router,cash,0.218375,0.9936,-0.8573
+657,-0.014425,68830.06,0.290059,77329.8394,-0.005705,,0.083754,0.025357,dd=29.01% vol_pct=0.76,panic,BTC_1d_regime_router,cash,0.123489,0.763,1.3871
+671,0.027635,74884.67,0.216285,71189.6758,-0.0033,,0.12163,0.028098,vol_pct=0.82,high_vol,BTC_1d_regime_router,cash,0.049342,0.8203,0.4054
+685,-0.121072,66797.37,0.207252,68735.3726,-0.001027,,0.132846,0.02091,no_clear_regime,unknown,BTC_1d_regime_router,cash,0.029013,0.4677,-0.3465
+699,0.018474,74417.99,0.006232,69296.5008,0.001959,,0.112971,0.022703,slope=0.0020 trend=0.0688,trend_up,BTC_1d_regime_router,trend_following,0.068821,0.5876,1.2593
+713,-0.016624,77371.32,0.016352,71806.147,0.003185,,0.102319,0.019463,slope=0.0032 trend=0.0719,trend_up,BTC_1d_regime_router,trend_following,0.071928,0.3838,0.03
+727,-0.005681,81745.65,0.005649,74199.6094,0.003757,,0.078659,0.012377,slope=0.0038 trend=0.0923,trend_up,BTC_1d_regime_router,trend_following,0.092311,0.0495,-0.1868
+55,,,,,,1.0,,,slope=0.0007 trend=0.0313,trend_up,ETH_1d_regime_router,trend_following,,,
+56,,,,,,0.25,,,reduce_exposure_high_vol,high_vol,ETH_1d_regime_router,cash,,,
+58,,,,,,1.0,,,slope=0.0023 trend=0.1372,trend_up,ETH_1d_regime_router,trend_following,,,
+87,,,,,,0.25,,,reduce_exposure_high_vol,high_vol,ETH_1d_regime_router,cash,,,
+120,,,,,,1.0,,,slope=0.0040 trend=0.0599,trend_up,ETH_1d_regime_router,trend_following,,,
+130,,,,,,0.0,,,unknown_hold,unknown,ETH_1d_regime_router,cash,,,
+140,,,,,,1.0,,,range_score=0.1927,range,ETH_1d_regime_router,grid,,,
+141,,,,,,0.0,,,unknown_hold,unknown,ETH_1d_regime_router,cash,,,
+143,,,,,,1.0,,,slope=0.0002 trend=0.0220,trend_up,ETH_1d_regime_router,trend_following,,,
+146,,,,,,1.0,,,range_score=0.1820,range,ETH_1d_regime_router,grid,,,
+147,,,,,,1.0,,,slope=0.0020 trend=0.0264,trend_up,ETH_1d_regime_router,trend_following,,,
+148,,,,,,1.0,,,range_score=0.1854,range,ETH_1d_regime_router,grid,,,
+149,,,,,,0.0,,,panic_cash,panic,ETH_1d_regime_router,cash,,,
+169,,,,,,0.0,,,unknown_hold,unknown,ETH_1d_regime_router,cash,,,
+209,,,,,,1.0,,,range_score=0.1664,range,ETH_1d_regime_router,grid,,,
+211,,,,,,0.0,,,unknown_hold,unknown,ETH_1d_regime_router,cash,,,
+232,,,,,,1.0,,,range_score=0.0952,range,ETH_1d_regime_router,grid,,,
+233,,,,,,0.0,,,unknown_hold,unknown,ETH_1d_regime_router,cash,,,
+234,,,,,,1.0,,,slope=0.0001 trend=0.0379,trend_up,ETH_1d_regime_router,trend_following,,,
+235,,,,,,0.0,,,unknown_hold,unknown,ETH_1d_regime_router,cash,,,
+236,,,,,,1.0,,,slope=0.0009 trend=0.0665,trend_up,ETH_1d_regime_router,trend_following,,,
+241,,,,,,0.0,,,unknown_hold,unknown,ETH_1d_regime_router,cash,,,
+242,,,,,,1.0,,,slope=0.0023 trend=0.0276,trend_up,ETH_1d_regime_router,trend_following,,,
+243,,,,,,0.0,,,unknown_hold,unknown,ETH_1d_regime_router,cash,,,
+244,,,,,,1.0,,,slope=0.0024 trend=0.0828,trend_up,ETH_1d_regime_router,trend_following,,,
+251,,,,,,0.0,,,unknown_hold,unknown,ETH_1d_regime_router,cash,,,
+258,,,,,,1.0,,,range_score=0.1778,range,ETH_1d_regime_router,grid,,,
+259,,,,,,0.0,,,unknown_hold,unknown,ETH_1d_regime_router,cash,,,
+262,,,,,,0.0,,,panic_cash,panic,ETH_1d_regime_router,cash,,,
+288,,,,,,0.0,,,unknown_hold,unknown,ETH_1d_regime_router,cash,,,
+294,,,,,,0.0,,,panic_cash,panic,ETH_1d_regime_router,cash,,,
+297,,,,,,0.0,,,unknown_hold,unknown,ETH_1d_regime_router,cash,,,
+300,,,,,,0.0,,,panic_cash,panic,ETH_1d_regime_router,cash,,,
+301,,,,,,0.0,,,unknown_hold,unknown,ETH_1d_regime_router,cash,,,
+303,,,,,,0.0,,,panic_cash,panic,ETH_1d_regime_router,cash,,,
+304,,,,,,0.0,,,unknown_hold,unknown,ETH_1d_regime_router,cash,,,
+306,,,,,,0.25,,,reduce_exposure_high_vol,high_vol,ETH_1d_regime_router,cash,,,
+307,,,,,,0.0,,,unknown_hold,unknown,ETH_1d_regime_router,cash,,,
+311,,,,,,1.0,,,range_score=0.1995,range,ETH_1d_regime_router,grid,,,
+313,,,,,,0.0,,,unknown_hold,unknown,ETH_1d_regime_router,cash,,,
+316,,,,,,1.0,,,range_score=0.2018,range,ETH_1d_regime_router,grid,,,
+317,,,,,,0.0,,,unknown_hold,unknown,ETH_1d_regime_router,cash,,,
+320,,,,,,1.0,,,range_score=0.1818,range,ETH_1d_regime_router,grid,,,
+321,,,,,,1.0,,,slope=0.0000 trend=0.0312,trend_up,ETH_1d_regime_router,trend_following,,,
+323,,,,,,1.0,,,range_score=0.1790,range,ETH_1d_regime_router,grid,,,
+326,,,,,,1.0,,,slope=0.0002 trend=0.0297,trend_up,ETH_1d_regime_router,trend_following,,,
+363,,,,,,1.0,,,range_score=0.0520,range,ETH_1d_regime_router,grid,,,
+365,,,,,,0.0,,,unknown_hold,unknown,ETH_1d_regime_router,cash,,,
+366,,,,,,1.0,,,range_score=0.0659,range,ETH_1d_regime_router,grid,,,
+367,,,,,,0.0,,,unknown_hold,unknown,ETH_1d_regime_router,cash,,,
+55,0.009177,2615.25,0.071421,2533.4736,0.000688,,0.148189,0.032575,slope=0.0007 trend=0.0313,trend_up,ETH_1d_regime_router,trend_following,0.031269,0.6857,-0.3611
+62,0.039603,3137.89,0.0,2590.1386,0.004453,,0.233558,0.027605,slope=0.0045 trend=0.1746,trend_up,ETH_1d_regime_router,trend_following,0.17456,0.0952,1.5956
+69,-0.004303,3746.21,0.004285,2731.5898,0.008408,,0.334816,0.026493,slope=0.0084 trend=0.2708,trend_up,ETH_1d_regime_router,trend_following,0.270839,0.0408,0.6948
+76,-0.020642,3793.79,0.020224,2900.7986,0.007738,,0.244826,0.025897,slope=0.0077 trend=0.2354,trend_up,ETH_1d_regime_router,trend_following,0.235382,0.0536,-0.645
+83,-0.07201,3612.0,0.067173,3036.556,0.007083,,0.132381,0.029309,slope=0.0071 trend=0.1593,trend_up,ETH_1d_regime_router,trend_following,0.159315,0.3651,-0.7342
+90,0.071865,4590.52,0.0,3277.164,0.013476,,0.260663,0.036108,vol_pct=0.97,high_vol,ETH_1d_regime_router,cash,0.286102,0.9714,1.9693
+97,-0.165304,4075.59,0.141855,3554.9892,0.009027,,0.332556,0.041671,vol_pct=1.00,high_vol,ETH_1d_regime_router,cash,0.127736,1.0,0.7486
+104,-0.050306,4600.63,0.047897,3839.4918,0.010838,,0.200355,0.052963,vol_pct=1.00,high_vol,ETH_1d_regime_router,cash,0.165442,1.0,0.2868
+111,-0.116854,4326.5,0.104628,4050.7358,0.006524,,0.174848,0.046746,vol_pct=0.88,high_vol,ETH_1d_regime_router,cash,0.063738,0.8791,-0.5863
+118,-0.121107,4310.09,0.108024,4162.8796,0.002639,,0.140779,0.04194,vol_pct=0.81,high_vol,ETH_1d_regime_router,cash,0.034155,0.8061,-0.5733
+125,-0.046847,4501.29,0.068455,4274.8346,0.003297,,0.097532,0.02018,slope=0.0033 trend=0.0503,trend_up,ETH_1d_regime_router,trend_following,0.050309,0.0095,-1.0237
+132,-0.131572,4164.26,0.138204,4385.5038,0.002026,,0.131572,0.022287,no_clear_regime,unknown,ETH_1d_regime_router,cash,0.053129,0.0804,-0.3897
+139,-0.136789,4145.15,0.142159,4398.1166,-0.000355,,0.202116,0.028601,no_clear_regime,unknown,ETH_1d_regime_router,cash,0.061027,0.3109,0.0121
+146,-0.053131,4447.7,0.079546,4397.0164,0.000613,,0.182038,0.030826,range_score=0.1820,range,ETH_1d_regime_router,grid,0.011395,0.4683,1.138
+153,-0.135512,4125.02,0.146324,4348.709,-0.001154,,0.227204,0.047555,dd=14.63% vol_pct=0.92,panic,ETH_1d_regime_router,cash,0.054227,0.9248,1.2809
+160,-0.209385,3873.05,0.189764,4276.2488,-0.00206,,0.241985,0.043661,dd=18.98% vol_pct=0.81,panic,ETH_1d_regime_router,cash,0.104104,0.8071,-0.0846
+167,-0.137344,3979.2,0.155547,4227.0724,-0.001546,,0.156137,0.043291,dd=15.55% vol_pct=0.79,panic,ETH_1d_regime_router,cash,0.062292,0.7891,-0.4496
+174,-0.265104,3287.05,0.302432,4119.1154,-0.005969,,0.265104,0.032001,no_clear_regime,unknown,ETH_1d_regime_router,cash,0.253134,0.513,3.4293
+181,-0.216721,3417.76,0.270335,3976.5858,-0.003914,,0.254965,0.037369,no_clear_regime,unknown,ETH_1d_regime_router,cash,0.163506,0.6894,0.4091
+188,-0.250642,3123.66,0.333123,3848.1428,-0.00564,,0.280165,0.037238,no_clear_regime,unknown,ETH_1d_regime_router,cash,0.231934,0.6845,0.4273
+195,-0.21089,2959.36,0.368199,3626.8366,-0.009421,,0.276279,0.032592,no_clear_regime,unknown,ETH_1d_regime_router,cash,0.225548,0.4914,-0.9027
+202,-0.1398,2996.07,0.360362,3457.5834,-0.007149,,0.155434,0.034776,no_clear_regime,unknown,ETH_1d_regime_router,cash,0.15404,0.6154,-0.2157
+209,0.039083,3318.04,0.2176,3341.4992,-0.003942,,0.166421,0.036714,range_score=0.1664,range,ETH_1d_regime_router,grid,0.00707,0.6825,0.4394
+216,-0.122148,2962.3,0.287645,3222.479,-0.007135,,0.177251,0.034404,no_clear_regime,unknown,ETH_1d_regime_router,cash,0.08783,0.5765,-0.2332
+223,-0.121119,2965.02,0.286991,3096.0104,-0.00411,,0.167139,0.027443,no_clear_regime,unknown,ETH_1d_regime_router,cash,0.044179,0.1527,-0.0811
+230,-0.11785,2973.69,0.2388,3027.5226,-0.00391,,0.137479,0.021573,no_clear_regime,unknown,ETH_1d_regime_router,cash,0.018103,0.0476,-0.2457
+237,0.021794,3296.84,0.079984,3015.9964,0.001763,,0.142036,0.016455,slope=0.0018 trend=0.0852,trend_up,ETH_1d_regime_router,trend_following,0.085186,0.0046,0.8996
+244,0.008714,3325.82,0.0,3050.4092,0.002448,,0.126847,0.022707,slope=0.0024 trend=0.0828,trend_up,ETH_1d_regime_router,trend_following,0.08281,0.1205,1.6174
+251,-0.141176,2939.88,0.123711,3088.0516,0.000913,,0.141176,0.029898,no_clear_regime,unknown,ETH_1d_regime_router,cash,0.050401,0.3593,1.6554
+258,-0.108416,3026.77,0.097812,3069.1928,-0.000634,,0.177757,0.030428,range_score=0.1778,range,ETH_1d_regime_router,grid,0.014016,0.4202,0.9983
+265,-0.501943,2233.72,0.334196,2983.9162,-0.004877,,0.485723,0.037611,dd=33.42% vol_pct=0.77,panic,ETH_1d_regime_router,cash,0.335851,0.7673,2.1644
+272,-0.496423,2022.67,0.397103,2858.9098,-0.006856,,0.593246,0.056818,dd=39.71% vol_pct=0.98,panic,ETH_1d_regime_router,cash,0.413434,0.9841,-0.4692
+279,-0.511694,1991.66,0.406347,2726.8822,-0.006892,,0.499965,0.057876,dd=40.63% vol_pct=0.98,panic,ETH_1d_regime_router,cash,0.36915,0.9807,-0.913
+286,-0.160005,1851.94,0.447993,2565.7124,-0.01059,,0.150215,0.050779,dd=44.80% vol_pct=0.91,panic,ETH_1d_regime_router,cash,0.385419,0.906,-0.3598
+293,-0.052345,1982.8,0.408987,2404.9692,-0.009171,,0.118343,0.037159,no_clear_regime,unknown,ETH_1d_regime_router,cash,0.212916,0.6703,0.4767
+300,-0.044571,2036.51,0.392978,2225.6722,-0.010255,,0.135202,0.03887,dd=39.30% vol_pct=0.75,panic,ETH_1d_regime_router,cash,0.092885,0.75,0.1548
+307,-0.015353,2317.39,0.300001,2118.2886,-0.005754,,0.182589,0.033742,no_clear_regime,unknown,ETH_1d_regime_router,cash,0.085916,0.5087,0.2005
+314,-0.091243,2156.23,0.287614,2044.2446,-0.001863,,0.192869,0.031135,no_clear_regime,unknown,ETH_1d_regime_router,cash,0.051936,0.3605,-0.5636
+321,-0.117572,2105.43,0.141324,2039.8338,4e-06,,0.174943,0.032078,slope=0.0000 trend=0.0312,trend_up,ETH_1d_regime_router,trend_following,0.031156,0.4385,0.2635
+328,0.016348,2240.01,0.048007,2055.0796,0.002358,,0.114004,0.028346,slope=0.0024 trend=0.0826,trend_up,ETH_1d_regime_router,trend_following,0.082558,0.237,1.1162
+335,-0.020246,2322.44,0.019844,2097.8954,0.004464,,0.165696,0.032873,slope=0.0045 trend=0.0967,trend_up,ETH_1d_regime_router,trend_following,0.096685,0.4889,1.338
+342,-0.039473,2327.14,0.037974,2149.5592,0.002797,,0.156918,0.031261,slope=0.0028 trend=0.0763,trend_up,ETH_1d_regime_router,trend_following,0.076309,0.3851,-0.6507
+349,-0.056599,2289.42,0.053568,2194.3604,0.002709,,0.099938,0.027771,slope=0.0027 trend=0.0415,trend_up,ETH_1d_regime_router,trend_following,0.041521,0.2036,-0.9142
+356,-0.024666,2360.77,0.024072,2219.7992,7e-05,,0.070358,0.018016,slope=0.0001 trend=0.0597,trend_up,ETH_1d_regime_router,trend_following,0.059714,0.0208,0.2622
+363,-0.043566,2274.96,0.059545,2243.1172,0.001097,,0.052032,0.014932,range_score=0.0520,range,ETH_1d_regime_router,grid,0.013997,0.0117,-0.1299
+370,-0.121523,2114.33,0.125949,2261.8862,0.000777,,0.121523,0.014547,no_clear_regime,unknown,ETH_1d_regime_router,cash,0.069789,0.0143,-1.0356
