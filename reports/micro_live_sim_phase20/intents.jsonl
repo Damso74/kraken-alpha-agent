@@ -1,0 +1,1 @@
+{"symbol": "BTC", "side": "buy", "quantity": 5e-05, "notional_usd": 5.0, "price_hint": 100000.0, "strategy": "micro_live_sim", "reason": "phase20_dry_run"}
