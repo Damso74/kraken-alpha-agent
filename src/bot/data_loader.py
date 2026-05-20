@@ -260,8 +260,9 @@ def summarize_candles(
             blocked_reason="cache file missing",
         )
     try:
-        raw_rows, _ = _read_cache_payload(resolved.path)
-        parsed = parse_ohlc_candle_rows(raw_rows)
+        raw_rows, file_interval = _read_cache_payload(resolved.path)
+        normalize_daily = file_interval is None or int(file_interval) >= 1440
+        parsed = parse_ohlc_candle_rows(raw_rows, normalize_to_day=normalize_daily)
     except Exception as exc:  # noqa: BLE001 — audit path
         return CandleSummary(
             asset=resolved.asset,

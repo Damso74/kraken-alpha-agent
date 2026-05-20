@@ -78,7 +78,11 @@ def default_ohlc_daily_cache_path(ticker: str) -> Path:
     return DEFAULT_COLLECTOR_CACHE_DIR / f"ohlc_daily_{sym}.json"
 
 
-def _normalize_candle_row(raw: Mapping[str, Any]) -> Optional[dict[str, Any]]:
+def _normalize_candle_row(
+    raw: Mapping[str, Any],
+    *,
+    normalize_to_day: bool = True,
+) -> Optional[dict[str, Any]]:
     ts = raw.get("timestamp")
     if not isinstance(ts, int):
         return None
@@ -100,8 +104,11 @@ def _normalize_candle_row(raw: Mapping[str, Any]) -> Optional[dict[str, Any]]:
             vwap = (h + lo + c) / 3.0
     else:
         vwap = (h + lo + c) / 3.0
-    d = datetime.fromtimestamp(ts, tz=timezone.utc).date()
-    ts_norm = int(datetime(d.year, d.month, d.day, tzinfo=timezone.utc).timestamp())
+    if normalize_to_day:
+        d = datetime.fromtimestamp(ts, tz=timezone.utc).date()
+        ts_norm = int(datetime(d.year, d.month, d.day, tzinfo=timezone.utc).timestamp())
+    else:
+        ts_norm = ts
     return {
         "timestamp": ts_norm,
         "open": o,
@@ -113,8 +120,12 @@ def _normalize_candle_row(raw: Mapping[str, Any]) -> Optional[dict[str, Any]]:
     }
 
 
-def parse_ohlc_candle_rows(rows: Any) -> list[dict[str, Any]]:
-    """Parse a list of candle dicts into normalized daily rows."""
+def parse_ohlc_candle_rows(
+    rows: Any,
+    *,
+    normalize_to_day: bool = True,
+) -> list[dict[str, Any]]:
+    """Parse candle dicts; daily caches normalize to UTC midnight."""
     if not isinstance(rows, list):
         raise CollectorError(
             f"OHLC candle payload is not a list: {type(rows).__name__}"
@@ -123,7 +134,7 @@ def parse_ohlc_candle_rows(rows: Any) -> list[dict[str, Any]]:
     for item in rows:
         if not isinstance(item, dict):
             continue
-        row = _normalize_candle_row(item)
+        row = _normalize_candle_row(item, normalize_to_day=normalize_to_day)
         if row is not None:
             out.append(row)
     out.sort(key=lambda r: int(r["timestamp"]))
@@ -356,3 +367,252 @@ def iso_window_to_dates(start_iso: str, end_iso: str) -> tuple[date, date]:
     if start is None or end is None:
         raise ValueError(f"invalid ISO window: {start_iso!r} .. {end_iso!r}")
     return start, end
+
+
+# --- Intraday backbone (Phase 21): 1h / 4h / extended 1d ---
+
+OHLC_INTRADAY_CACHE_SOURCE = "binance_public_klines"
+
+TIMEFRAME_BINANCE_INTERVAL: dict[str, str] = {
+    "1d": "1d",
+    "4h": "4h",
+    "1h": "1h",
+}
+
+TIMEFRAME_INTERVAL_MINUTES: dict[str, int] = {
+    "1d": 1440,
+    "4h": 240,
+    "1h": 60,
+}
+
+TIMEFRAME_CACHE_BASENAME: dict[str, str] = {
+    "1d": "ohlc_daily",
+    "4h": "ohlc_4h",
+    "1h": "ohlc_1h",
+}
+
+# Target history depth (calendar days) for cache fill.
+TIMEFRAME_COVERAGE_DAYS: dict[str, int] = {
+    "1d": 365 * 5,
+    "4h": 365 * 3,
+    "1h": 365 * 2,
+}
+
+# Minimum row counts for ``data_ok`` (Phase 21 readiness gate).
+MIN_ROWS_DATA_OK: dict[str, int] = {
+    "1d": 1800,
+    "4h": 6000,
+    "1h": 17000,
+}
+
+
+def default_ohlc_cache_path(ticker: str, timeframe: str) -> Path:
+    """Path for ``ohlc_{tf}_{TICKER}.json`` under collector_cache."""
+    tf = timeframe.strip().lower()
+    if tf not in TIMEFRAME_CACHE_BASENAME:
+        raise ValueError(f"unsupported timeframe: {timeframe}")
+    sym = ticker.strip().upper().partition("/")[0]
+    basename = TIMEFRAME_CACHE_BASENAME[tf]
+    return DEFAULT_COLLECTOR_CACHE_DIR / f"{basename}_{sym}.json"
+
+
+def parse_binance_klines_intraday(payload: Any) -> list[dict[str, Any]]:
+    """Parse klines keeping candle open time (no day-boundary normalization)."""
+    if not isinstance(payload, list):
+        raise CollectorError(
+            f"Binance klines payload is not a list: {type(payload).__name__}"
+        )
+    rows: list[dict[str, Any]] = []
+    for item in payload:
+        if not isinstance(item, list) or len(item) < 6:
+            continue
+        try:
+            open_ms = int(item[0])
+            o = float(item[1])
+            h = float(item[2])
+            lo = float(item[3])
+            c = float(item[4])
+            vol = float(item[5])
+        except (TypeError, ValueError):
+            continue
+        if vol < 0 or o <= 0 or h <= 0 or lo <= 0 or c <= 0:
+            continue
+        ts = open_ms // 1000
+        quote_vol = float(item[7]) if len(item) > 7 else 0.0
+        vwap = quote_vol / vol if vol > 0 else (h + lo + c) / 3.0
+        rows.append(
+            {
+                "timestamp": ts,
+                "open": o,
+                "high": h,
+                "low": lo,
+                "close": c,
+                "vwap": vwap,
+                "volume": vol,
+            }
+        )
+    rows.sort(key=lambda r: int(r["timestamp"]))
+    return rows
+
+
+def _interval_step_seconds(timeframe: str) -> int:
+    tf = timeframe.strip().lower()
+    return TIMEFRAME_INTERVAL_MINUTES[tf] * 60
+
+
+def _date_range_for_coverage_days(days: int) -> tuple[date, date]:
+    today = datetime.now(timezone.utc).date()
+    start = today - timedelta(days=max(days, 1) + 5)
+    return start, today
+
+
+def save_ohlc_cache(
+    cache_path: Path,
+    *,
+    ticker: str,
+    timeframe: str,
+    rows: Sequence[dict[str, Any]],
+    source: str = OHLC_INTRADAY_CACHE_SOURCE,
+) -> None:
+    """Persist OHLC cache compatible with :mod:`src.bot.data_loader`."""
+    tf = timeframe.strip().lower()
+    sym = ticker.strip().upper().partition("/")[0]
+    save_json_cache(
+        cache_path,
+        {
+            "source": source,
+            "generated_at": utc_now_iso(),
+            "ticker": sym,
+            "interval_minutes": TIMEFRAME_INTERVAL_MINUTES[tf],
+            "entries": {"candles": list(rows)},
+        },
+    )
+
+
+def load_ohlc_cache_rows(cache_path: Path) -> list[dict[str, Any]]:
+    """Load all candles from cache file (no date window filter)."""
+    payload = load_json_cache(cache_path)
+    entries = payload.get("entries") if isinstance(payload, dict) else None
+    if not isinstance(entries, dict):
+        raise CollectorError(f"OHLC cache {cache_path} missing entries")
+    raw_candles = entries.get("candles")
+    interval = payload.get("interval_minutes") if isinstance(payload, dict) else None
+    try:
+        interval_int = int(interval) if interval is not None else 1440
+    except (TypeError, ValueError):
+        interval_int = 1440
+    normalize_to_day = interval_int >= 1440
+    return parse_ohlc_candle_rows(raw_candles, normalize_to_day=normalize_to_day)
+
+
+def fetch_binance_klines(
+    ticker: str,
+    timeframe: str,
+    *,
+    coverage_days: int | None = None,
+    fetcher: BinanceFetcherFn = default_http_fetcher,
+    sleep_between_pages: float = BINANCE_SLEEP_BETWEEN_PAGES_SECONDS,
+) -> list[dict[str, Any]]:
+    """Fetch paginated Binance public klines for 1h, 4h, or 1d."""
+    import time
+
+    tf = timeframe.strip().lower()
+    if tf not in TIMEFRAME_BINANCE_INTERVAL:
+        raise ValueError(f"unsupported timeframe: {timeframe}")
+    days = coverage_days if coverage_days is not None else TIMEFRAME_COVERAGE_DAYS[tf]
+    symbol = normalize_binance_symbol(ticker)
+    start_date, end_date = _date_range_for_coverage_days(days)
+    start_ms = int(
+        datetime(
+            start_date.year, start_date.month, start_date.day, tzinfo=timezone.utc
+        ).timestamp()
+        * 1000
+    )
+    end_ms = int(
+        datetime(
+            end_date.year, end_date.month, end_date.day, 23, 59, 59, tzinfo=timezone.utc
+        ).timestamp()
+        * 1000
+    )
+    step_sec = _interval_step_seconds(tf)
+    candles_per_day = max(1, 86400 // step_sec)
+    expected_rows = days * candles_per_day
+    max_pages = max(10, (expected_rows // BINANCE_KLINES_MAX_LIMIT) + 5)
+
+    all_rows: list[dict[str, Any]] = []
+    cursor_ms = start_ms
+    pages = 0
+    parse_fn = parse_binance_klines if tf == "1d" else parse_binance_klines_intraday
+
+    while cursor_ms <= end_ms and pages < max_pages:
+        params: dict[str, Any] = {
+            "symbol": symbol,
+            "interval": TIMEFRAME_BINANCE_INTERVAL[tf],
+            "startTime": cursor_ms,
+            "endTime": end_ms,
+            "limit": BINANCE_KLINES_MAX_LIMIT,
+        }
+        payload = fetcher(BINANCE_KLINES_URL, params)
+        page_rows = parse_fn(payload)
+        if not page_rows:
+            break
+        all_rows = _merge_candles_by_timestamp(all_rows, page_rows)
+        last_ts = int(page_rows[-1]["timestamp"])
+        next_ms = (last_ts + step_sec) * 1000
+        if next_ms <= cursor_ms:
+            break
+        cursor_ms = next_ms
+        pages += 1
+        if pages < max_pages and cursor_ms <= end_ms:
+            time.sleep(sleep_between_pages)
+
+    merged = _merge_candles_by_timestamp([], all_rows)
+    expected_rows = days * candles_per_day
+    min_rows = max(30, int(expected_rows * 0.85))
+    if coverage_days is None:
+        min_rows = max(min_rows, MIN_ROWS_DATA_OK.get(tf, min_rows))
+    if len(merged) < min_rows:
+        raise CollectorError(
+            f"Binance klines for {symbol} {tf} returned {len(merged)} rows "
+            f"(expected >={min_rows})"
+        )
+    return merged
+
+
+def fetch_ohlc_with_cache(
+    ticker: str,
+    timeframe: str,
+    *,
+    cache_path: Path | None = None,
+    use_cache_only: bool = False,
+    coverage_days: int | None = None,
+    fetcher: BinanceFetcherFn = default_http_fetcher,
+) -> list[dict[str, Any]]:
+    """Load OHLC from disk or fetch Binance public API and persist."""
+    tf = timeframe.strip().lower()
+    path = cache_path or default_ohlc_cache_path(ticker, tf)
+    min_rows = MIN_ROWS_DATA_OK.get(tf, 30)
+
+    if path.exists():
+        try:
+            rows = load_ohlc_cache_rows(path)
+            if len(rows) >= min_rows:
+                return rows
+        except CollectorError:
+            if use_cache_only:
+                raise
+
+    if use_cache_only:
+        raise CollectorError(
+            f"use_cache_only: OHLC cache missing or incomplete at {path} "
+            f"(need >={min_rows} rows)"
+        )
+
+    rows = fetch_binance_klines(
+        ticker,
+        tf,
+        coverage_days=coverage_days,
+        fetcher=fetcher,
+    )
+    save_ohlc_cache(path, ticker=ticker, timeframe=tf, rows=rows)
+    return rows
