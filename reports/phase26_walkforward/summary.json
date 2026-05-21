@@ -1,0 +1,11 @@
+{
+  "runs_total": 1,
+  "validation_candidate_count": 0,
+  "paper_candidate_derivatives_count": 0,
+  "overlay_only_count": 0,
+  "weak_count": 1,
+  "kill_count": 0,
+  "blocked_data_count": 0,
+  "micro_live": "NO-GO",
+  "holdout_pct": 0.3
+}

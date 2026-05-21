@@ -58,3 +58,15 @@ Voir `src/bot/metrics.py`. `micro_live_candidate` nécessite `allow_micro_live=T
 - Tournoi zoo : `python scripts/run_strategy_tournament.py --phase 16 --timeframes 1d 4h 1h --cache-only`.
 - Cache manquant → `blocked_data` (manifest : `reports/data_manifests_phase16/ohlcv_intraday_readiness.json`).
 - Rapport : `reports/STRATEGY_ZOO_PHASE16.md`.
+
+## Phase 26 — derivatives crowding research (addendum)
+
+- Collectors publics : `src/data/collectors/binance_derivatives_public.py` (funding + OI Binance USDT-M ; liquidations = `blocked_data`).
+- Caches gitignored : `data/collector_cache/funding_{TICKER}.json`, `oi_{TICKER}_{4h|1d}.json`.
+- Build : `python scripts/build_derivatives_cache_phase26.py` ; audit : `scripts/audit_derivatives_cache_phase26.py`.
+- Event study : `src/bot/derivatives_event_study.py` + `scripts/run_derivatives_event_study_phase26.py`.
+- Overlay crowding : `src/bot/crowding_overlay.py` + `scripts/run_crowding_overlay_tournament_phase26.py` (stratégies Phase 23 uniquement).
+- Walk-forward : `scripts/run_crowding_walkforward_phase26.py`.
+- Verdicts autorisés : `kill`, `blocked_data`, `weak`, `overlay_only`, `validation_candidate`, `paper_candidate_derivatives` (recherche — pas live).
+- Micro-live : **NO-GO** (`reports/MICRO_LIVE_GO_NO_GO_PHASE26.md`).
+- Synthèse : `reports/PHASE26_DERIVATIVES_CROWDING_BLOCK.md`.

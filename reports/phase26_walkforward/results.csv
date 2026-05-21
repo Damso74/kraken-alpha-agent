@@ -1,0 +1,2 @@
+asset,baseline_excess_vs_bh_pct,baseline_max_dd_pct,baseline_return_pct,compare,crowding_overlay,data_ok,holdout_beats_bh,overlay_excess_vs_bh_pct,overlay_max_dd_pct,overlay_return_pct,strategy,timeframe,variant,verdict,wf_verdict
+BTC,,26.11386277448312,30.873861483386918,"{'dd_reduction_pp': 0.0, 'return_delta_pct': 0.0, 'improved_risk_only': False, 'improved_alpha': False}",on,True,9,,26.11386277448312,30.873861483386918,trend_following,4h,slow,weak,unstable

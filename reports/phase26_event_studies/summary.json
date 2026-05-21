@@ -1,0 +1,672 @@
+{
+  "bundles": [
+    {
+      "asset": "BTC",
+      "timeframe": "4h",
+      "funding_rows": 1000,
+      "oi_rows": 180,
+      "liquidations_status": "blocked_data",
+      "results": [
+        {
+          "signal_id": "funding_extreme",
+          "status": "available",
+          "event_count": 3144,
+          "blocked_reason": null,
+          "forward_stats": [
+            {
+              "horizon_hours": 4,
+              "horizon_bars": 1,
+              "event_count": 3143,
+              "mean_return_pct": 0.0049,
+              "median_return_pct": 0.0098,
+              "sign_rate": 0.5049,
+              "baseline_mean_return_pct": 0.0211,
+              "excess_mean_pct": -0.0162
+            },
+            {
+              "horizon_hours": 24,
+              "horizon_bars": 6,
+              "event_count": 3138,
+              "mean_return_pct": 0.0095,
+              "median_return_pct": 0.0708,
+              "sign_rate": 0.5143,
+              "baseline_mean_return_pct": 0.1275,
+              "excess_mean_pct": -0.118
+            },
+            {
+              "horizon_hours": 72,
+              "horizon_bars": 18,
+              "event_count": 3126,
+              "mean_return_pct": 0.0222,
+              "median_return_pct": 0.0857,
+              "sign_rate": 0.5115,
+              "baseline_mean_return_pct": 0.3763,
+              "excess_mean_pct": -0.3541
+            }
+          ],
+          "notes": [
+            "events=funding percentile <=10% or >=90%"
+          ]
+        },
+        {
+          "signal_id": "funding_zscore",
+          "status": "available",
+          "event_count": 126,
+          "blocked_reason": null,
+          "forward_stats": [
+            {
+              "horizon_hours": 4,
+              "horizon_bars": 1,
+              "event_count": 126,
+              "mean_return_pct": 0.0613,
+              "median_return_pct": 0.0718,
+              "sign_rate": 0.5476,
+              "baseline_mean_return_pct": 0.0211,
+              "excess_mean_pct": 0.0402
+            },
+            {
+              "horizon_hours": 24,
+              "horizon_bars": 6,
+              "event_count": 126,
+              "mean_return_pct": 0.6098,
+              "median_return_pct": 0.4055,
+              "sign_rate": 0.5635,
+              "baseline_mean_return_pct": 0.1275,
+              "excess_mean_pct": 0.4822
+            },
+            {
+              "horizon_hours": 72,
+              "horizon_bars": 18,
+              "event_count": 126,
+              "mean_return_pct": 1.3069,
+              "median_return_pct": 0.7037,
+              "sign_rate": 0.5635,
+              "baseline_mean_return_pct": 0.3763,
+              "excess_mean_pct": 0.9306
+            }
+          ],
+          "notes": [
+            "events=|funding z|>=2"
+          ]
+        },
+        {
+          "signal_id": "oi_expansion_flat_price",
+          "status": "available",
+          "event_count": 14,
+          "blocked_reason": null,
+          "forward_stats": [
+            {
+              "horizon_hours": 4,
+              "horizon_bars": 1,
+              "event_count": 14,
+              "mean_return_pct": 0.3418,
+              "median_return_pct": 0.1609,
+              "sign_rate": 0.7143,
+              "baseline_mean_return_pct": 0.0211,
+              "excess_mean_pct": 0.3207
+            },
+            {
+              "horizon_hours": 24,
+              "horizon_bars": 6,
+              "event_count": 13,
+              "mean_return_pct": 0.8177,
+              "median_return_pct": 0.6564,
+              "sign_rate": 0.8462,
+              "baseline_mean_return_pct": 0.1275,
+              "excess_mean_pct": 0.6901
+            },
+            {
+              "horizon_hours": 72,
+              "horizon_bars": 18,
+              "event_count": 13,
+              "mean_return_pct": 2.6629,
+              "median_return_pct": 3.674,
+              "sign_rate": 0.7692,
+              "baseline_mean_return_pct": 0.3763,
+              "excess_mean_pct": 2.2866
+            }
+          ],
+          "notes": [
+            "events=OI z>=1 and 5-bar range <1%"
+          ]
+        },
+        {
+          "signal_id": "oi_zscore_range_compress",
+          "status": "available",
+          "event_count": 23,
+          "blocked_reason": null,
+          "forward_stats": [
+            {
+              "horizon_hours": 4,
+              "horizon_bars": 1,
+              "event_count": 23,
+              "mean_return_pct": 0.1651,
+              "median_return_pct": 0.0996,
+              "sign_rate": 0.5652,
+              "baseline_mean_return_pct": 0.0211,
+              "excess_mean_pct": 0.144
+            },
+            {
+              "horizon_hours": 24,
+              "horizon_bars": 6,
+              "event_count": 23,
+              "mean_return_pct": 0.7371,
+              "median_return_pct": 0.6564,
+              "sign_rate": 0.8261,
+              "baseline_mean_return_pct": 0.1275,
+              "excess_mean_pct": 0.6096
+            },
+            {
+              "horizon_hours": 72,
+              "horizon_bars": 18,
+              "event_count": 23,
+              "mean_return_pct": 1.1828,
+              "median_return_pct": 2.0834,
+              "sign_rate": 0.6087,
+              "baseline_mean_return_pct": 0.3763,
+              "excess_mean_pct": 0.8065
+            }
+          ],
+          "notes": [
+            "events=OI z>=1.5 and 10-bar range <2%"
+          ]
+        },
+        {
+          "signal_id": "liquidation_spike",
+          "status": "blocked_data",
+          "event_count": 0,
+          "blocked_reason": "Binance /fapi/v1/allForceOrders is a short rolling window only; no stable public historical liquidation series in repo.",
+          "forward_stats": [],
+          "notes": [
+            "blocked_data"
+          ]
+        },
+        {
+          "signal_id": "funding_oi_disagreement",
+          "status": "available",
+          "event_count": 0,
+          "blocked_reason": null,
+          "forward_stats": [],
+          "notes": [
+            "events=funding z and OI z opposite signs (strong)",
+            "too_few_events_for_stats"
+          ]
+        }
+      ],
+      "non_trivial_signals": 4,
+      "proceed_to_overlay": true,
+      "verdict": "overlay_only"
+    },
+    {
+      "asset": "BTC",
+      "timeframe": "1d",
+      "funding_rows": 1000,
+      "oi_rows": 30,
+      "liquidations_status": "blocked_data",
+      "results": [
+        {
+          "signal_id": "funding_extreme",
+          "status": "available",
+          "event_count": 479,
+          "blocked_reason": null,
+          "forward_stats": [
+            {
+              "horizon_hours": 4,
+              "horizon_bars": 1,
+              "event_count": 478,
+              "mean_return_pct": -0.0412,
+              "median_return_pct": -0.0572,
+              "sign_rate": 0.4812,
+              "baseline_mean_return_pct": 0.0851,
+              "excess_mean_pct": -0.1263
+            },
+            {
+              "horizon_hours": 24,
+              "horizon_bars": 1,
+              "event_count": 478,
+              "mean_return_pct": -0.0412,
+              "median_return_pct": -0.0572,
+              "sign_rate": 0.4812,
+              "baseline_mean_return_pct": 0.0851,
+              "excess_mean_pct": -0.1263
+            },
+            {
+              "horizon_hours": 72,
+              "horizon_bars": 3,
+              "event_count": 476,
+              "mean_return_pct": 0.0056,
+              "median_return_pct": 0.0628,
+              "sign_rate": 0.5084,
+              "baseline_mean_return_pct": 0.2517,
+              "excess_mean_pct": -0.246
+            }
+          ],
+          "notes": [
+            "events=funding percentile <=10% or >=90%"
+          ]
+        },
+        {
+          "signal_id": "funding_zscore",
+          "status": "available",
+          "event_count": 23,
+          "blocked_reason": null,
+          "forward_stats": [
+            {
+              "horizon_hours": 4,
+              "horizon_bars": 1,
+              "event_count": 23,
+              "mean_return_pct": 0.3461,
+              "median_return_pct": -0.0601,
+              "sign_rate": 0.4783,
+              "baseline_mean_return_pct": 0.0851,
+              "excess_mean_pct": 0.261
+            },
+            {
+              "horizon_hours": 24,
+              "horizon_bars": 1,
+              "event_count": 23,
+              "mean_return_pct": 0.3461,
+              "median_return_pct": -0.0601,
+              "sign_rate": 0.4783,
+              "baseline_mean_return_pct": 0.0851,
+              "excess_mean_pct": 0.261
+            },
+            {
+              "horizon_hours": 72,
+              "horizon_bars": 3,
+              "event_count": 23,
+              "mean_return_pct": 0.3743,
+              "median_return_pct": -0.3093,
+              "sign_rate": 0.4348,
+              "baseline_mean_return_pct": 0.2517,
+              "excess_mean_pct": 0.1226
+            }
+          ],
+          "notes": [
+            "events=|funding z|>=2"
+          ]
+        },
+        {
+          "signal_id": "oi_expansion_flat_price",
+          "status": "available",
+          "event_count": 0,
+          "blocked_reason": null,
+          "forward_stats": [],
+          "notes": [
+            "events=OI z>=1 and 5-bar range <1%",
+            "too_few_events_for_stats"
+          ]
+        },
+        {
+          "signal_id": "oi_zscore_range_compress",
+          "status": "available",
+          "event_count": 0,
+          "blocked_reason": null,
+          "forward_stats": [],
+          "notes": [
+            "events=OI z>=1.5 and 10-bar range <2%",
+            "too_few_events_for_stats"
+          ]
+        },
+        {
+          "signal_id": "liquidation_spike",
+          "status": "blocked_data",
+          "event_count": 0,
+          "blocked_reason": "Binance /fapi/v1/allForceOrders is a short rolling window only; no stable public historical liquidation series in repo.",
+          "forward_stats": [],
+          "notes": [
+            "blocked_data"
+          ]
+        },
+        {
+          "signal_id": "funding_oi_disagreement",
+          "status": "available",
+          "event_count": 0,
+          "blocked_reason": null,
+          "forward_stats": [],
+          "notes": [
+            "events=funding z and OI z opposite signs (strong)",
+            "too_few_events_for_stats"
+          ]
+        }
+      ],
+      "non_trivial_signals": 2,
+      "proceed_to_overlay": true,
+      "verdict": "blocked_data"
+    },
+    {
+      "asset": "ETH",
+      "timeframe": "4h",
+      "funding_rows": 1000,
+      "oi_rows": 180,
+      "liquidations_status": "blocked_data",
+      "results": [
+        {
+          "signal_id": "funding_extreme",
+          "status": "available",
+          "event_count": 3199,
+          "blocked_reason": null,
+          "forward_stats": [
+            {
+              "horizon_hours": 4,
+              "horizon_bars": 1,
+              "event_count": 3198,
+              "mean_return_pct": 0.0173,
+              "median_return_pct": 0.0126,
+              "sign_rate": 0.5063,
+              "baseline_mean_return_pct": 0.0118,
+              "excess_mean_pct": 0.0056
+            },
+            {
+              "horizon_hours": 24,
+              "horizon_bars": 6,
+              "event_count": 3193,
+              "mean_return_pct": 0.0727,
+              "median_return_pct": 0.0466,
+              "sign_rate": 0.5058,
+              "baseline_mean_return_pct": 0.0716,
+              "excess_mean_pct": 0.0011
+            },
+            {
+              "horizon_hours": 72,
+              "horizon_bars": 18,
+              "event_count": 3181,
+              "mean_return_pct": 0.2192,
+              "median_return_pct": 0.0325,
+              "sign_rate": 0.5017,
+              "baseline_mean_return_pct": 0.2086,
+              "excess_mean_pct": 0.0106
+            }
+          ],
+          "notes": [
+            "events=funding percentile <=10% or >=90%"
+          ]
+        },
+        {
+          "signal_id": "funding_zscore",
+          "status": "available",
+          "event_count": 142,
+          "blocked_reason": null,
+          "forward_stats": [
+            {
+              "horizon_hours": 4,
+              "horizon_bars": 1,
+              "event_count": 142,
+              "mean_return_pct": 0.1664,
+              "median_return_pct": 0.0844,
+              "sign_rate": 0.5211,
+              "baseline_mean_return_pct": 0.0118,
+              "excess_mean_pct": 0.1547
+            },
+            {
+              "horizon_hours": 24,
+              "horizon_bars": 6,
+              "event_count": 142,
+              "mean_return_pct": 0.7082,
+              "median_return_pct": 0.6333,
+              "sign_rate": 0.6408,
+              "baseline_mean_return_pct": 0.0716,
+              "excess_mean_pct": 0.6366
+            },
+            {
+              "horizon_hours": 72,
+              "horizon_bars": 18,
+              "event_count": 142,
+              "mean_return_pct": 0.9944,
+              "median_return_pct": 1.0338,
+              "sign_rate": 0.6056,
+              "baseline_mean_return_pct": 0.2086,
+              "excess_mean_pct": 0.7858
+            }
+          ],
+          "notes": [
+            "events=|funding z|>=2"
+          ]
+        },
+        {
+          "signal_id": "oi_expansion_flat_price",
+          "status": "available",
+          "event_count": 11,
+          "blocked_reason": null,
+          "forward_stats": [
+            {
+              "horizon_hours": 4,
+              "horizon_bars": 1,
+              "event_count": 11,
+              "mean_return_pct": 0.0016,
+              "median_return_pct": 0.2264,
+              "sign_rate": 0.6364,
+              "baseline_mean_return_pct": 0.0118,
+              "excess_mean_pct": -0.0101
+            },
+            {
+              "horizon_hours": 24,
+              "horizon_bars": 6,
+              "event_count": 11,
+              "mean_return_pct": -1.0533,
+              "median_return_pct": -0.4206,
+              "sign_rate": 0.4545,
+              "baseline_mean_return_pct": 0.0716,
+              "excess_mean_pct": -1.1249
+            },
+            {
+              "horizon_hours": 72,
+              "horizon_bars": 18,
+              "event_count": 9,
+              "mean_return_pct": -1.3165,
+              "median_return_pct": -2.2751,
+              "sign_rate": 0.2222,
+              "baseline_mean_return_pct": 0.2086,
+              "excess_mean_pct": -1.5251
+            }
+          ],
+          "notes": [
+            "events=OI z>=1 and 5-bar range <1%"
+          ]
+        },
+        {
+          "signal_id": "oi_zscore_range_compress",
+          "status": "available",
+          "event_count": 18,
+          "blocked_reason": null,
+          "forward_stats": [
+            {
+              "horizon_hours": 4,
+              "horizon_bars": 1,
+              "event_count": 18,
+              "mean_return_pct": -0.0764,
+              "median_return_pct": -0.3012,
+              "sign_rate": 0.3889,
+              "baseline_mean_return_pct": 0.0118,
+              "excess_mean_pct": -0.0882
+            },
+            {
+              "horizon_hours": 24,
+              "horizon_bars": 6,
+              "event_count": 18,
+              "mean_return_pct": -0.099,
+              "median_return_pct": 0.6937,
+              "sign_rate": 0.6111,
+              "baseline_mean_return_pct": 0.0716,
+              "excess_mean_pct": -0.1707
+            },
+            {
+              "horizon_hours": 72,
+              "horizon_bars": 18,
+              "event_count": 18,
+              "mean_return_pct": 0.0687,
+              "median_return_pct": -0.0423,
+              "sign_rate": 0.5,
+              "baseline_mean_return_pct": 0.2086,
+              "excess_mean_pct": -0.1399
+            }
+          ],
+          "notes": [
+            "events=OI z>=1.5 and 10-bar range <2%"
+          ]
+        },
+        {
+          "signal_id": "liquidation_spike",
+          "status": "blocked_data",
+          "event_count": 0,
+          "blocked_reason": "Binance /fapi/v1/allForceOrders is a short rolling window only; no stable public historical liquidation series in repo.",
+          "forward_stats": [],
+          "notes": [
+            "blocked_data"
+          ]
+        },
+        {
+          "signal_id": "funding_oi_disagreement",
+          "status": "available",
+          "event_count": 0,
+          "blocked_reason": null,
+          "forward_stats": [],
+          "notes": [
+            "events=funding z and OI z opposite signs (strong)",
+            "too_few_events_for_stats"
+          ]
+        }
+      ],
+      "non_trivial_signals": 3,
+      "proceed_to_overlay": true,
+      "verdict": "overlay_only"
+    },
+    {
+      "asset": "ETH",
+      "timeframe": "1d",
+      "funding_rows": 1000,
+      "oi_rows": 30,
+      "liquidations_status": "blocked_data",
+      "results": [
+        {
+          "signal_id": "funding_extreme",
+          "status": "available",
+          "event_count": 504,
+          "blocked_reason": null,
+          "forward_stats": [
+            {
+              "horizon_hours": 4,
+              "horizon_bars": 1,
+              "event_count": 503,
+              "mean_return_pct": 0.144,
+              "median_return_pct": 0.0531,
+              "sign_rate": 0.507,
+              "baseline_mean_return_pct": 0.0671,
+              "excess_mean_pct": 0.0769
+            },
+            {
+              "horizon_hours": 24,
+              "horizon_bars": 1,
+              "event_count": 503,
+              "mean_return_pct": 0.144,
+              "median_return_pct": 0.0531,
+              "sign_rate": 0.507,
+              "baseline_mean_return_pct": 0.0671,
+              "excess_mean_pct": 0.0769
+            },
+            {
+              "horizon_hours": 72,
+              "horizon_bars": 3,
+              "event_count": 501,
+              "mean_return_pct": 0.3609,
+              "median_return_pct": 0.1783,
+              "sign_rate": 0.515,
+              "baseline_mean_return_pct": 0.1866,
+              "excess_mean_pct": 0.1743
+            }
+          ],
+          "notes": [
+            "events=funding percentile <=10% or >=90%"
+          ]
+        },
+        {
+          "signal_id": "funding_zscore",
+          "status": "available",
+          "event_count": 22,
+          "blocked_reason": null,
+          "forward_stats": [
+            {
+              "horizon_hours": 4,
+              "horizon_bars": 1,
+              "event_count": 22,
+              "mean_return_pct": -0.4911,
+              "median_return_pct": -0.9997,
+              "sign_rate": 0.3182,
+              "baseline_mean_return_pct": 0.0671,
+              "excess_mean_pct": -0.5583
+            },
+            {
+              "horizon_hours": 24,
+              "horizon_bars": 1,
+              "event_count": 22,
+              "mean_return_pct": -0.4911,
+              "median_return_pct": -0.9997,
+              "sign_rate": 0.3182,
+              "baseline_mean_return_pct": 0.0671,
+              "excess_mean_pct": -0.5583
+            },
+            {
+              "horizon_hours": 72,
+              "horizon_bars": 3,
+              "event_count": 22,
+              "mean_return_pct": 0.3448,
+              "median_return_pct": -0.5586,
+              "sign_rate": 0.4545,
+              "baseline_mean_return_pct": 0.1866,
+              "excess_mean_pct": 0.1582
+            }
+          ],
+          "notes": [
+            "events=|funding z|>=2"
+          ]
+        },
+        {
+          "signal_id": "oi_expansion_flat_price",
+          "status": "available",
+          "event_count": 0,
+          "blocked_reason": null,
+          "forward_stats": [],
+          "notes": [
+            "events=OI z>=1 and 5-bar range <1%",
+            "too_few_events_for_stats"
+          ]
+        },
+        {
+          "signal_id": "oi_zscore_range_compress",
+          "status": "available",
+          "event_count": 0,
+          "blocked_reason": null,
+          "forward_stats": [],
+          "notes": [
+            "events=OI z>=1.5 and 10-bar range <2%",
+            "too_few_events_for_stats"
+          ]
+        },
+        {
+          "signal_id": "liquidation_spike",
+          "status": "blocked_data",
+          "event_count": 0,
+          "blocked_reason": "Binance /fapi/v1/allForceOrders is a short rolling window only; no stable public historical liquidation series in repo.",
+          "forward_stats": [],
+          "notes": [
+            "blocked_data"
+          ]
+        },
+        {
+          "signal_id": "funding_oi_disagreement",
+          "status": "available",
+          "event_count": 0,
+          "blocked_reason": null,
+          "forward_stats": [],
+          "notes": [
+            "events=funding z and OI z opposite signs (strong)",
+            "too_few_events_for_stats"
+          ]
+        }
+      ],
+      "non_trivial_signals": 2,
+      "proceed_to_overlay": true,
+      "verdict": "blocked_data"
+    }
+  ]
+}
