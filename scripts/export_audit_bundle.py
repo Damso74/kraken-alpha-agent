@@ -47,7 +47,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.config import get_settings, safe_env_snapshot  # noqa: E402
-from src.logger import mask_secrets, setup_logging  # noqa: E402
+from src.logger import mask_secrets, sanitize_payload, setup_logging  # noqa: E402
 from src.storage import (  # noqa: E402
     fetch_positions,
     fetch_recent_cycles,
@@ -65,16 +65,10 @@ def _redact(payload: Any) -> Any:
     The agent's structured fields already filter secrets at write time,
     but free-form ``message`` / ``rationale`` / ``where_label`` columns
     have ended up with key fragments in past incidents. Belt-and-
-    suspenders : we run :func:`mask_secrets` on every string value
+    suspenders : we run :func:`sanitize_payload` on every value
     *before* the bundle ever touches disk.
     """
-    if isinstance(payload, str):
-        return mask_secrets(payload)
-    if isinstance(payload, dict):
-        return {k: _redact(v) for k, v in payload.items()}
-    if isinstance(payload, list):
-        return [_redact(v) for v in payload]
-    return payload
+    return sanitize_payload(payload)
 
 
 def _write_json(path: Path, payload: Any) -> int:
