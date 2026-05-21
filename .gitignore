@@ -44,7 +44,9 @@ env/
 # IDE / OS
 .idea/
 .vscode/
-.cursor/
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
 *.swp
 *.swo
 .DS_Store

@@ -1,0 +1,49 @@
+---
+description: Règles projet kraken-alpha-agent — trading agent + pipeline recherche
+alwaysApply: true
+---
+
+# kraken-alpha-agent — règles projet
+
+## Environnement
+
+- Racine : `kraken-alpha-agent/`
+- Python 3.11+ ; activer venv : `.\.venv\Scripts\Activate.ps1` (PowerShell)
+- Chaîner commandes avec `;` — **pas** `&&` sous PowerShell
+- Branche courante recherche/ops : `phase30/observation-ops-ux` ; **`master` frozen** (pas de merge)
+
+## Qualité
+
+- **pytest doit rester vert** après chaque changement : `python -m pytest -q` (894 tests, 2026-05-21)
+- Lint : `ruff check src tests scripts`
+- Voir `docs/QUALITY.md`
+
+## Fichiers protégés — ne pas modifier sans justification forte
+
+- `config.yaml`
+- `src/execution.py`, `src/risk.py`, `src/futures_kraken_cli.py`
+- `web/` (dashboard soumission — données statiques JSON uniquement)
+
+## Sécurité
+
+- Jamais committer `.env` ; seul `.env.example` est versionné
+- Jamais logger de secrets ; triple opt-in obligatoire pour live
+- Pas d’appels Kraken live sans séquence documentée dans `AGENTS.md`
+
+## Architecture
+
+- Agent compétition : `src/main.py` → risk → execution
+- Recherche / backtest : `src/bot/` + `scripts/run_*_phase*.py`
+- Observation forward : `scripts/ops_run_observation_once_phase30.*`
+- Doc : `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`
+
+## Préférences utilisateur
+
+- Réponses en **français**
+- Diffs minimaux ; evidence-first
+- Pas de suppression code sans classification SAFE_TO_DELETE + preuve grep
+- Anti-curve-fit : walk-forward OOS strict (voir `AGENTS.md`)
+
+## Référence complète
+
+Lire `AGENTS.md` pour overrides futures 1×, PEDSL-CY, observation Phase 30, et règles soumission hackathon.
