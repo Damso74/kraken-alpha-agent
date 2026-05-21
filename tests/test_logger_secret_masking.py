@@ -48,16 +48,18 @@ def test_mask_secrets_kraken_featherless_vultr_env_prefixes(monkeypatch):
 
 
 def test_mask_secrets_token_suffix_env(monkeypatch):
-    monkeypatch.setenv("GITHUB_TOKEN", "ghp_abcdefghijklmnopqrstuvwxyz1234")
-    text = "Authorization failed ghp_abcdefghijklmnopqrstuvwxyz1234"
+    fake_github_token = "ghp_FAKE_TEST_TOKEN_NOT_REAL_abc123xyz"
+    monkeypatch.setenv("GITHUB_TOKEN", fake_github_token)
+    text = f"Authorization failed {fake_github_token}"
     masked = mask_secrets(text)
-    assert "ghp_abcdefghijklmnopqrstuvwxyz1234" not in masked
+    assert fake_github_token not in masked
 
 
 def test_mask_secrets_authorization_and_bearer_headers():
-    text = "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.payload"
+    fake_bearer_token = "fake-test-token-not-a-real-secret-abc123xyz"
+    text = f"Authorization: Bearer {fake_bearer_token}"
     masked = mask_secrets(text)
-    assert "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9" not in masked
+    assert fake_bearer_token not in masked
     assert "Bearer" in masked
 
 
@@ -71,16 +73,16 @@ def test_mask_secrets_api_key_assignment_patterns():
 def test_mask_secrets_private_key_block():
     pem = (
         "-----BEGIN RSA PRIVATE KEY-----\n"
-        "MIIEpAIBAAKCAQEA1234567890abcdef\n"
+        "FAKE_TEST_ONLY_NOT_A_REAL_PRIVATE_KEY\n"
         "-----END RSA PRIVATE KEY-----"
     )
     masked = mask_secrets(pem)
-    assert "MIIEpAIBAAKCAQEA" not in masked
+    assert "FAKE_TEST_ONLY_NOT_A_REAL_PRIVATE_KEY" not in masked
     assert "***PRIVATE_KEY***" in masked
 
 
 def test_mask_secrets_long_base64_like_blob():
-    blob = "YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXo="
+    blob = "FAKEBASE64NOTAREALSECRET1234567890="
     masked = mask_secrets(f"wire payload {blob} end")
     assert blob not in masked
 
