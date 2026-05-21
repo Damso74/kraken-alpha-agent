@@ -30,7 +30,7 @@
 The user's Kraken account is on **PEDSL-CY (Cyprus EU)**, so **both
 the spot xStocks orderbook and the xStocks Perpetual Futures are
 venue-blocked at the account-class layer**. The engine is correct end
-to end (a BTC Perp control on the same key fills cleanly; 232 / 232
+to end (a BTC Perp control on the same key fills cleanly; 894 / 894
 tests green), **other lablab participants have publicly reported the
 same xStocks errors** (see `docs/HACKATHON_DISCORD_CONTEXT.md`), and
 the audit-ready PnL is documented honestly in `docs/SUBMISSION.md`
@@ -49,8 +49,8 @@ copy .env.example .env                        # cp .env.example .env
 # Probe the Kraken CLI (works without an API key, falls back to deterministic mock)
 python scripts/check_kraken_cli.py
 
-# Full deterministic test suite (~5 s)
-pytest                                        # expected: 232 passed
+# Full deterministic test suite (~2 min)
+pytest                                        # expected: 894 passed (2026-05-21)
 
 # One full agent cycle, no order placed (uses the mock transport if no CLI is installed)
 python scripts/dry_run_once.py
@@ -82,7 +82,7 @@ cd kraken-alpha-agent
 python -m venv .venv && .venv\Scripts\Activate.ps1   # source .venv/bin/activate on macOS/Linux
 pip install -r requirements.txt
 copy .env.example .env                               # cp .env.example .env
-pytest                                               # 232 tests, ~5s
+pytest                                               # 894 tests, ~2 min
 python scripts/dry_run_once.py                       # one full cycle, no orders
 uvicorn src.dashboard.app:app --reload               # http://127.0.0.1:8000
 ```
@@ -137,6 +137,9 @@ For the full "paper competition" runbook see
 ```
 
 ## Architecture
+
+See [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) for the full map (agent vs research vs observation ops).
+Quality gates: [`docs/QUALITY.md`](./docs/QUALITY.md) · Decisions: [`docs/DECISIONS.md`](./docs/DECISIONS.md)
 
 | Layer            | File                         | Responsibility                                                 |
 |------------------|------------------------------|----------------------------------------------------------------|

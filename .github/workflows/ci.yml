@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: ["master", "phase30/**", "phase**"]
+  pull_request:
+    branches: ["master", "phase30/**", "phase**"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run pytest (mock CLI transport)
+        env:
+          KRAKEN_CLI_TRANSPORT: mock
+          TRADING_MODE: dry_run
+          LIVE_TRADING: "false"
+          ALLOW_LIVE_ORDERS: "false"
+        run: python -m pytest -q
