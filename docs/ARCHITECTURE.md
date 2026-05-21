@@ -19,6 +19,16 @@ Deux dashboards coexistent :
 
 ---
 
+Entrypoints distincts (ne pas confondre) :
+
+| Surface | Entrypoint script | Orchestrateur | Risk / portfolio |
+|---------|-------------------|---------------|------------------|
+| Agent compétition | `scripts/run_agent_loop.py`, `dry_run_once.py` | `src/main.py` | `src/risk.py`, `src/portfolio.py` |
+| Recherche / backtest | `scripts/run_*_phase*.py` | runners phase | `src/bot/risk_manager.py`, `src/bot/portfolio.py` |
+| Observation forward | `scripts/ops_run_observation_once_phase30.*` | `run_overlay_observation_daemon_phase28.py` | overlay bot (paper only) |
+
+---
+
 ## Pipeline agent (live / paper / dry_run)
 
 ```

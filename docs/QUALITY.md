@@ -54,7 +54,7 @@ Pas de secrets GitHub requis. Pas d’appels Kraken.
 |-------|--------|
 | `.env` | Gitignored — jamais committer |
 | `.env.example` | Placeholders vides uniquement |
-| Logs | `src/logger.py` masque `KRAKEN_API_KEY`, `KRAKEN_API_SECRET`, `FEATHERLESS_API_KEY` |
+| Logs | `src/logger.py` masque env `KRAKEN_*`, `FEATHERLESS_*`, `VULTR_*`, suffixes `*_KEY` / `*_SECRET` / `*_TOKEN`, en-têtes Authorization, clés privées PEM, blobs base64-like ; `sanitize_payload()` pour structures JSON |
 | Audit export | `scripts/export_audit_bundle.py` redact secrets |
 | Live | Triple opt-in : `TRADING_MODE=live` + `LIVE_TRADING=true` + `ALLOW_LIVE_ORDERS=true` |
 

@@ -68,6 +68,14 @@ Décisions enregistrées à partir de l’état du dépôt et de `AGENTS.md`. Fo
 
 ---
 
+## ADR-011 — Séparation entrypoints agent vs recherche
+
+**Contexte :** Deux pipelines coexistent (`src/main.py` vs `src/bot/` + scripts phase) avec des modules homonymes (`portfolio`, `risk`).  
+**Décision :** L’agent compétition passe exclusivement par `scripts/dry_run_once.py` / `scripts/run_agent_loop.py` → `src/main.py` → `src/risk.py` + `src/execution.py` + `src/portfolio.py`. La recherche et l’observation forward passent par `scripts/run_*_phase*.py` et `scripts/ops_run_observation_once_phase30.*` → `src/bot/` (+ collectors) sans importer `src/main.py`.  
+**Conséquences :** Pas de fusion des modules homonymes ; les tests agent (`tests/test_risk.py`, `tests/test_dry_run_safety.py`) ne couvrent pas le paper engine bot ; l’observation Phase 28–30 écrit sous `reports/paper_observation_phase28/` (gitignored).
+
+---
+
 ## ADR-009 — Pas de CI avant audit 2026-05-21
 
 **Contexte :** Validation manuelle uniquement.  
