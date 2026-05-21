@@ -70,6 +70,19 @@ ${PYTHON} scripts/generate_overlay_observation_report_phase28.py \
 log "Aggregating observation metrics (Phase 29)"
 ${PYTHON} scripts/aggregate_observation_metrics_phase29.py >>"${LOG_FILE}" 2>&1
 
+log "Generating observation dashboard (Phase 30.2)"
+if ! ${PYTHON} scripts/generate_observation_dashboard_phase30.py >>"${LOG_FILE}" 2>&1; then
+  warn "generate_observation_dashboard_phase30.py failed"
+  REPORT_FAIL=1
+else
+  REPORT_FAIL=0
+fi
+
+log "Generating observation alerts (Phase 30.3)"
+if ! ${PYTHON} scripts/generate_observation_alerts_phase30.py >>"${LOG_FILE}" 2>&1; then
+  warn "generate_observation_alerts_phase30.py returned non-zero (STOP flag?)"
+fi
+
 log "Checking state.json legacy metadata"
 LEGACY_WARNINGS="$(
   cd "${REPO_ROOT}"
@@ -92,6 +105,10 @@ if [[ -n "${LEGACY_WARNINGS}" ]]; then
   done <<<"${LEGACY_WARNINGS}"
 else
   log "state.json legacy check: OK"
+fi
+
+if [[ "${REPORT_FAIL:-0}" -eq 1 ]]; then
+  warn "dashboard generation failed — see alerts.json after manual regen"
 fi
 
 log "Phase 30 observation once complete — log=${LOG_FILE}"

@@ -105,6 +105,19 @@ Write-OpsLog "Aggregating observation metrics Phase 29"
     Tee-Object -FilePath $LogFile -Append
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+$ReportFail = $false
+Write-OpsLog "Generating observation dashboard Phase 30.2"
+& $Python scripts/generate_observation_dashboard_phase30.py 2>&1 |
+    Tee-Object -FilePath $LogFile -Append
+if ($LASTEXITCODE -ne 0) { $ReportFail = $true; Write-OpsWarn "generate_observation_dashboard_phase30.py failed" }
+
+Write-OpsLog "Generating observation alerts Phase 30.3"
+& $Python scripts/generate_observation_alerts_phase30.py 2>&1 |
+    Tee-Object -FilePath $LogFile -Append
+if ($LASTEXITCODE -ne 0) {
+    Write-OpsWarn "generate_observation_alerts_phase30.py returned non-zero (STOP flag?)"
+}
+
 Write-OpsLog "Checking state.json legacy metadata"
 $LegacyScript = Join-Path $env:TEMP ("phase30_legacy_check_{0}.py" -f $Timestamp)
 @'
@@ -136,6 +149,10 @@ try {
     if (Test-Path $LegacyScript) {
         Remove-Item $LegacyScript -Force
     }
+}
+
+if ($ReportFail) {
+    Write-OpsWarn "dashboard generation failed - see alerts.json after manual regen"
 }
 
 Write-OpsLog ("Phase 30 observation once complete - log=" + $LogFile)

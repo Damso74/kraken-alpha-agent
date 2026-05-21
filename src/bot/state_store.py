@@ -23,6 +23,9 @@ class DaemonState:
     iteration: int = 0
     mode: str = "observation"
     updated_at_utc: str = ""
+    overlay: str = ""
+    state_schema_version: int = 0
+    migrated_from_legacy: bool = False
 
 
 @dataclass
@@ -70,6 +73,10 @@ def recover_from_partial_write(path: Path) -> bool:
     return False
 
 
+def _daemon_state_fields() -> frozenset[str]:
+    return frozenset(DaemonState.__dataclass_fields__)
+
+
 def load_state(state_dir: Path | str) -> StateBundle:
     root = Path(state_dir)
     bundle = StateBundle()
@@ -78,7 +85,17 @@ def load_state(state_dir: Path | str) -> StateBundle:
     recover_from_partial_write(sp)
     if sp.is_file():
         raw = json.loads(sp.read_text(encoding="utf-8"))
-        bundle.state = DaemonState(**raw)
+        if isinstance(raw, dict):
+            from src.bot.observation_state_migration import (
+                is_legacy_observation_state,
+                migrate_observation_state,
+            )
+
+            target_id = root.name
+            if is_legacy_observation_state(raw, target_id):
+                raw = migrate_observation_state(raw, target_id)
+            fields = _daemon_state_fields()
+            bundle.state = DaemonState(**{k: v for k, v in raw.items() if k in fields})
     if pp.is_file():
         raw = json.loads(pp.read_text(encoding="utf-8"))
         bundle.positions = {

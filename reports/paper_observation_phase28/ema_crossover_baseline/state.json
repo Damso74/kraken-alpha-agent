@@ -1,12 +1,15 @@
 {
-  "asset": "BTC",
-  "timeframe": "1d",
-  "strategy": "regime_router",
+  "asset": "ETH",
+  "timeframe": "4h",
+  "strategy": "ema_crossover+funding_basis",
   "cash_usd": 965.8844390644817,
   "last_processed_timestamp": 1779264000,
   "last_bar_index": 6602,
   "equity": 965.8844390644817,
   "iteration": 1,
   "mode": "observation",
-  "updated_at_utc": "2026-05-21T09:50:15.171590+00:00"
+  "updated_at_utc": "2026-05-21T09:50:15.171590+00:00",
+  "overlay": "funding_basis",
+  "state_schema_version": 1,
+  "migrated_from_legacy": true
 }

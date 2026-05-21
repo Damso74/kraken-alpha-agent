@@ -1,6 +1,6 @@
 # Phase 29 — Observation monitoring
 
-> Generated: 2026-05-21T10:14:35.921522+00:00 UTC
+> Generated: 2026-05-21T10:21:35.106197+00:00 UTC
 
 > **PAPER OBSERVATION ONLY — no live trading, no Kraken private API.**
 
