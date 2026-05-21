@@ -1,0 +1,120 @@
+{
+  "generated_at_utc": "2026-05-21T10:01:25.524937+00:00",
+  "phase": 29,
+  "observation_base": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\reports\\paper_observation_phase28",
+  "stop_observation_active": false,
+  "stop_observation_path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\reports\\paper_observation_phase28\\STOP_OBSERVATION",
+  "targets": [
+    {
+      "target": "trend_following_baseline",
+      "state_dir": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\reports\\paper_observation_phase28\\trend_following_baseline",
+      "observation_only": true,
+      "decision_count": 1,
+      "shadow_row_count": 1,
+      "trade_count": 114,
+      "overlay_decisions": {
+        "allow": 1,
+        "block": 0,
+        "reduce": 0,
+        "neutral": 0
+      },
+      "block_rate_on_signals": 0.0,
+      "reduce_rate_on_decisions": 0.0,
+      "stale_data_count": 0,
+      "error_count": 0,
+      "errors_tail": [],
+      "equity": {
+        "overlay_usd": 1112.0884,
+        "overlay_return_pct_from_1k": 11.2088,
+        "buy_hold_return_pct_proxy": 0.0,
+        "standalone_return_pct": null,
+        "max_drawdown_pct": 0.0
+      },
+      "shadow_proxies": {
+        "missed_upside_bars": 0,
+        "avoided_drawdown_bars": 0,
+        "blocks": 0,
+        "reductions": 0
+      },
+      "kill_criteria": {
+        "should_kill": false,
+        "reasons": [],
+        "metrics": {
+          "shadow_summary": {
+            "count": 1,
+            "blocks": 0,
+            "reductions": 0,
+            "standalone_trades": 0,
+            "block_rate_on_signals": 0.0
+          },
+          "trade_count": 114,
+          "incoherent_blocks": 0
+        }
+      },
+      "state_meta": {
+        "iteration": 1,
+        "last_processed_timestamp": 1779264000,
+        "mode": "observation"
+      }
+    },
+    {
+      "target": "ema_crossover_baseline",
+      "state_dir": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\reports\\paper_observation_phase28\\ema_crossover_baseline",
+      "observation_only": true,
+      "decision_count": 1,
+      "shadow_row_count": 1,
+      "trade_count": 100,
+      "overlay_decisions": {
+        "allow": 1,
+        "block": 0,
+        "reduce": 0,
+        "neutral": 0
+      },
+      "block_rate_on_signals": 0.0,
+      "reduce_rate_on_decisions": 0.0,
+      "stale_data_count": 0,
+      "error_count": 0,
+      "errors_tail": [],
+      "equity": {
+        "overlay_usd": 965.8844,
+        "overlay_return_pct_from_1k": -3.4116,
+        "buy_hold_return_pct_proxy": 0.0,
+        "standalone_return_pct": null,
+        "max_drawdown_pct": 0.0
+      },
+      "shadow_proxies": {
+        "missed_upside_bars": 0,
+        "avoided_drawdown_bars": 0,
+        "blocks": 0,
+        "reductions": 0
+      },
+      "kill_criteria": {
+        "should_kill": false,
+        "reasons": [],
+        "metrics": {
+          "shadow_summary": {
+            "count": 1,
+            "blocks": 0,
+            "reductions": 0,
+            "standalone_trades": 0,
+            "block_rate_on_signals": 0.0
+          },
+          "trade_count": 100,
+          "incoherent_blocks": 0
+        }
+      },
+      "state_meta": {
+        "iteration": 1,
+        "last_processed_timestamp": 1779264000,
+        "mode": "observation"
+      }
+    }
+  ],
+  "summary": {
+    "target_count": 2,
+    "total_decisions": 2,
+    "total_trades": 214,
+    "any_kill_triggered": false,
+    "observation_only": true
+  }
+}
