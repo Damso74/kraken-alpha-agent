@@ -1,0 +1,115 @@
+{
+  "status": "warning",
+  "generated_at_utc": "2026-05-21T10:34:58.217638+00:00",
+  "checks": [
+    {
+      "name": "stop_observation",
+      "status": "pass",
+      "message": "STOP_OBSERVATION absent"
+    },
+    {
+      "name": "summary_present",
+      "status": "pass",
+      "message": "summary loaded from summary.json"
+    },
+    {
+      "name": "targets_present",
+      "status": "pass",
+      "message": "target_count=2",
+      "details": {
+        "target_count": 2
+      }
+    },
+    {
+      "name": "observation_only",
+      "status": "pass",
+      "message": "observation_only=true"
+    },
+    {
+      "name": "state_eth_4h_trend_following_baseline",
+      "status": "pass",
+      "message": "trend_following_baseline: ETH 4h metadata OK"
+    },
+    {
+      "name": "state_eth_4h_ema_crossover_baseline",
+      "status": "pass",
+      "message": "ema_crossover_baseline: ETH 4h metadata OK"
+    },
+    {
+      "name": "state_legacy",
+      "status": "pass",
+      "message": "no legacy state metadata warnings"
+    },
+    {
+      "name": "alerts_present",
+      "status": "pass",
+      "message": "alerts.json loaded"
+    },
+    {
+      "name": "alerts_critical",
+      "status": "pass",
+      "message": "no critical alerts"
+    },
+    {
+      "name": "alerts_warning",
+      "status": "pass",
+      "message": "no warning alerts"
+    },
+    {
+      "name": "ops_log_freshness",
+      "status": "pass",
+      "message": "latest log 20260521_101417.log is 0.3h old",
+      "details": {
+        "latest_log": "20260521_101417.log",
+        "age_hours": 0.34
+      }
+    },
+    {
+      "name": "dashboard_present",
+      "status": "pass",
+      "message": "dashboard at dashboard.html"
+    },
+    {
+      "name": "dashboard_freshness",
+      "status": "pass",
+      "message": "dashboard is 0.2h old",
+      "details": {
+        "age_hours": 0.19222503158781262
+      }
+    },
+    {
+      "name": "last_processed_trend_following_baseline",
+      "status": "warning",
+      "message": "last_processed_timestamp age 26.6h",
+      "details": {
+        "target": "trend_following_baseline",
+        "age_hours": 26.582839366396268
+      }
+    },
+    {
+      "name": "last_processed_ema_crossover_baseline",
+      "status": "warning",
+      "message": "last_processed_timestamp age 26.6h",
+      "details": {
+        "target": "ema_crossover_baseline",
+        "age_hours": 26.582839366396268
+      }
+    },
+    {
+      "name": "no_new_candle_info",
+      "status": "pass",
+      "message": "only no_new_candle info alerts (awaiting next 4h bar)"
+    }
+  ],
+  "summary": {
+    "fail_count": 0,
+    "warning_count": 2,
+    "pass_count": 14,
+    "check_total": 16,
+    "alerts_critical_count": 0,
+    "alerts_warning_count": 0,
+    "cron_active": false,
+    "stop_observation_active": false,
+    "observation_base": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\reports\\paper_observation_phase28"
+  }
+}

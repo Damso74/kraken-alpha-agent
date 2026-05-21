@@ -111,4 +111,14 @@ if [[ "${REPORT_FAIL:-0}" -eq 1 ]]; then
   warn "dashboard generation failed — see alerts.json after manual regen"
 fi
 
+log "Running observation healthcheck (Phase 30.4, fail-soft)"
+if ! ${PYTHON} scripts/check_observation_health_phase30.py --cron-active >>"${LOG_FILE}" 2>&1; then
+  warn "healthcheck reported fail — see HEALTHCHECK.md / healthcheck.json"
+fi
+
+log "Generating observation ops digest (Phase 30.4, fail-soft)"
+if ! ${PYTHON} scripts/generate_observation_ops_digest_phase30.py >>"${LOG_FILE}" 2>&1; then
+  warn "ops digest generation failed"
+fi
+
 log "Phase 30 observation once complete — log=${LOG_FILE}"

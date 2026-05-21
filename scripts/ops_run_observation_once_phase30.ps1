@@ -155,4 +155,29 @@ if ($ReportFail) {
     Write-OpsWarn "dashboard generation failed - see alerts.json after manual regen"
 }
 
+Write-OpsLog "Running observation healthcheck Phase 30.4 fail-soft"
+$prevEap = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+try {
+    & $Python scripts/check_observation_health_phase30.py --cron-active 2>&1 |
+        Tee-Object -FilePath $LogFile -Append
+    if ($LASTEXITCODE -ne 0) {
+        Write-OpsWarn "healthcheck reported fail - see HEALTHCHECK.md / healthcheck.json"
+    }
+} finally {
+    $ErrorActionPreference = $prevEap
+}
+
+Write-OpsLog "Generating observation ops digest Phase 30.4 fail-soft"
+$ErrorActionPreference = "Continue"
+try {
+    & $Python scripts/generate_observation_ops_digest_phase30.py 2>&1 |
+        Tee-Object -FilePath $LogFile -Append
+    if ($LASTEXITCODE -ne 0) {
+        Write-OpsWarn "ops digest generation failed"
+    }
+} finally {
+    $ErrorActionPreference = $prevEap
+}
+
 Write-OpsLog ("Phase 30 observation once complete - log=" + $LogFile)
