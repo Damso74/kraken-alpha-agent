@@ -1,0 +1,12 @@
+{
+  "asset": "BTC",
+  "timeframe": "1d",
+  "strategy": "regime_router",
+  "cash_usd": 1112.088358312647,
+  "last_processed_timestamp": 1779264000,
+  "last_bar_index": 6602,
+  "equity": 1112.088358312647,
+  "iteration": 1,
+  "mode": "observation",
+  "updated_at_utc": "2026-05-21T09:50:12.308818+00:00"
+}

@@ -83,3 +83,16 @@ Voir `src/bot/metrics.py`. `micro_live_candidate` nécessite `allow_micro_live=T
 - Verdicts tournoi : `kill`, `blocked_data`, `weak`, `overlay_only` — **validation_candidate = 0** (OI experimental).
 - Micro-live : **NO-GO** (`reports/MICRO_LIVE_GO_NO_GO_PHASE27.md`).
 - Synthèse : `reports/PHASE27_DERIVATIVES_BASIS_OVERLAY.md`.
+
+## Phase 28 — ETH 4h overlay paper observation (addendum)
+
+- Daemon observation-only : `scripts/run_overlay_observation_daemon_phase28.py` (`--observation-only` default true).
+- Cibles : ETH 4h `trend_following/baseline` + `ema_crossover/baseline` avec overlay `funding_basis`.
+- Moteur : `src/bot/overlay_observation_engine.py` (cache-only, paper sim local).
+- Shadow compare : `src/bot/overlay_shadow_compare.py` → `shadow_comparison.jsonl`.
+- Kill criteria : `src/bot/overlay_observation_kill.py` + `reports/paper_observation_phase28/KILL_CRITERIA.md`.
+- Flag stop : `reports/paper_observation_phase28/STOP_OBSERVATION`.
+- Rapports : `scripts/generate_overlay_observation_report_phase28.py` → `daily_summary_*.md` / `weekly_summary_*.md`.
+- État : `reports/paper_observation_phase28/{strategy}_{variant}/`.
+- Micro-live : **NO-GO** (`reports/MICRO_LIVE_GO_NO_GO_PHASE28.md`) — besoin 2–4 semaines observation.
+- Setup : `reports/PHASE28_SETUP.md` ; synthèse : `reports/PHASE28_ETH4H_OVERLAY_OBSERVATION.md`.

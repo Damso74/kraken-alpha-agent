@@ -7,7 +7,7 @@ import json
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping, Sequence
 
 
 @dataclass
@@ -125,4 +125,119 @@ def write_daily_report(state_dir: Path | str, output_dir: Path | str) -> Path:
     out_root.mkdir(parents=True, exist_ok=True)
     path = out_root / f"daily_summary_{data.report_date}.md"
     path.write_text(render_daily_report_md(data), encoding="utf-8")
+    return path
+
+
+def build_overlay_observation_report(
+    state_dir: Path | str,
+    *,
+    report_date: date | None = None,
+) -> dict[str, Any]:
+    """Phase 28 overlay observation daily metrics."""
+    from src.bot.overlay_shadow_compare import load_shadow_comparisons, summarize_shadow
+
+    root = Path(state_dir)
+    rd = report_date or datetime.now(UTC).date()
+    base = build_daily_report(root, report_date=rd)
+    shadows = load_shadow_comparisons(root)
+    today_rows = [r for r in shadows if str(r.get("timestamp", "")).startswith(str(rd))]
+    if not today_rows and shadows:
+        today_rows = shadows[-5:]
+    summary = summarize_shadow(shadows)
+    last = shadows[-1] if shadows else {}
+    return {
+        "report_date": rd.isoformat(),
+        "equity": base.equity,
+        "pnl_day": base.pnl_day,
+        "drawdown_pct": base.drawdown_pct,
+        "raw_signal": last.get("raw_signal", "n/a"),
+        "overlay_decision": last.get("overlay_decision", "n/a"),
+        "overlay_reason": last.get("overlay_reason", ""),
+        "funding_z": last.get("funding_z"),
+        "basis_z": last.get("basis_z"),
+        "blocks_total": summary["blocks"],
+        "reductions_total": summary["reductions"],
+        "block_rate": summary["block_rate_on_signals"],
+        "shadow_rows_today": len(today_rows),
+        "errors": base.errors,
+        "open_positions": base.open_positions,
+    }
+
+
+def render_overlay_observation_md(data: Mapping[str, Any]) -> str:
+    lines = [
+        f"# Overlay observation daily — {data['report_date']}",
+        "",
+        "> **PAPER OBSERVATION ONLY — no live trading, no Kraken private API.**",
+        "",
+        "## Signal & overlay",
+        f"- Raw signal: `{data.get('raw_signal', 'n/a')}`",
+        f"- Overlay decision: `{data.get('overlay_decision', 'n/a')}`",
+        f"- Overlay reason: {data.get('overlay_reason', '')}",
+        f"- Funding z: {data.get('funding_z')}",
+        f"- Basis z: {data.get('basis_z')}",
+        "",
+        "## Paper portfolio",
+        f"- Equity: **{data.get('equity', 0):.2f}** USD",
+        f"- PnL day: {data.get('pnl_day', 0):+.2f} USD",
+        f"- Drawdown (curve): {data.get('drawdown_pct', 0):.2f}%",
+        f"- Open positions: {len(data.get('open_positions', []))}",
+        "",
+        "## Shadow comparison (cumulative)",
+        f"- Blocks: {data.get('blocks_total', 0)}",
+        f"- Reductions: {data.get('reductions_total', 0)}",
+        f"- Block rate on standalone signals: {data.get('block_rate', 0):.2%}",
+        f"- Shadow rows today: {data.get('shadow_rows_today', 0)}",
+        "",
+    ]
+    errors = data.get("errors") or []
+    if errors:
+        lines.append("## Stale / errors")
+        for e in errors:
+            lines.append(f"- `{e}`")
+        lines.append("")
+    return "\n".join(lines)
+
+
+def write_overlay_observation_report(
+    state_dir: Path | str,
+    output_dir: Path | str,
+    *,
+    report_date: date | None = None,
+) -> Path:
+    data = build_overlay_observation_report(state_dir, report_date=report_date)
+    out_root = Path(output_dir)
+    out_root.mkdir(parents=True, exist_ok=True)
+    path = out_root / f"daily_summary_{data['report_date']}.md"
+    path.write_text(render_overlay_observation_md(data), encoding="utf-8")
+    return path
+
+
+def write_weekly_overlay_report(
+    state_dirs: Sequence[Path | str],
+    output_dir: Path | str,
+    *,
+    week_label: str | None = None,
+) -> Path:
+    rd = datetime.now(UTC).date()
+    iso = rd.isocalendar()
+    label = week_label or f"{iso.year}-W{iso.week:02d}"
+    sections: list[str] = [
+        f"# Overlay observation weekly — {label}",
+        "",
+        "> **PAPER OBSERVATION ONLY.**",
+        "",
+    ]
+    for sd in state_dirs:
+        data = build_overlay_observation_report(sd)
+        name = Path(sd).name
+        sections.append(f"## {name}")
+        sections.append(f"- Equity: {data['equity']:.2f} USD")
+        sections.append(f"- Blocks: {data['blocks_total']} | Reductions: {data['reductions_total']}")
+        sections.append(f"- Block rate: {data['block_rate']:.2%}")
+        sections.append("")
+    out_root = Path(output_dir)
+    out_root.mkdir(parents=True, exist_ok=True)
+    path = out_root / f"weekly_summary_{label}.md"
+    path.write_text("\n".join(sections), encoding="utf-8")
     return path
