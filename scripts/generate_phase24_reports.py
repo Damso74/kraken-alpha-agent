@@ -111,21 +111,23 @@ def generate_all(reports_dir: Path) -> None:
 
     # PHASE24_NEXT_DECISION.md
     if vc == 0 and pc == 0:
-        option = "**Option A** — Pas d'alpha robuste : documenter échec, ne pas paper/live."
-        opt_b = "Option B — Étendre cache actifs majeurs (XRP/ADA si fetch manuel) puis re-WF."
-        opt_c = "Option C — Revoir uniquement gates WF (holdout %) sans tuning stratégies."
-        opt_d = "Option D — Phase 25 paper review si 1 validation_candidate + red team dédié."
+        option = "**Option A** — Pas d'alpha robuste : documenter l'échec, pas de paper/live."
+        opt_b = "Étendre le cache (actifs majeurs supplémentaires) puis re-auditer."
+        opt_c = "Sensibilité holdout % uniquement (sans retuning stratégies)."
+        opt_d = "Phase 25 paper review seulement si un futur run passe les gates strictes."
     elif vc > 0 and pc == 0:
         option = (
             f"**Option D** — {vc} `validation_candidate` : Phase 25 paper review "
-            "(ultra-strict, pas micro-live)."
+            "(ultra-strict, red team dédié, pas micro-live)."
         )
-        opt_b = "Option B — Compléter données avant paper."
-        opt_c = "Option C — Holdout sensitivity seulement si instable."
-        opt_d = "Option A — Stop si red team échoue."
+        opt_b = "Compléter données / re-WF avant toute observation paper."
+        opt_c = "Affiner gates WF si le candidat est instable sur d'autres holdout %."
+        opt_d = "Paper daemon observation 2–4 semaines (cache-only)."
     else:
-        option = "**Option A** — Anomalie paper_candidate : bloquer et investiguer."
-        opt_b = opt_c = opt_d = ""
+        option = "**Option A** — Anomalie `paper_candidate` : bloquer et investiguer."
+        opt_b = "Audit gates Phase 24."
+        opt_c = "Re-run WF après correctif."
+        opt_d = "Pas de paper/live."
 
     next_lines = [
         "# Phase 24 — Next decision",
@@ -137,9 +139,9 @@ def generate_all(reports_dir: Path) -> None:
         "## Options",
         "",
         "- **A** — Zéro candidat documenté ; pas de paper/live.",
-        f"- **B** — {opt_b or 'Étendre backbone données (cache-only build).'}",
-        f"- **C** — {opt_c or 'Sensibilité fenêtres uniquement.'}",
-        f"- **D** — {opt_d or 'Paper review Phase 25.'}",
+        f"- **B** — {opt_b}",
+        f"- **C** — {opt_c}",
+        f"- **D** — {opt_d}",
         "",
         "## Micro-live",
         "",
