@@ -41,6 +41,14 @@ env/
 # Runtime logs
 *.log
 
+# Forward observation / paper daemon runtime state (never commit live state)
+reports/paper_daemon_state/
+reports/paper_observation_phase28/**/*
+!reports/paper_observation_phase28/**/.gitkeep
+reports/phase29_observation_metrics/summary.json
+reports/phase30_observation_alerts/
+reports/phase30_observation_ops_digest/
+
 # IDE / OS
 .idea/
 .vscode/
