@@ -70,3 +70,16 @@ Voir `src/bot/metrics.py`. `micro_live_candidate` nécessite `allow_micro_live=T
 - Verdicts autorisés : `kill`, `blocked_data`, `weak`, `overlay_only`, `validation_candidate`, `paper_candidate_derivatives` (recherche — pas live).
 - Micro-live : **NO-GO** (`reports/MICRO_LIVE_GO_NO_GO_PHASE26.md`).
 - Synthèse : `reports/PHASE26_DERIVATIVES_CROWDING_BLOCK.md`.
+
+## Phase 27 — derivatives basis + overlay autopsy (addendum)
+
+- Basis collector : `src/data/collectors/binance_basis_public.py` (spot vs mark-price perp, aligné 4h).
+- Caches gitignored : `data/collector_cache/basis_{TICKER}_{4h|1d}.json`.
+- Build : `python scripts/build_basis_cache_phase27.py` ; manifest : `reports/data_manifests_phase27/basis_readiness.json`.
+- Overlay funding+basis : `src/bot/basis_crowding_overlay.py` + `scripts/run_basis_overlay_tournament_phase27.py`.
+- OI depth audit : `scripts/audit_derivatives_depth_phase27.py` → OI **experimental** si <500 rows / <180j (exclu des gates `validation_candidate`).
+- ETH 4h autopsy (3 cibles Phase 26 overlay_only) : `scripts/run_eth4h_overlay_autopsy_phase27.py`.
+- Verdicts autopsy : `useful_overlay` | `decorative` | `kill_overlay`.
+- Verdicts tournoi : `kill`, `blocked_data`, `weak`, `overlay_only` — **validation_candidate = 0** (OI experimental).
+- Micro-live : **NO-GO** (`reports/MICRO_LIVE_GO_NO_GO_PHASE27.md`).
+- Synthèse : `reports/PHASE27_DERIVATIVES_BASIS_OVERLAY.md`.

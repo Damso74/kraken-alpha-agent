@@ -1,0 +1,214 @@
+{
+  "oi_depth": {
+    "generated_at": "2026-05-21T09:08:33Z",
+    "oi_wf_serious_min_rows": 500,
+    "entries": [
+      {
+        "asset": "BTC",
+        "period": "4h",
+        "path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\oi_BTC_4h.json",
+        "row_count": 180,
+        "span_days": 29.8,
+        "binance_api_max_lookback_days": 30,
+        "wf_serious": false,
+        "gate_status": "available",
+        "validation_candidate_eligible": false,
+        "label": "experimental",
+        "notes": "Binance openInterestHist \u224830d rolling window; no longer public history without paid aggregator."
+      },
+      {
+        "asset": "BTC",
+        "period": "1d",
+        "path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\oi_BTC_1d.json",
+        "row_count": 30,
+        "span_days": 29.0,
+        "binance_api_max_lookback_days": 30,
+        "wf_serious": false,
+        "gate_status": "available",
+        "validation_candidate_eligible": false,
+        "label": "experimental",
+        "notes": "Binance openInterestHist \u224830d rolling window; no longer public history without paid aggregator."
+      },
+      {
+        "asset": "ETH",
+        "period": "4h",
+        "path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\oi_ETH_4h.json",
+        "row_count": 180,
+        "span_days": 29.8,
+        "binance_api_max_lookback_days": 30,
+        "wf_serious": false,
+        "gate_status": "available",
+        "validation_candidate_eligible": false,
+        "label": "experimental",
+        "notes": "Binance openInterestHist \u224830d rolling window; no longer public history without paid aggregator."
+      },
+      {
+        "asset": "ETH",
+        "period": "1d",
+        "path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\oi_ETH_1d.json",
+        "row_count": 30,
+        "span_days": 29.0,
+        "binance_api_max_lookback_days": 30,
+        "wf_serious": false,
+        "gate_status": "available",
+        "validation_candidate_eligible": false,
+        "label": "experimental",
+        "notes": "Binance openInterestHist \u224830d rolling window; no longer public history without paid aggregator."
+      },
+      {
+        "asset": "SOL",
+        "period": "4h",
+        "path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\oi_SOL_4h.json",
+        "row_count": 0,
+        "span_days": 0.0,
+        "binance_api_max_lookback_days": 30,
+        "wf_serious": false,
+        "gate_status": "blocked_data",
+        "validation_candidate_eligible": false,
+        "label": "experimental",
+        "notes": "Binance openInterestHist \u224830d rolling window; no longer public history without paid aggregator."
+      },
+      {
+        "asset": "SOL",
+        "period": "1d",
+        "path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\oi_SOL_1d.json",
+        "row_count": 0,
+        "span_days": 0.0,
+        "binance_api_max_lookback_days": 30,
+        "wf_serious": false,
+        "gate_status": "blocked_data",
+        "validation_candidate_eligible": false,
+        "label": "experimental",
+        "notes": "Binance openInterestHist \u224830d rolling window; no longer public history without paid aggregator."
+      }
+    ],
+    "experimental_count": 6,
+    "coinglass_public": "not_integrated_requires_api_key",
+    "recommendation": "Keep OI experimental; exclude from validation_candidate gates until a documented long-history source is wired."
+  },
+  "derivatives": {
+    "generated_at": "2026-05-21T09:08:33Z",
+    "cache_root": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache",
+    "entries": [
+      {
+        "asset": "BTC",
+        "series": "funding",
+        "path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\funding_BTC.json",
+        "status": "available",
+        "row_count": 1000,
+        "blocked_reason": null
+      },
+      {
+        "asset": "BTC",
+        "series": "open_interest_4h",
+        "path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\oi_BTC_4h.json",
+        "status": "available",
+        "row_count": 180,
+        "blocked_reason": null
+      },
+      {
+        "asset": "BTC",
+        "series": "open_interest_1d",
+        "path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\oi_BTC_1d.json",
+        "status": "available",
+        "row_count": 30,
+        "blocked_reason": null
+      },
+      {
+        "asset": "ETH",
+        "series": "funding",
+        "path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\funding_ETH.json",
+        "status": "available",
+        "row_count": 1000,
+        "blocked_reason": null
+      },
+      {
+        "asset": "ETH",
+        "series": "open_interest_4h",
+        "path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\oi_ETH_4h.json",
+        "status": "available",
+        "row_count": 180,
+        "blocked_reason": null
+      },
+      {
+        "asset": "ETH",
+        "series": "open_interest_1d",
+        "path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\oi_ETH_1d.json",
+        "status": "available",
+        "row_count": 30,
+        "blocked_reason": null
+      },
+      {
+        "asset": "SOL",
+        "series": "funding",
+        "path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\funding_SOL.json",
+        "status": "blocked_data",
+        "row_count": 0,
+        "blocked_reason": "cache file missing"
+      },
+      {
+        "asset": "SOL",
+        "series": "open_interest_4h",
+        "path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\oi_SOL_4h.json",
+        "status": "blocked_data",
+        "row_count": 0,
+        "blocked_reason": "cache file missing"
+      },
+      {
+        "asset": "SOL",
+        "series": "open_interest_1d",
+        "path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\oi_SOL_1d.json",
+        "status": "blocked_data",
+        "row_count": 0,
+        "blocked_reason": "cache file missing"
+      },
+      {
+        "asset": "*",
+        "series": "liquidations",
+        "path": "",
+        "status": "blocked_data",
+        "row_count": 0,
+        "blocked_reason": "Binance /fapi/v1/allForceOrders is a short rolling window only; no stable public historical liquidation series in repo."
+      }
+    ],
+    "available_count": 6,
+    "entries_total": 10,
+    "liquidations": {
+      "status": "blocked_data",
+      "reason": "Binance /fapi/v1/allForceOrders is a short rolling window only; no stable public historical liquidation series in repo."
+    }
+  },
+  "basis": {
+    "generated_at": "2026-05-21T09:08:33Z",
+    "cache_root": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache",
+    "timeframe": "4h",
+    "entries": [
+      {
+        "asset": "BTC",
+        "series": "basis_4h",
+        "path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\basis_BTC_4h.json",
+        "status": "available",
+        "row_count": 6603,
+        "blocked_reason": null
+      },
+      {
+        "asset": "ETH",
+        "series": "basis_4h",
+        "path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\basis_ETH_4h.json",
+        "status": "available",
+        "row_count": 6603,
+        "blocked_reason": null
+      },
+      {
+        "asset": "SOL",
+        "series": "basis_4h",
+        "path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\basis_SOL_4h.json",
+        "status": "blocked_data",
+        "row_count": 0,
+        "blocked_reason": "cache file missing"
+      }
+    ],
+    "available_count": 2,
+    "entries_total": 3
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "generated_at": "2026-05-21T09:06:06Z",
+  "cache_root": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache",
+  "timeframe": "4h",
+  "entries": [
+    {
+      "asset": "BTC",
+      "series": "basis_4h",
+      "path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\basis_BTC_4h.json",
+      "status": "available",
+      "row_count": 6603,
+      "blocked_reason": null
+    },
+    {
+      "asset": "ETH",
+      "series": "basis_4h",
+      "path": "C:\\Users\\credo\\Documents\\Code_Informatique\\Projets-en-cours\\kraken-alpha-agent\\data\\collector_cache\\basis_ETH_4h.json",
+      "status": "available",
+      "row_count": 6603,
+      "blocked_reason": null
+    }
+  ],
+  "available_count": 2,
+  "entries_total": 2
+}
