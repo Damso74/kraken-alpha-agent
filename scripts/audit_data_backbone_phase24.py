@@ -92,6 +92,12 @@ def _parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Phase 24 OHLCV data backbone audit")
     p.add_argument("--cache-root", type=Path, default=DEFAULT_CACHE_ROOT)
     p.add_argument("--report-dir", type=Path, default=DEFAULT_REPORT_DIR)
+    p.add_argument(
+        "--summary-md",
+        type=Path,
+        default=None,
+        help="Chemin du rapport markdown. Par defaut le parent de --report-dir.",
+    )
     p.add_argument("--assets", nargs="+", default=list(PHASE24_REQUIRED_ASSETS))
     p.add_argument("--timeframes", nargs="+", default=list(PHASE24_TIMEFRAMES))
     p.add_argument("--no-watchlist", action="store_true")
@@ -121,10 +127,20 @@ def main() -> int:
     (args.report_dir / "data_quality.json").write_text(
         json.dumps(payload, indent=2), encoding="utf-8"
     )
-    (REPO_ROOT / "reports" / "PHASE24_DATA_BACKBONE_AUDIT.md").write_text(
-        _markdown_report(entries, summary), encoding="utf-8"
+    # Le markdown suit ``--report-dir``. Avec un chemin en dur vers
+    # ``reports/PHASE24_DATA_BACKBONE_AUDIT.md``, toute execution hors du
+    # repertoire par defaut — a commencer par ``tests/test_data_backbone_audit
+    # _phase24.py``, qui seme un cache synthetique BTC/XRP — remplacait le
+    # rapport de recherche versionne par sa propre sortie.
+    summary_md = args.summary_md or (args.report_dir.parent / "PHASE24_DATA_BACKBONE_AUDIT.md")
+    summary_md.parent.mkdir(parents=True, exist_ok=True)
+    summary_md.write_text(_markdown_report(entries, summary), encoding="utf-8")
+    print(
+        json.dumps(
+            {"report_dir": str(args.report_dir), "summary_md": str(summary_md), **summary},
+            indent=2,
+        )
     )
-    print(json.dumps({"report_dir": str(args.report_dir), **summary}, indent=2))
     return 0
 
 

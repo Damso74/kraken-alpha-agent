@@ -119,6 +119,45 @@ def test_audit_script_fast(tmp_path: Path) -> None:
     assert payload["phase"] == 24
 
 
+def test_audit_script_never_writes_the_tracked_report(tmp_path: Path) -> None:
+    """``--report-dir`` doit etre respecte pour le markdown aussi.
+
+    Le script ecrivait son rapport markdown dans un chemin repo en dur. Ce test,
+    qui seme un cache synthetique BTC/XRP de 2020, remplacait donc a chaque run
+    le rapport de recherche versionne ``reports/PHASE24_DATA_BACKBONE_AUDIT.md``
+    par sa propre sortie — le fichier committe ne documentait plus les caches
+    reels mais la fixture.
+    """
+    tracked = REPO / "reports" / "PHASE24_DATA_BACKBONE_AUDIT.md"
+    before = tracked.read_bytes() if tracked.is_file() else None
+
+    cache = _seed_phase24_cache(tmp_path)
+    out = tmp_path / "reports" / "phase24_data_backbone"
+    proc = subprocess.run(
+        [
+            PY,
+            str(REPO / "scripts" / "audit_data_backbone_phase24.py"),
+            "--cache-root",
+            str(cache),
+            "--report-dir",
+            str(out),
+            "--assets",
+            "BTC",
+        ],
+        capture_output=True,
+        text=True,
+        cwd=str(REPO),
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr
+
+    after = tracked.read_bytes() if tracked.is_file() else None
+    assert after == before, "le script a reecrit reports/PHASE24_DATA_BACKBONE_AUDIT.md"
+
+    # Le markdown doit bien avoir ete produit, mais sous --report-dir.
+    assert (tmp_path / "reports" / "PHASE24_DATA_BACKBONE_AUDIT.md").is_file()
+
+
 @pytest.mark.parametrize(
     "script",
     (
