@@ -1,0 +1,52 @@
+name: CI
+
+# Branche de soumission hackathon, gelée au 2026-05-19. Ce workflow **vérifie**
+# la soumission, il ne la modifie pas : pas de gate lint, parce que ce code n'a
+# jamais été passé à ruff et qu'y toucher changerait ce qu'un jury exécute.
+# La branche de recherche (`phase30/observation-ops-ux`) porte, elle, le workflow
+# complet avec ruff et shellcheck.
+#
+# Avant le 2026-08-19 cette branche — la seule déployée sur Vercel — n'avait
+# aucun répertoire `.github` : aucune vérification automatisée du tout.
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Shell syntax check (ops scripts)
+        run: bash -n scripts/*.sh
+
+      - name: Pytest collect sanity
+        run: python -m pytest --collect-only -q
+
+      - name: Run pytest (mock CLI transport)
+        env:
+          KRAKEN_CLI_TRANSPORT: mock
+          TRADING_MODE: dry_run
+          LIVE_TRADING: "false"
+          ALLOW_LIVE_ORDERS: "false"
+        run: python -m pytest -q
+
+      # Aucun test ne doit réécrire un fichier suivi. Sur la branche recherche,
+      # un rapport versionné a été silencieusement remplacé par la sortie d'une
+      # fixture pytest pendant trois mois faute de ce contrôle.
+      - name: No tracked file was rewritten by the test run
+        run: git diff --exit-code
