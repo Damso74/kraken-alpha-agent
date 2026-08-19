@@ -45,6 +45,9 @@ env/
 reports/paper_daemon_state/
 reports/paper_observation_phase28/**/*
 !reports/paper_observation_phase28/**/.gitkeep
+# KILL_CRITERIA.md est de la documentation ecrite a la main, pas un artefact
+# d'execution : c'est le seul fichier de ce repertoire qui reste suivi.
+!reports/paper_observation_phase28/KILL_CRITERIA.md
 reports/phase29_observation_metrics/summary.json
 reports/phase30_observation_alerts/
 reports/phase30_observation_ops_digest/

@@ -11,6 +11,32 @@
 
 ---
 
+## Verdict — research lab closed, 2026-08-19
+
+> **This repository documents a negative result, and that is its point.**
+>
+> Thirty phases of post-hackathon research — 872 engine configurations under
+> walk-forward out-of-sample, 18 event-study hypotheses, ~2 600 backtests —
+> produced **0 tradable signal** and **0 OOS candidate**. The last object still
+> standing before the closing audit, an ETH 4h funding+basis risk *overlay*,
+> did not survive it either: its funding cache was truncated to a single
+> 1 000-row page (~30 % of the backtest window, forward-filled beyond), and the
+> derivatives pipeline applied no inference test at all — no p-value, no
+> placebo, no BH-FDR — with a threshold taken in absolute value, so a *negative*
+> excess counted as favourable evidence.
+>
+> The forward paper observation planned for a VPS cron was **never started**:
+> 1 bar on 2026-05-21, 0 since. It is now archived rather than resumed — the
+> measurement harness itself was defective (see
+> [`reports/PHASE31_FINAL_VERDICT.md`](./reports/PHASE31_FINAL_VERDICT.md)).
+>
+> Two branches, two roles. **`master`** is the frozen hackathon submission
+> (2026-05-19) deployed on Vercel. **`phase30/observation-ops-ux`** is the
+> research lab — this branch. Neither is a live trading system, and the account
+> class (PEDSL-CY) blocks xStocks execution at the venue layer regardless.
+
+---
+
 ## For hackathon judges — start here
 
 | Asset | Link |
@@ -30,7 +56,7 @@
 The user's Kraken account is on **PEDSL-CY (Cyprus EU)**, so **both
 the spot xStocks orderbook and the xStocks Perpetual Futures are
 venue-blocked at the account-class layer**. The engine is correct end
-to end (a BTC Perp control on the same key fills cleanly; 894 / 894
+to end (a BTC Perp control on the same key fills cleanly; 1058 / 1058
 tests green), **other lablab participants have publicly reported the
 same xStocks errors** (see `docs/HACKATHON_DISCORD_CONTEXT.md`), and
 the audit-ready PnL is documented honestly in `docs/SUBMISSION.md`
@@ -50,7 +76,7 @@ copy .env.example .env                        # cp .env.example .env
 python scripts/check_kraken_cli.py
 
 # Full deterministic test suite (~2 min)
-pytest                                        # expected: 894 passed (2026-05-21)
+pytest                                        # expected: 1058 passed (2026-08-19)
 
 # One full agent cycle, no order placed (uses the mock transport if no CLI is installed)
 python scripts/dry_run_once.py
@@ -82,7 +108,7 @@ cd kraken-alpha-agent
 python -m venv .venv && .venv\Scripts\Activate.ps1   # source .venv/bin/activate on macOS/Linux
 pip install -r requirements.txt
 copy .env.example .env                               # cp .env.example .env
-pytest                                               # 894 tests, ~2 min
+pytest                                               # 1058 tests, ~3 min
 python scripts/dry_run_once.py                       # one full cycle, no orders
 uvicorn src.dashboard.app:app --reload               # http://127.0.0.1:8000
 ```

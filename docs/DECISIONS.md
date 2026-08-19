@@ -89,3 +89,69 @@ Décisions enregistrées à partir de l’état du dépôt et de `AGENTS.md`. Fo
 **Contexte :** Signal implémenté, feed Mempool.space absent.  
 **Décision :** Conserver code + backlog ; classer `blocked_data` dans decision board.  
 **Conséquences :** Pas de suppression ; pas de tests tant que collector absent.
+
+---
+
+## ADR-012 — Archivage de l'observation forward (2026-08-19)
+
+**Contexte :** Le cron VPS de l'ADR-006 n'a jamais été installé. Trois mois après
+la décision `ready_for_vps_cron` (2026-05-21), l'observation compte **1 barre au
+2026-05-21 et 0 aujourd'hui** (`reports/PHASE29_OBSERVATION_MONITORING.md`,
+healthcheck `FAIL`, `Cron active: False`). L'audit du 2026-08-19 a par ailleurs
+établi que le harnais de mesure était défectueux : boucle de replay no-op laissant
+le portefeuille standalone vide, donc un baseline qui ne peut jamais vendre ; un
+critère de kill sur cinq structurellement inerte ; et un cache funding tronqué à
+une page qui neutralisait le leg funding de l'overlay sur ~70 % de la fenêtre de
+backtest qui avait fondé son statut `useful_overlay`.
+
+**Décision :** **Ne pas installer le cron.** L'observation forward est archivée.
+Les défauts du harnais sont corrigés dans le dépôt — le code fautif ne doit pas
+rester en référence publique — mais aucune collecte n'est relancée.
+
+**Alternative écartée :** reprendre l'observation après correction complète
+(~6 jours de travail puis 14 jours d'attente) pour observer un overlay de
+**risque** qui, même validé, ne génère aucun alpha, sur un compte bloqué au
+niveau venue (ADR-003) incapable de l'exécuter. La valeur attendue ne couvre pas
+le coût.
+
+**Conséquences :** `reports/PHASE31_REVIEW_CHECKLIST.md` reste comme protocole
+non exécuté. Les fichiers d'état d'exécution sous
+`reports/paper_observation_phase28/` sont dé-suivis (`git rm --cached`), le
+`.gitignore` les visait déjà. `reports/PHASE31_FINAL_VERDICT.md` fait foi.
+
+---
+
+## ADR-013 — La CI est un gate, pas une intention (2026-08-19)
+
+**Contexte :** L'ADR-009 décidait d'ajouter une CI. Elle a été ajoutée mais n'a
+**jamais exécuté un seul test** : `ruff` n'était déclaré que dans l'extra `[dev]`
+de `pyproject.toml` alors que le workflow installe `requirements.txt`, d'où un
+`exit 127` au step lint et tous les steps suivants `skipped`. Les deux seuls runs
+de la branche sont rouges. Pendant ces trois mois, un `B018` de ruff signalait la
+boucle no-op de l'observation sans que personne ne le voie.
+
+**Décision :** Une CI qui ne peut pas passer est un mensonge, pas une protection.
+`ruff` est déclaré dans `requirements.txt` ; les scripts shell d'ops sont couverts
+par `bash -n` et `shellcheck -S error` ; et un step `git diff --exit-code` après
+pytest interdit qu'un test réécrive un fichier suivi.
+
+**Conséquences :** La CI doit être verte avant tout merge. `master`, la branche
+déployée sur Vercel, reçoit le même workflow — elle n'avait aucun répertoire
+`.github`.
+
+---
+
+## ADR-014 — Verdict final de la recherche (2026-08-19)
+
+**Contexte :** 30 phases, 872 configurations moteur en OOS, 18 hypothèses
+event-study, ~2 600 backtests cumulés sur le même univers (BTC/ETH/SOL, OHLC
+Binance + funding/basis/OI), sans correction du budget de tests cumulé.
+
+**Décision :** La recherche d'alpha sur cet univers est **close**, pas en pause.
+Résultat : `0 signal tradable`, `0 candidat OOS`. Le seul objet non tué avant
+l'audit — l'overlay funding+basis ETH 4h — ne survit pas à l'audit de ses données
+d'entrée ni à l'absence de test d'inférence dans le pipeline dérivés.
+
+**Conséquences :** Aucune phase 31 de recherche sur le même univers. Le dépôt
+reste public comme démonstration de méthode et résultat négatif documenté. Voir
+`reports/PHASE31_FINAL_VERDICT.md`.

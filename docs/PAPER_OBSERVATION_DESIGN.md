@@ -1,5 +1,27 @@
 # Phase 10 — Observation paper (design)
 
+> ## ⚠ Design jamais implémenté — ne pas chercher ses artefacts
+>
+> **Statut au 2026-08-19 : `design_only`.** Ce document décrit une architecture
+> qui n'a jamais été branchée. Concrètement :
+>
+> - `src/research/paper_simulator.py` n'est importé par **aucun** module de
+>   production — seulement par `tests/`.
+> - Les répertoires `data/paper_observation/` et `reports/paper_observation/`
+>   (sans suffixe) **n'existent pas**, et les rapports hebdomadaires `WEEK_*.md`
+>   décrits plus bas n'ont jamais été produits.
+> - Les gates G1 à G4c décrits ici comme actifs ne sont appliqués par aucun code
+>   en exécution.
+>
+> L'observation réellement construite est une **autre** implémentation, celle des
+> phases 28 à 30 : `src/bot/overlay_observation_engine.py` →
+> `reports/paper_observation_phase28/`. Elle non plus n'a jamais tourné en
+> forward (1 barre au 2026-05-21, 0 depuis) et elle est désormais **archivée** —
+> voir `reports/PHASE31_FINAL_VERDICT.md` et l'ADR-012 de `docs/DECISIONS.md`.
+>
+> Ce document est conservé comme trace de conception, pas comme documentation
+> d'un système existant.
+
 > Système **paper-only** pour observer un signal alternatif *après* les
 > gates de recherche (G0–G4), sans ordre exchange, sans clé privée, sans
 > profil live, sans import de `src.execution`, `src.risk` ou

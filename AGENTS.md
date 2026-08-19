@@ -41,10 +41,15 @@
   - The agent never calls `kraken futures transfer` / `wallet-transfer`. The Futures write API key MUST be created with `Trades` + `Positions` only and `Withdrawal` / `Transfer` / `Funding` disabled; the existing Spot key cannot be reused for futures.
   - Because `kraken futures order` has no `--validate` flag, there is no mainnet dry-run for futures: the first live futures order is necessarily a real wire-level order and must be sized minimal (1x, isolated, micro nominal). All pre-live validation runs through `kraken futures paper *` (which itself requires `kraken futures paper init` to have been run on the host once).
 
-## Repository audit (2026-05-21)
+## Repository audit (2026-08-19)
 
-- Score qualité : **72/100** → **~78/100** après docs + CI (branche `phase30/observation-ops-ux`)
-- Tests : **894** collectés (`python -m pytest -q`)
-- CI : `.github/workflows/ci.yml` (pytest, `KRAKEN_CLI_TRANSPORT=mock`)
-- Rapports : `reports/PHASE1_AUDIT_REPORT.md`, `reports/REPOSITORY_AUDIT_FINAL.md`
+- Tests : **1058** collectés (`python -m pytest -q`), 126 fichiers, ~3 min
+- CI : `.github/workflows/ci.yml` — ruff + shellcheck + pytest + `git diff --exit-code`.
+  **Elle n'avait jamais exécuté un seul test avant le 2026-08-19** (`ruff` absent de
+  `requirements.txt` → `exit 127` au step lint). Voir ADR-013.
+- Verdict de la recherche : **`reports/PHASE31_FINAL_VERDICT.md`** — 0 signal tradable,
+  observation forward archivée. Lire ce document avant toute reprise.
+- Rapports d'audit antérieurs : `reports/PHASE1_AUDIT_REPORT.md`,
+  `reports/REPOSITORY_AUDIT_FINAL.md` (le score « 72/100 → 78/100 » qui figurait ici
+  n'était étayé par aucune mesure : ni couverture, ni CI verte)
 - Scripts index : `scripts/README.md`
