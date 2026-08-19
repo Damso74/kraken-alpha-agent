@@ -355,7 +355,10 @@ def main() -> int:
                                 "bh_max_drawdown_pct": bh_full.get("max_drawdown_pct"),
                                 "sharpe_ratio": full_metrics.get("sharpe_ratio"),
                                 "trade_count": full_metrics.get("trade_count"),
+                                # win_rate_pct peut etre null : sans aller-retour
+                                # ferme il est non evaluable, pas nul.
                                 "win_rate_pct": full_metrics.get("win_rate_pct"),
+                                "round_trip_count": full_metrics.get("round_trip_count"),
                                 "turnover_ratio": full_metrics.get("turnover_ratio"),
                                 "fee_bps": args.fees_bps,
                                 "holdout_beats_bh": bh_beats,

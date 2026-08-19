@@ -7,6 +7,7 @@ import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from statistics import median_low
 from typing import Any
 
 from src.data.collectors._common import DEFAULT_COLLECTOR_CACHE_DIR
@@ -25,6 +26,16 @@ TIMEFRAME_CACHE_BASENAME: dict[str, str] = {
     "4h": "ohlc_4h",
     "1h": "ohlc_1h",
 }
+
+# Seuils du controle d'espacement (voir _check_interval_spacing).
+# 10 bougies = 9 ecarts : une minorite de trous ne peut pas emporter la
+# mediane, et tout cache reellement backteste depasse largement ce seuil
+# (MIN_CANDLES_BY_TIMEFRAME va de 60 a 240).
+MIN_ROWS_FOR_SPACING_CHECK = 10
+# 2 % du pas, plancher 60 s : absorbe un desalignement de timestamps sans
+# jamais confondre deux granularites voisines (1h vs 4h = facteur 4).
+SPACING_TOLERANCE_RATIO = 0.02
+SPACING_MIN_TOLERANCE_SECONDS = 60.0
 
 
 @dataclass(frozen=True)
@@ -143,12 +154,37 @@ def validate_candles(
 
 
 def _check_interval_spacing(rows: list[dict[str, Any]], interval_minutes: int) -> None:
-    """Warn-level spacing check: large gaps allowed (weekends); reject backward steps only."""
+    """Reject a series whose dominant spacing is not the announced interval.
+
+    Pourquoi : la version precedente calculait le pas attendu puis ne s'en
+    servait jamais, si bien qu'un cache annonce en 4h mais rempli de bougies 1h
+    passait la validation sans un mot — et faussait tout backtest en aval.
+
+    Le controle porte sur le pas *median* et non sur chaque ecart : un vrai
+    trou (week-end, interruption de venue) reste minoritaire et ne deplace pas
+    la mediane, alors qu'une granularite systematiquement differente la
+    deplace entierement. Deux garde-fous supplementaires evitent de casser un
+    cache legitime : rien n'est verifie sous MIN_ROWS_FOR_SPACING_CHECK
+    bougies (echantillon trop maigre pour conclure), et une tolerance absorbe
+    les timestamps legerement desalignes.
+    """
     step = interval_minutes * 60
-    for i in range(1, min(len(rows), 50)):
-        delta = int(rows[i]["timestamp"]) - int(rows[i - 1]["timestamp"])
-        if delta <= 0:
-            raise DataLoaderError("non-monotonic timestamps in sample")
+    if step <= 0 or len(rows) < MIN_ROWS_FOR_SPACING_CHECK:
+        return
+    deltas = [
+        int(rows[i]["timestamp"]) - int(rows[i - 1]["timestamp"]) for i in range(1, len(rows))
+    ]
+    deltas = [d for d in deltas if d > 0]
+    if not deltas:
+        return
+    # median_low renvoie un ecart reellement observe, pas une moyenne de deux.
+    dominant = median_low(deltas)
+    tolerance = max(SPACING_MIN_TOLERANCE_SECONDS, step * SPACING_TOLERANCE_RATIO)
+    if abs(dominant - step) > tolerance:
+        raise DataLoaderError(
+            f"interval spacing mismatch: dominant step={dominant}s "
+            f"expected={step}s ({interval_minutes}min) over {len(deltas)} gaps"
+        )
 
 
 def _read_cache_payload(path: Path) -> tuple[list[Any], int | None]:

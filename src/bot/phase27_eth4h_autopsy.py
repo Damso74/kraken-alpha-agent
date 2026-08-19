@@ -14,6 +14,7 @@ from src.bot.metrics import metrics_to_dict
 from src.bot.paper_engine import run_paper_backtest
 from src.bot.phase23_presets import build_phase23_strategy
 from src.bot.portfolio import PaperPortfolio
+from src.bot.risk_adjusted_metrics import estimate_time_in_market_pct
 from src.bot.risk_manager import RiskManager
 
 ETH4H_AUTOPSY_TARGETS: tuple[tuple[str, str], ...] = (
@@ -39,23 +40,20 @@ def _slice_candles(candles: Sequence[Mapping[str, Any]], y0: int, y1: int) -> li
     return [c for c in candles if y0 <= _year_utc(int(c["timestamp"])) <= y1]
 
 
-def _time_in_market_pct(journal: BotJournal, total_bars: int) -> float:
-    if total_bars <= 0:
-        return 0.0
-    in_market = 0
-    pos_open = False
-    for t in journal.trades:
-        side = str(t.get("side", "")).lower()
-        if side == "buy":
-            pos_open = True
-        elif side == "sell":
-            pos_open = False
-    # Approximate from trade journal: bars with open position
-    # Use simpler heuristic: fraction of bars between first buy and last sell
-    buys = [i for i, t in enumerate(journal.trades) if str(t.get("side", "")).lower() == "buy"]
-    if not buys:
-        return 0.0
-    return min(100.0, len(buys) / max(1, total_bars) * 100.0 * 10)
+def _time_in_market_pct(journal: BotJournal, total_bars: int, *, warmup: int = 0) -> float:
+    """Percentage of post-warmup bars with an open position (0..100).
+
+    Thin wrapper over :func:`src.bot.risk_adjusted_metrics.estimate_time_in_market_pct`,
+    which returns a *fraction* in ``0..1``; the conversion to percent happens here.
+    """
+    return (
+        estimate_time_in_market_pct(
+            journal,
+            warmup_bars=max(0, warmup),
+            total_bars=total_bars,
+        )
+        * 100.0
+    )
 
 
 def _missed_upside_pct(
@@ -115,7 +113,7 @@ def _run_overlay_backtest(
         data_ok=True,
     )
     metrics = metrics_to_dict(result.metrics, result.risk_stats)
-    tim_pct = _time_in_market_pct(journal, len(candles))
+    tim_pct = _time_in_market_pct(journal, len(candles), warmup=warmup)
     block_indices: list[int] = []
     if overlay_kind == "crowding" and hasattr(inst, "_states") and inst._states:
         for i, st in enumerate(inst._states):

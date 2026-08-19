@@ -59,6 +59,17 @@ class RiskManager:
     def record_trade(self) -> None:
         self.state.trades_today += 1
 
+    @staticmethod
+    def _reduces_exposure(order: Order) -> bool:
+        """``sell`` est exit-only dans ce moteur : il ne peut que reduire.
+
+        Le portefeuille papier n'ouvre jamais de short (``PaperPortfolio``
+        refuse un fill vendeur superieur a la position, et le simulateur
+        d'execution rejette ``insufficient_position``). Un ordre vendeur ne
+        peut donc que diminuer l'exposition, jamais la creer.
+        """
+        return order.side == "sell"
+
     def validate_order(
         self,
         order: Order,
@@ -71,6 +82,16 @@ class RiskManager:
         cfg = self.config
         if equity <= 1e-12:
             return RiskDecision("deny", "zero equity", "equity")
+
+        # Exit-only : aucune garde de risque ne bloque un ordre qui REDUIT
+        # l'exposition. Un plafond (position, exposition totale) contraint
+        # l'OUVERTURE d'exposition ; un stop (drawdown, perte du jour) et un
+        # quota (trades par jour) limitent la prise de risque. Les appliquer a
+        # une sortie piege la position : des qu'un compteur est sature, la
+        # vente est refusee a chaque barre, la position ne peut plus etre
+        # soldee et le risque grandit au lieu d'etre coupe.
+        if self._reduces_exposure(order):
+            return RiskDecision("allow", "exit-only reduction", "")
 
         if self.state.peak_equity > 1e-12:
             dd = (self.state.peak_equity - equity) / self.state.peak_equity
@@ -85,22 +106,18 @@ class RiskManager:
         if self.state.trades_today >= cfg.max_trades_per_day:
             return RiskDecision("deny", "max trades per day", "max_trades_per_day")
 
+        # A partir d'ici l'ordre augmente l'exposition (side == "buy").
+        notional = order.quantity * order.price_hint
+
         reserve = equity * cfg.min_cash_reserve
-        if order.side == "buy" and cash_usd - order.quantity * order.price_hint < reserve:
+        if cash_usd - notional < reserve:
             return RiskDecision("deny", "min cash reserve", "min_cash_reserve")
 
-        projected_pos = position_fraction
-        if order.side == "buy":
-            add_frac = (order.quantity * order.price_hint) / equity
-            projected_pos += add_frac
+        projected_pos = position_fraction + notional / equity
         if projected_pos > cfg.max_position_fraction + 1e-9:
             return RiskDecision("deny", "max position fraction", "max_position_fraction")
 
-        projected_exp = exposure_fraction
-        if order.side == "buy":
-            projected_exp += (order.quantity * order.price_hint) / equity
-        elif order.side == "sell":
-            projected_exp -= (order.quantity * order.price_hint) / equity
+        projected_exp = exposure_fraction + notional / equity
         if projected_exp > cfg.max_total_exposure + 1e-9:
             return RiskDecision("deny", "max total exposure", "max_total_exposure")
 

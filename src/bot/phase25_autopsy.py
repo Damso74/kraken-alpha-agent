@@ -504,6 +504,29 @@ def check_param_sensitivity(
     )
 
 
+HIGH_FEE_BPS = 25.0
+
+
+def fee_grid_flags(rows: Sequence[dict[str, Any]]) -> tuple[bool, bool]:
+    """(default_pass, only_low_fee_edge) a partir de la grille cout.
+
+    `only_low_fee_edge` doit valoir True quand l'edge DISPARAIT des que les couts montent:
+    le champ portait auparavant la valeur inverse (True = toutes les cellules cheres passent),
+    ce qui faisait lire au rapport « edge robuste » exactement dans le cas fragile.
+    """
+    default_pass = False
+    only_low_fee_edge = False
+    for row in rows:
+        ok = bool(row.get("pass"))
+        fee = float(row.get("fee_bps", 0.0))
+        slip = float(row.get("slippage_bps", 0.0))
+        if fee == DEFAULT_FEE_BPS and slip == DEFAULT_SLIPPAGE_BPS:
+            default_pass = ok
+        if fee >= HIGH_FEE_BPS and not ok:
+            only_low_fee_edge = True
+    return default_pass, only_low_fee_edge
+
+
 def check_fee_sensitivity(
     spec: CandidateSpec,
     *,
@@ -523,8 +546,6 @@ def check_fee_sensitivity(
     fee_grid = [0.0, 10.0, 25.0, 40.0]
     slip_grid = [0.0, 5.0, 10.0]
     rows: list[dict[str, Any]] = []
-    only_low_fee_pass = True
-    default_pass = False
 
     for fee in fee_grid:
         for slip in slip_grid:
@@ -554,25 +575,22 @@ def check_fee_sensitivity(
                     "pass": ok,
                 }
             )
-            if fee == DEFAULT_FEE_BPS and slip == DEFAULT_SLIPPAGE_BPS:
-                default_pass = ok
-            if fee >= 25.0 and not ok:
-                only_low_fee_pass = False
 
+    default_pass, only_low_fee_edge = fee_grid_flags(rows)
     verdict: TestVerdict = "pass" if default_pass else "fail"
     summary = (
         "survives default 40bps/5bps slippage"
         if default_pass
         else "fails at default fees — research-only"
     )
-    if default_pass and not only_low_fee_pass:
+    if default_pass and only_low_fee_edge:
         summary += " (marginal at high fees)"
 
     return AutopsyTestResult(
         "fee_sensitivity",
         verdict,
         summary,
-        {"grid": rows, "default_pass": default_pass, "only_low_fee_edge": only_low_fee_pass},
+        {"grid": rows, "default_pass": default_pass, "only_low_fee_edge": only_low_fee_edge},
     )
 
 
@@ -654,6 +672,50 @@ def check_period_splits(
     )
 
 
+def classify_asset_placebo(
+    candidate_excess_pct: float,
+    cells: Sequence[dict[str, Any]],
+) -> tuple[TestVerdict, str, dict[str, Any]]:
+    """Oriente le verdict placebo: un temoin qui reproduit l'edge INVALIDE le candidat.
+
+    L'ancienne regle concluait `pass` des qu'une cellule temoin battait le B&H et `warn`
+    quand aucune ne le battait — exactement l'inverse de ce que teste un placebo. Un actif
+    ou un timeframe temoin qui fait aussi bien ou mieux que le candidat prouve que l'edge
+    n'est pas specifique a la cellule candidate: il n'y a rien a demontrer, c'est `fail`.
+    """
+    scored = [c for c in cells if not c.get("skipped")]
+    positive = [c for c in scored if float(c["excess_vs_bh_pct"]) > 0.0]
+    beaters = [
+        c for c in scored if float(c["excess_vs_bh_pct"]) >= candidate_excess_pct
+    ]
+    stats = {
+        "candidate_excess_vs_bh_pct": round(candidate_excess_pct, 4),
+        "evaluated_cells": len(scored),
+        "placebo_positive": len(positive),
+        "placebo_beats_candidate": len(beaters),
+    }
+
+    if candidate_excess_pct <= 0.0:
+        return "fail", "primary cell does not beat B&H", stats
+    if not scored:
+        return "warn", "no placebo cell evaluable — control untested", stats
+    if beaters:
+        best = max(float(c["excess_vs_bh_pct"]) for c in beaters)
+        return (
+            "fail",
+            f"{len(beaters)} placebo cell(s) match or beat the candidate "
+            f"(best {best:+.4f}% vs candidate {candidate_excess_pct:+.4f}%)",
+            stats,
+        )
+    if positive:
+        return (
+            "warn",
+            f"{len(positive)} placebo cell(s) also beat B&H (below the candidate)",
+            stats,
+        )
+    return "pass", "no placebo cell reproduces the edge", stats
+
+
 def check_asset_placebo(
     spec: CandidateSpec,
     *,
@@ -667,12 +729,8 @@ def check_asset_placebo(
     ]
     exec_cfg = ExecutionConfig(fee_bps=DEFAULT_FEE_BPS, slippage_bps=DEFAULT_SLIPPAGE_BPS)
     rows: list[dict[str, Any]] = []
-    eth_4h_pass = (
-        baseline.excess_vs_bh_pct > 0.0
-        if baseline is not None
-        else False
-    )
-    placebo_pass = 0
+    candidate_excess = baseline.excess_vs_bh_pct if baseline is not None else 0.0
+    eth_4h_pass = candidate_excess > 0.0
 
     for asset, tf in targets:
         inst = build_trend_following_instrument(tf, spec.variant)
@@ -698,38 +756,25 @@ def check_asset_placebo(
             exec_cfg=exec_cfg,
             timeframe=tf,
         )
-        excess = float(m["total_return_pct"]) - float(bh["total_return_pct"])
-        ok = excess > 0.0
-        if ok:
-            placebo_pass += 1
+        excess = round(float(m["total_return_pct"]) - float(bh["total_return_pct"]), 4)
+        beats_bh = excess > 0.0
         rows.append(
             {
                 "asset": asset,
                 "timeframe": tf,
-                "excess_vs_bh_pct": round(excess, 4),
-                "pass": ok,
+                "excess_vs_bh_pct": excess,
+                "beats_bh": beats_bh,
+                "beats_candidate": excess >= candidate_excess,
+                # `pass` = le temoin s'est comporte comme un temoin, donc il ne reproduit pas l'edge.
+                "pass": not beats_bh,
+                "skipped": False,
             }
         )
 
-    if not eth_4h_pass:
-        verdict: TestVerdict = "fail"
-        summary = "primary ETH 4h does not beat B&H"
-    elif placebo_pass == 0:
-        verdict = "warn"
-        summary = "ETH 4h only — no placebo asset/TF beats B&H"
-    else:
-        verdict = "pass"
-        summary = f"{placebo_pass} placebo cell(s) also beat B&H"
-    return AutopsyTestResult(
-        "asset_placebo",
-        verdict,
-        summary,
-        {
-            "cells": rows,
-            "eth_4h_pass": eth_4h_pass,
-            "placebo_positive": placebo_pass,
-        },
-    )
+    verdict, summary, stats = classify_asset_placebo(candidate_excess, rows)
+    details: dict[str, Any] = {"cells": rows, "eth_4h_pass": eth_4h_pass}
+    details.update(stats)
+    return AutopsyTestResult("asset_placebo", verdict, summary, details)
 
 
 def check_trade_concentration(baseline: BacktestSnapshot) -> AutopsyTestResult:
@@ -811,7 +856,12 @@ def classify_final_verdict(
     )
     if any(by_id.get(k, AutopsyTestResult(k, "fail", "")).verdict == "fail" for k in required_pass):
         return "kill"
-    if by_id.get("asset_placebo", AutopsyTestResult("", "pass", "")).verdict == "warn":
+    # Un placebo en echec doit tuer le candidat: auparavant seul le verdict "warn" etait
+    # regarde, si bien qu'un placebo "fail" laissait passer un paper_observation_candidate.
+    placebo = by_id.get("asset_placebo", AutopsyTestResult("asset_placebo", "fail", ""))
+    if placebo.verdict == "fail":
+        return "kill"
+    if placebo.verdict == "warn":
         return "weak"
     if all(by_id.get(k, AutopsyTestResult(k, "fail", "")).verdict == "pass" for k in required_pass):
         return "paper_observation_candidate"

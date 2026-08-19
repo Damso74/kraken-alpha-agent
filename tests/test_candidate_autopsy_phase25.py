@@ -16,8 +16,10 @@ from src.bot.phase25_autopsy import (
     build_trend_following_instrument,
     check_drawdown_acceptability,
     check_trade_concentration,
+    classify_asset_placebo,
     classify_final_verdict,
     extract_round_trip_pnls,
+    fee_grid_flags,
     run_full_autopsy,
 )
 from src.data.collectors.binance_public import (
@@ -125,6 +127,136 @@ def test_classify_final_verdict_weak_on_placebo_warn() -> None:
         AutopsyTestResult("asset_placebo", "warn", ""),
     ]
     assert classify_final_verdict(tests) == "weak"
+
+
+def _cell(asset: str, tf: str, excess: float) -> dict:
+    return {"asset": asset, "timeframe": tf, "excess_vs_bh_pct": excess, "skipped": False}
+
+
+def test_placebo_passes_when_no_control_reproduces_edge() -> None:
+    """Cas positif: le candidat gagne, aucun temoin ne bat le B&H."""
+    verdict, _, stats = classify_asset_placebo(
+        0.1388,
+        [_cell("BTC", "4h", -15.0366), _cell("SOL", "4h", -23.3241), _cell("ETH", "1d", -2.0)],
+    )
+    assert verdict == "pass"
+    assert stats["placebo_positive"] == 0
+    assert stats["placebo_beats_candidate"] == 0
+
+
+def test_placebo_fails_when_control_beats_candidate() -> None:
+    """Cas symetrique (chiffres reels du rapport phase 25): ETH/1d +4.906 % ecrase
+    le candidat ETH 4h +0.1388 % — le placebo doit ECHOUER, pas passer."""
+    verdict, summary, stats = classify_asset_placebo(
+        0.1388,
+        [_cell("BTC", "4h", -15.0366), _cell("SOL", "4h", -23.3241), _cell("ETH", "1d", 4.906)],
+    )
+    assert verdict == "fail"
+    assert stats["placebo_beats_candidate"] == 1
+    assert "beat the candidate" in summary
+
+
+def test_placebo_warns_when_control_positive_but_weaker() -> None:
+    verdict, _, stats = classify_asset_placebo(
+        5.0,
+        [_cell("BTC", "4h", 1.0), _cell("SOL", "4h", -3.0), _cell("ETH", "1d", -1.0)],
+    )
+    assert verdict == "warn"
+    assert stats["placebo_positive"] == 1
+    assert stats["placebo_beats_candidate"] == 0
+
+
+def test_placebo_fails_when_candidate_flat() -> None:
+    verdict, _, _ = classify_asset_placebo(-0.5, [_cell("BTC", "4h", -15.0)])
+    assert verdict == "fail"
+
+
+def test_placebo_warns_when_all_cells_skipped() -> None:
+    verdict, _, stats = classify_asset_placebo(
+        1.0, [{"asset": "BTC", "timeframe": "4h", "skipped": True}]
+    )
+    assert verdict == "warn"
+    assert stats["evaluated_cells"] == 0
+
+
+def test_classify_final_verdict_kill_on_placebo_fail() -> None:
+    """Cas symetrique du test 'weak': un placebo en echec ne doit jamais laisser
+    passer un paper_observation_candidate."""
+    tests = [
+        AutopsyTestResult("reproducibility", "pass", ""),
+        AutopsyTestResult("param_sensitivity", "pass", ""),
+        AutopsyTestResult("fee_sensitivity", "pass", ""),
+        AutopsyTestResult("period_splits", "pass", ""),
+        AutopsyTestResult("trade_concentration", "pass", ""),
+        AutopsyTestResult("drawdown_acceptability", "pass", ""),
+        AutopsyTestResult("asset_placebo", "fail", ""),
+    ]
+    assert classify_final_verdict(tests) == "kill"
+
+
+def test_classify_final_verdict_candidate_on_placebo_pass() -> None:
+    tests = [
+        AutopsyTestResult("reproducibility", "pass", ""),
+        AutopsyTestResult("param_sensitivity", "pass", ""),
+        AutopsyTestResult("fee_sensitivity", "pass", ""),
+        AutopsyTestResult("period_splits", "pass", ""),
+        AutopsyTestResult("trade_concentration", "pass", ""),
+        AutopsyTestResult("drawdown_acceptability", "pass", ""),
+        AutopsyTestResult("asset_placebo", "pass", ""),
+    ]
+    assert classify_final_verdict(tests) == "paper_observation_candidate"
+
+
+def test_classify_final_verdict_kill_on_missing_placebo() -> None:
+    tests = [
+        AutopsyTestResult("reproducibility", "pass", ""),
+        AutopsyTestResult("param_sensitivity", "pass", ""),
+        AutopsyTestResult("fee_sensitivity", "pass", ""),
+        AutopsyTestResult("period_splits", "pass", ""),
+        AutopsyTestResult("trade_concentration", "pass", ""),
+        AutopsyTestResult("drawdown_acceptability", "pass", ""),
+    ]
+    assert classify_final_verdict(tests) == "kill"
+
+
+def test_phase25_published_tests_still_kill() -> None:
+    """Le verdict publie reste 'kill' apres correction: il tenait deja a trois echecs
+    (param_sensitivity, period_splits, drawdown_acceptability), le placebo passe de
+    'pass' a 'fail' et ajoute un quatrieme motif."""
+    published = [
+        AutopsyTestResult("reproducibility", "pass", ""),
+        AutopsyTestResult("param_sensitivity", "fail", ""),
+        AutopsyTestResult("fee_sensitivity", "pass", ""),
+        AutopsyTestResult("period_splits", "fail", ""),
+        AutopsyTestResult("trade_concentration", "pass", ""),
+        AutopsyTestResult("drawdown_acceptability", "fail", ""),
+        AutopsyTestResult("asset_placebo", "fail", ""),
+    ]
+    assert classify_final_verdict(published) == "kill"
+
+
+def test_fee_grid_flags_marks_high_fee_failure() -> None:
+    """Cas reel: 40bps/5bps passe mais 40bps/10bps echoue — l'edge est bien
+    conditionne aux couts bas, only_low_fee_edge doit valoir True."""
+    rows = [
+        {"fee_bps": 0.0, "slippage_bps": 0.0, "pass": True},
+        {"fee_bps": 25.0, "slippage_bps": 10.0, "pass": True},
+        {"fee_bps": 40.0, "slippage_bps": 5.0, "pass": True},
+        {"fee_bps": 40.0, "slippage_bps": 10.0, "pass": False},
+    ]
+    default_pass, only_low_fee_edge = fee_grid_flags(rows)
+    assert default_pass is True
+    assert only_low_fee_edge is True
+
+
+def test_fee_grid_flags_robust_grid() -> None:
+    rows = [
+        {"fee_bps": 0.0, "slippage_bps": 0.0, "pass": True},
+        {"fee_bps": 25.0, "slippage_bps": 10.0, "pass": True},
+        {"fee_bps": 40.0, "slippage_bps": 5.0, "pass": True},
+        {"fee_bps": 40.0, "slippage_bps": 10.0, "pass": True},
+    ]
+    assert fee_grid_flags(rows) == (True, False)
 
 
 def test_trade_concentration_kill_threshold() -> None:

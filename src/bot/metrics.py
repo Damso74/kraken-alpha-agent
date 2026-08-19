@@ -48,18 +48,29 @@ SAFETY_STOP_RULES = frozenset({"max_drawdown_pct", "max_daily_loss_pct"})
 
 @dataclass
 class BacktestMetrics:
+    """Metriques d'un backtest.
+
+    ``win_rate_pct`` vaut ``None`` quand aucun aller-retour ferme n'est
+    disponible : l'information est *non evaluable*, ce qui n'est pas la meme
+    chose qu'un taux de reussite de 0 %.
+    ``cost_drag_pct`` n'est lisible que si ``cost_drag_undefined`` est faux ;
+    quand le flag est vrai, la valeur 0.0 est un remplissage et non une mesure.
+    """
+
     total_return_pct: float = 0.0
     sharpe_ratio: float = 0.0
     max_drawdown_pct: float = 0.0
-    win_rate_pct: float = 0.0
+    win_rate_pct: float | None = None
     trade_count: int = 0
     fees_usd: float = 0.0
     slippage_drag_usd: float = 0.0
     cost_drag_pct: float = 0.0
+    cost_drag_undefined: bool = False
     final_equity: float = 0.0
     starting_equity: float = 0.0
     candle_count: int = 0
     usable_bars: int = 0
+    round_trip_count: int = 0
 
 
 @dataclass
@@ -128,7 +139,26 @@ def compute_metrics(
     candle_count: int = 0,
     usable_bars: int = 0,
     timeframe: str = "1d",
+    round_trip_pnls: Sequence[float] | None = None,
 ) -> BacktestMetrics:
+    """Agrege les metriques d'un run.
+
+    Deux entrees distinctes, volontairement separees :
+
+    * ``trade_pnls`` — un element par fill execute. Il ne sert qu'au comptage
+      (``trade_count``). Le moteur y range un delta d'equity mesure aux memes
+      prix avant et apres le fill : ce delta vaut ``-frais``, jamais le
+      resultat du trade. L'utiliser pour ``win_rate`` donnait 0 % meme sur un
+      run gagnant, et pour ``cost_drag`` donnait exactement 100 % puisque le
+      denominateur etait la somme des frais.
+    * ``round_trip_pnls`` — PnL realise a chaque sortie (fermeture ou reduction
+      de position). C'est la seule source valable pour ``win_rate_pct`` et pour
+      le denominateur de ``cost_drag_pct``.
+
+    Sans aller-retour ferme, ``win_rate_pct`` vaut ``None`` (non evaluable) et
+    ``cost_drag_undefined`` passe a vrai plutot que de renvoyer la sentinelle
+    100 % historique.
+    """
     final_eq = equity_curve[-1] if equity_curve else starting_equity
     total_return = 0.0
     if starting_equity > 1e-12:
@@ -140,16 +170,24 @@ def compute_metrics(
         if prev > 1e-12:
             bar_returns.append((equity_curve[i] - prev) / prev)
 
-    wins = sum(1 for p in trade_pnls if p > 0)
     trade_count = len(trade_pnls)
-    win_rate = (wins / trade_count * 100.0) if trade_count else 0.0
+    closed_pnls = list(round_trip_pnls) if round_trip_pnls is not None else []
 
-    gross_pnl = sum(trade_pnls)
+    win_rate: float | None = None
+    if closed_pnls:
+        wins = sum(1 for p in closed_pnls if p > 0)
+        win_rate = wins / len(closed_pnls) * 100.0
+
+    realized_pnl = sum(closed_pnls)
+    costs = fees_usd + slippage_drag_usd
     cost_drag = 0.0
-    if abs(gross_pnl) > 1e-9:
-        cost_drag = (fees_usd + slippage_drag_usd) / abs(gross_pnl)
-    elif fees_usd + slippage_drag_usd > 0:
-        cost_drag = 1.0
+    cost_drag_undefined = False
+    if abs(realized_pnl) > 1e-9:
+        cost_drag = costs / abs(realized_pnl)
+    elif costs > 1e-9:
+        # Des frais sans PnL realise : le ratio n'existe pas. On le signale au
+        # lieu de renvoyer 1.0, qui se lisait comme "les frais mangent 100 %".
+        cost_drag_undefined = True
 
     return BacktestMetrics(
         total_return_pct=total_return,
@@ -160,10 +198,12 @@ def compute_metrics(
         fees_usd=fees_usd,
         slippage_drag_usd=slippage_drag_usd,
         cost_drag_pct=cost_drag * 100.0,
+        cost_drag_undefined=cost_drag_undefined,
         final_equity=final_eq,
         starting_equity=starting_equity,
         candle_count=candle_count,
         usable_bars=usable_bars,
+        round_trip_count=len(closed_pnls),
     )
 
 
@@ -249,7 +289,9 @@ def classify_strategy_verdict(
     if risk_reasons:
         return VerdictResult("blocked_risk", risk_reasons)
 
-    if metrics.cost_drag_pct > MAX_COST_DRAG_PCT * 100.0:
+    # Un cost_drag non mesurable ne doit pas etre traite comme un echec du
+    # filtre : sans PnL realise, le ratio n'a pas de valeur a comparer.
+    if not metrics.cost_drag_undefined and metrics.cost_drag_pct > MAX_COST_DRAG_PCT * 100.0:
         return VerdictResult(
             "blocked_costs",
             [f"cost_drag_pct={metrics.cost_drag_pct:.2f}"],
@@ -314,17 +356,23 @@ def compute_verdict(
 
 
 def metrics_to_dict(metrics: BacktestMetrics, risk_stats: RiskRunStats | None = None) -> dict[str, Any]:
-    """Serialize metrics + risk fields for tournament JSON/CSV."""
+    """Serialize metrics + risk fields for tournament JSON/CSV.
+
+    ``win_rate_pct`` peut valoir ``None`` (aucun aller-retour ferme) et
+    ``cost_drag_pct`` n'est a lire que si ``cost_drag_undefined`` est faux.
+    """
     stats = risk_stats or RiskRunStats()
     return {
         "total_return_pct": metrics.total_return_pct,
         "sharpe_ratio": metrics.sharpe_ratio,
         "max_drawdown_pct": metrics.max_drawdown_pct,
         "win_rate_pct": metrics.win_rate_pct,
+        "round_trip_count": metrics.round_trip_count,
         "trade_count": metrics.trade_count,
         "fees_usd": metrics.fees_usd,
         "slippage_drag_usd": metrics.slippage_drag_usd,
         "cost_drag_pct": metrics.cost_drag_pct,
+        "cost_drag_undefined": metrics.cost_drag_undefined,
         "final_equity": metrics.final_equity,
         "starting_equity": metrics.starting_equity,
         "candle_count": metrics.candle_count,

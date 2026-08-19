@@ -99,8 +99,8 @@ def run_paper_backtest(
     equity_curve: list[float] = []
     equity_ts: list[str | int] = []
     trade_pnls: list[float] = []
+    round_trip_pnls: list[float] = []
     slippage_drag = 0.0
-    prev_equity = portfolio.cash_usd
     risk_stats = RiskRunStats()
     rules_seen: set[str] = set()
     grid_max_inventory = 0.30
@@ -207,12 +207,19 @@ def run_paper_backtest(
         slippage_drag += slip_drag
 
         eq_before = portfolio.equity(prices)
+        realized_before = portfolio.realized_pnl_usd
         portfolio.apply_fill(fill)
         risk_manager.record_trade()
         journal.log_fill(fill)
         eq_after = portfolio.equity(prices)
         trade_pnls.append(eq_after - eq_before)
-        prev_equity = eq_after
+        # Le delta d'equity ci-dessus est marque au meme prix avant/apres le
+        # fill : il ne vaut que -frais et ne porte aucun resultat de trade.
+        # Le PnL du trade n'existe qu'a la sortie — on le lit sur le compteur
+        # realise du portefeuille, sinon win_rate et cost_drag sont faux.
+        realized_delta = portfolio.realized_pnl_usd - realized_before
+        if fill.side == "sell":
+            round_trip_pnls.append(realized_delta)
 
         for p in portfolio.positions.values():
             if p.quantity > 1e-12:
@@ -240,6 +247,7 @@ def run_paper_backtest(
         candle_count=candle_count,
         usable_bars=usable_bars,
         timeframe=timeframe,
+        round_trip_pnls=round_trip_pnls,
     )
     if cfg.get("use_classify_verdict", True):
         verdict = classify_strategy_verdict(

@@ -15,6 +15,10 @@ from scripts._phase22_common import (
     run_backtest_cell,
     strategy_family,
 )
+from scripts.analyze_timeframe_turnover_phase22 import (
+    cost_drag_stats,
+    format_cost_drag_line,
+)
 from src.data.collectors.binance_public import (
     MIN_ROWS_DATA_OK,
     default_ohlc_cache_path,
@@ -189,3 +193,135 @@ def test_precompute_regime_features() -> None:
     assert len(feats) == len(candles)
     assert feats[0] is None
     assert feats[-1] is not None
+
+
+# ---------------------------------------------------------------------------
+# cost drag : la sentinelle 100 % a ete supprimee de src.bot.metrics, il ne
+# faut pas la remplacer par un 0.0 agrege qui dirait "les frais sont gratuits".
+# ---------------------------------------------------------------------------
+
+
+def test_cost_drag_stats_excludes_undefined_rows() -> None:
+    items = [
+        {"cost_drag_pct": 10.0, "cost_drag_undefined": False},
+        {"cost_drag_pct": 30.0, "cost_drag_undefined": False},
+        # remplissage : sans aller-retour ferme le ratio n'existe pas
+        {"cost_drag_pct": 0.0, "cost_drag_undefined": True},
+        {"cost_drag_pct": 0.0, "cost_drag_undefined": True},
+    ]
+    stats = cost_drag_stats(items)
+    assert stats["median_cost_drag_pct"] == 20.0  # et non 5.0 (mediane des 4)
+    assert stats["cost_drag_runs_total"] == 4
+    assert stats["cost_drag_measurable_runs"] == 2
+    assert stats["cost_drag_undefined_runs"] == 2
+    assert stats["cost_drag_unflagged_runs"] == 0
+
+
+def test_cost_drag_stats_is_none_when_every_run_is_undefined() -> None:
+    items = [{"cost_drag_pct": 0.0, "cost_drag_undefined": True} for _ in range(3)]
+    stats = cost_drag_stats(items)
+    assert stats["median_cost_drag_pct"] is None
+    assert stats["cost_drag_measurable_runs"] == 0
+    assert stats["cost_drag_undefined_runs"] == 3
+
+
+def test_cost_drag_stats_excludes_rows_without_the_flag() -> None:
+    """Un run sans la cle ne prouve rien : ni mesure ni indefini."""
+    items = [
+        {"cost_drag_pct": 12.0, "cost_drag_undefined": False},
+        {"cost_drag_pct": 100.0},  # artefact anterieur au correctif
+    ]
+    stats = cost_drag_stats(items)
+    assert stats["median_cost_drag_pct"] == 12.0
+    assert stats["cost_drag_unflagged_runs"] == 1
+    assert stats["cost_drag_measurable_runs"] == 1
+
+
+def test_format_cost_drag_line_states_the_denominator() -> None:
+    line = format_cost_drag_line(
+        {
+            "median_cost_drag_pct": 20.0,
+            "cost_drag_runs_total": 4,
+            "cost_drag_measurable_runs": 2,
+            "cost_drag_undefined_runs": 2,
+            "cost_drag_unflagged_runs": 0,
+        }
+    )
+    assert "20.0%" in line
+    assert "median calculee sur 2/4 runs" in line
+    assert "2 runs sans aller-retour ferme" in line
+
+
+def test_format_cost_drag_line_says_na_when_nothing_is_measurable() -> None:
+    line = format_cost_drag_line(
+        {
+            "median_cost_drag_pct": None,
+            "cost_drag_runs_total": 3,
+            "cost_drag_measurable_runs": 0,
+            "cost_drag_undefined_runs": 3,
+            "cost_drag_unflagged_runs": 0,
+        }
+    )
+    assert "n/a" in line
+    assert "0.0%" not in line
+    assert "median calculee sur 0/3 runs" in line
+
+
+def _turnover_row(*, cost_drag_pct: float, undefined: bool) -> dict:
+    return {
+        "asset": "BTC",
+        "timeframe": "1h",
+        "strategy": "trend_following",
+        "verdict": "blocked_costs",
+        "total_return_pct": -1.0,
+        "trade_count": 4,
+        "cost_drag_pct": cost_drag_pct,
+        "cost_drag_undefined": undefined,
+        "turnover_ratio": 0.5,
+    }
+
+
+def test_timeframe_turnover_report_does_not_publish_a_zero_cost_drag(tmp_path: Path) -> None:
+    """Bout en bout : le markdown ne doit pas annoncer 0.0 % de frais."""
+    src = tmp_path / "runs.json"
+    src.write_text(
+        json.dumps(
+            {
+                "runs": [
+                    _turnover_row(cost_drag_pct=40.0, undefined=False),
+                    _turnover_row(cost_drag_pct=0.0, undefined=True),
+                    _turnover_row(cost_drag_pct=0.0, undefined=True),
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    out = tmp_path / "tf_out"
+    proc = subprocess.run(
+        [
+            PY,
+            str(REPO / "scripts" / "analyze_timeframe_turnover_phase22.py"),
+            "--input",
+            str(src),
+            "--output-dir",
+            str(out),
+        ],
+        capture_output=True,
+        text=True,
+        cwd=str(REPO),
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr
+    summary_md = (out / "summary.md").read_text(encoding="utf-8")
+    assert "Median cost drag: 40.0%" in summary_md
+    assert "median calculee sur 1/3 runs" in summary_md
+    assert "2 runs sans aller-retour ferme" in summary_md
+    assert "Median cost drag: 0.0%" not in summary_md
+
+    payload = json.loads((out / "results.json").read_text(encoding="utf-8"))
+    tf_stats = payload["by_timeframe"]["1h"]
+    assert tf_stats["median_cost_drag_pct"] == 40.0
+    assert tf_stats["cost_drag_undefined_runs"] == 2
+    fam_stats = payload["by_family_timeframe"]["trend_ema_donchian"]["1h"]
+    assert fam_stats["median_cost_drag_pct"] == 40.0
+    assert fam_stats["cost_drag_undefined_runs"] == 2

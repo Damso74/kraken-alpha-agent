@@ -7,8 +7,10 @@ import argparse
 import json
 import sys
 from collections import defaultdict
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from statistics import median
+from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
@@ -48,6 +50,64 @@ def _parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
+COST_DRAG_UNDEFINED_KEY = "cost_drag_undefined"
+
+
+def cost_drag_stats(items: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    """Mediane du cost drag calculee sur les seuls runs ou il est mesurable.
+
+    ``src.bot.metrics`` ne renvoie plus la sentinelle 100 % quand aucun
+    aller-retour n'a ete ferme : il met ``cost_drag_undefined`` a vrai et
+    laisse ``cost_drag_pct`` a 0.0 en remplissage. Agreger ce 0.0 dirait
+    "les frais ne coutent rien", ce qui est plus trompeur encore que
+    l'ancien 100 %. Ces runs sont donc exclus de la mediane, et comptes.
+
+    Un run qui ne porte pas du tout la cle ``cost_drag_undefined`` (artefact
+    JSON produit avant le correctif, ou constructeur de ligne qui ne propage
+    pas encore le drapeau) est lui aussi exclu : son ``cost_drag_pct`` peut
+    etre soit une mesure, soit l'ancienne sentinelle, et rien dans la ligne
+    ne permet de trancher. Il est compte separement pour que le rapport le
+    dise au lieu de le noyer dans la mediane.
+    """
+    measurable: list[float] = []
+    undefined = 0
+    unflagged = 0
+    for row in items:
+        if COST_DRAG_UNDEFINED_KEY not in row:
+            unflagged += 1
+        elif bool(row[COST_DRAG_UNDEFINED_KEY]):
+            undefined += 1
+        else:
+            measurable.append(float(row.get("cost_drag_pct", 0.0)))
+    return {
+        "median_cost_drag_pct": median(measurable) if measurable else None,
+        "cost_drag_runs_total": len(items),
+        "cost_drag_measurable_runs": len(measurable),
+        "cost_drag_undefined_runs": undefined,
+        "cost_drag_unflagged_runs": unflagged,
+    }
+
+
+def format_cost_drag_line(stats: Mapping[str, Any]) -> str:
+    """Ligne markdown du cost drag, denominateur de la mediane explicite."""
+    total = int(stats.get("cost_drag_runs_total", 0))
+    kept = int(stats.get("cost_drag_measurable_runs", 0))
+    undefined = int(stats.get("cost_drag_undefined_runs", 0))
+    unflagged = int(stats.get("cost_drag_unflagged_runs", 0))
+    excluded: list[str] = []
+    if undefined:
+        excluded.append(f"{undefined} runs sans aller-retour ferme (cost drag indefini)")
+    if unflagged:
+        excluded.append(f"{unflagged} runs sans indicateur `{COST_DRAG_UNDEFINED_KEY}`")
+    detail = f"median calculee sur {kept}/{total} runs"
+    if excluded:
+        detail += "; exclus: " + ", ".join(excluded)
+    value = stats.get("median_cost_drag_pct")
+    if value is None:
+        return f"- Median cost drag: n/a — aucun run mesurable ({detail})"
+    return f"- Median cost drag: {float(value):.1f}% ({detail})"
+
+
 def _aggregate_by_timeframe(rows: list[dict]) -> dict[str, dict]:
     buckets: dict[str, list[dict]] = defaultdict(list)
     for row in rows:
@@ -57,14 +117,13 @@ def _aggregate_by_timeframe(rows: list[dict]) -> dict[str, dict]:
     for tf, items in sorted(buckets.items()):
         returns = [float(r.get("total_return_pct", 0)) for r in items]
         trades = [int(r.get("trade_count", 0)) for r in items]
-        costs = [float(r.get("cost_drag_pct", 0)) for r in items]
         turnover = [float(r.get("turnover_ratio", 0)) for r in items]
         verdicts = [str(r.get("verdict", "")) for r in items]
         out[tf] = {
             "runs": len(items),
             "median_return_pct": median(returns) if returns else 0.0,
             "median_trades": median(trades) if trades else 0,
-            "median_cost_drag_pct": median(costs) if costs else 0.0,
+            **cost_drag_stats(items),
             "median_turnover_ratio": median(turnover) if turnover else 0.0,
             "paper_candidate_count": sum(1 for v in verdicts if v == "paper_candidate"),
             "blocked_costs_count": sum(1 for v in verdicts if v == "blocked_costs"),
@@ -99,7 +158,7 @@ def main() -> int:
         by_family_tf[fam][tf] = {
             "median_trades": median([int(r.get("trade_count", 0)) for r in items]),
             "median_return_pct": median([float(r.get("total_return_pct", 0)) for r in items]),
-            "median_cost_drag_pct": median([float(r.get("cost_drag_pct", 0)) for r in items]),
+            **cost_drag_stats(items),
         }
 
     summary = {
@@ -121,7 +180,7 @@ def main() -> int:
         md.append(f"## {tf}")
         md.append(f"- Median trades: {stats['median_trades']:.1f}")
         md.append(f"- Median return: {stats['median_return_pct']:.2f}%")
-        md.append(f"- Median cost drag: {stats['median_cost_drag_pct']:.1f}%")
+        md.append(format_cost_drag_line(stats))
         md.append(f"- Paper candidates: {stats['paper_candidate_count']}")
         md.append("")
     (args.output_dir / "summary.md").write_text("\n".join(md) + "\n", encoding="utf-8")
