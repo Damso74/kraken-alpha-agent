@@ -20,8 +20,9 @@ from __future__ import annotations
 import argparse
 import random
 import sys
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
 _REPO_ROOT = _SCRIPT_DIR.parent
@@ -31,10 +32,6 @@ if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
 
 from _event_study_common import (  # noqa: E402
-    DEFAULT_ALPHA,
-    DEFAULT_DAYS,
-    DEFAULT_N_PLACEBOS,
-    DEFAULT_SEED,
     DEFAULT_WINDOWS,
     add_common_event_study_args,
     align_events_to_daily_candles,
@@ -42,6 +39,7 @@ from _event_study_common import (  # noqa: E402
     run_event_study_pipeline,
     write_json_report,
 )
+
 from src.crypto_ohlc_rest import CryptoOHLCFetchError
 from src.research.event_study import EventStudyWindow, run_event_study
 from src.research.placebo import (

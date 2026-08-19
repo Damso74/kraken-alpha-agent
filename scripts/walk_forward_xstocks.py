@@ -36,12 +36,11 @@ Usage examples (PowerShell)::
 from __future__ import annotations
 
 import argparse
-import itertools
 import json
 import os
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -365,7 +364,7 @@ def _load_or_fetch_ohlc(
 
 def _utc_now_iso() -> str:
     return (
-        datetime.now(timezone.utc)
+        datetime.now(UTC)
         .isoformat(timespec="seconds")
         .replace("+00:00", "Z")
     )
@@ -376,7 +375,7 @@ def _iso_from_unix(ts: int | None) -> str | None:
         return None
     try:
         return (
-            datetime.fromtimestamp(int(ts), tz=timezone.utc)
+            datetime.fromtimestamp(int(ts), tz=UTC)
             .isoformat(timespec="seconds")
             .replace("+00:00", "Z")
         )

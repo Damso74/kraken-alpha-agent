@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import math
-from typing import Any, Mapping, Sequence
+from collections.abc import Mapping, Sequence
+from typing import Any
 
 from src.bot.journal import BotJournal
-from src.bot.metrics import _max_drawdown
 
 
 def _underwater_segments(equity_curve: Sequence[float]) -> list[float]:

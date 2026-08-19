@@ -32,9 +32,10 @@ from __future__ import annotations
 import math
 import statistics
 from collections import Counter
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Iterable, Mapping, Optional, Sequence
+from datetime import UTC
+from typing import Any
 
 from . import actionability as actionability_mod
 from . import exit_rules as exit_rules_mod
@@ -51,8 +52,8 @@ from .schemas import (
     StrategyVote,
 )
 from .sessions import (
-    MarketSession,
     NY_TZ,
+    MarketSession,
     _parse_iso_to_utc,
     classify_market_session,
 )
@@ -81,8 +82,8 @@ class Candle:
     low: float
     close: float
     volume: float
-    vwap: Optional[float] = None
-    trade_count: Optional[int] = None
+    vwap: float | None = None
+    trade_count: int | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -254,8 +255,8 @@ class PortfolioResult:
     hold_count: int = 0
     actionability_reasons_top: list[tuple[str, int]] = field(default_factory=list)
     risk_reasons_top: list[tuple[str, int]] = field(default_factory=list)
-    best_symbol: Optional[str] = None
-    worst_symbol: Optional[str] = None
+    best_symbol: str | None = None
+    worst_symbol: str | None = None
     by_symbol: dict[str, SymbolResult] = field(default_factory=dict)
     status: str = "ok"
     note: str = ""
@@ -319,9 +320,9 @@ class GridResult:
     combos_evaluated: int = 0
     duration_seconds: float = 0.0
     top_by_adjusted_score: list[GridConfigResult] = field(default_factory=list)
-    best_by_adjusted_score: Optional[GridConfigResult] = None
-    best_by_net_pnl_pct: Optional[GridConfigResult] = None
-    cautious_recommendation: Optional[dict[str, Any]] = None
+    best_by_adjusted_score: GridConfigResult | None = None
+    best_by_net_pnl_pct: GridConfigResult | None = None
+    cautious_recommendation: dict[str, Any] | None = None
     source: str = SOURCE_LABEL
 
     def to_dict(self) -> dict[str, Any]:
@@ -362,10 +363,10 @@ def _coerce_timestamp(raw: Any) -> str:
         return raw
     if isinstance(raw, (int, float)):
         try:
-            from datetime import datetime, timezone
+            from datetime import datetime
 
             return (
-                datetime.fromtimestamp(float(raw), tz=timezone.utc)
+                datetime.fromtimestamp(float(raw), tz=UTC)
                 .isoformat(timespec="seconds")
                 .replace("+00:00", "Z")
             )
@@ -468,11 +469,11 @@ def _synthetic_ticker(symbol: str, window: Sequence[Candle]) -> dict[str, Any]:
 def compute_replay_features(
     symbol: str,
     candles_window: Sequence[Candle],
-    config: Optional[YAMLConfig] = None,
-    profile: Optional[str] = None,
+    config: YAMLConfig | None = None,
+    profile: str | None = None,
     *,
     interval_minutes: int = 60,
-) -> Optional[Features]:
+) -> Features | None:
     """Build a :class:`Features` snapshot from a sliding candle window.
 
     Returns ``None`` when the window is too small to compute the required
@@ -665,7 +666,7 @@ class _SimState:
     realized_pnl: float = 0.0
     peak_equity: float = 0.0
     max_drawdown_pct: float = 0.0
-    opened_at: Optional[str] = None
+    opened_at: str | None = None
 
     @property
     def quantity(self) -> float:
@@ -696,7 +697,7 @@ class _SimState:
             if dd > self.max_drawdown_pct:
                 self.max_drawdown_pct = dd
 
-    def buy(self, *, qty: float, price: float, timestamp_utc: Optional[str] = None) -> None:
+    def buy(self, *, qty: float, price: float, timestamp_utc: str | None = None) -> None:
         if qty <= 0 or price <= 0:
             return
         was_flat = self.quantity <= 1e-9
@@ -781,16 +782,16 @@ def _build_simulated_snapshot(symbol: str, state: _SimState, mark: float) -> Por
 def simulate_symbol(
     symbol: str,
     candles: Sequence[Candle],
-    config: Optional[YAMLConfig] = None,
-    profile: Optional[str] = None,
+    config: YAMLConfig | None = None,
+    profile: str | None = None,
     initial_cash: float = 10_000.0,
     *,
-    settings: Optional[Settings] = None,
-    block_low_liquidity: Optional[bool] = None,
+    settings: Settings | None = None,
+    block_low_liquidity: bool | None = None,
     interval_minutes: int = 60,
     record_decisions: bool = False,
     disable_realtime_cooldown: bool = False,
-    external_snapshots: Optional[Mapping[str, ExternalSnapshot]] = None,
+    external_snapshots: Mapping[str, ExternalSnapshot] | None = None,
 ) -> SymbolResult:
     """Replay a single symbol through the deterministic decision pipeline.
 
@@ -936,7 +937,7 @@ def simulate_symbol(
         # the walk-forward driver can pre-compute one snapshot per
         # candle once and stream it through the loop without
         # re-fetching anything per iteration.
-        ext_snap: Optional[ExternalSnapshot] = None
+        ext_snap: ExternalSnapshot | None = None
         if external_snapshots is not None:
             ext_snap = external_snapshots.get(current.timestamp_utc)
         ensemble, actionability = actionability_mod.apply_actionability_gates(
@@ -1189,18 +1190,16 @@ def _split_cash(initial_cash: float, n: int) -> float:
 def simulate_portfolio(
     symbols: Sequence[str],
     ohlc_by_symbol: Mapping[str, Sequence[Any]],
-    config: Optional[YAMLConfig] = None,
-    profile: Optional[str] = None,
+    config: YAMLConfig | None = None,
+    profile: str | None = None,
     initial_cash: float = 10_000.0,
     *,
-    settings: Optional[Settings] = None,
-    overrides: Optional[Mapping[str, Any]] = None,
+    settings: Settings | None = None,
+    overrides: Mapping[str, Any] | None = None,
     interval_minutes: int = 60,
     record_decisions: bool = False,
     disable_realtime_cooldown: bool = False,
-    external_snapshots_by_symbol: Optional[
-        Mapping[str, Mapping[str, ExternalSnapshot]]
-    ] = None,
+    external_snapshots_by_symbol: Mapping[str, Mapping[str, ExternalSnapshot]] | None = None,
 ) -> PortfolioResult:
     """Run :func:`simulate_symbol` for each symbol and aggregate the results.
 
@@ -1219,7 +1218,7 @@ def simulate_portfolio(
     for sym in symbols:
         rows = ohlc_by_symbol.get(sym) or []
         candles = build_replay_candles(sym, rows)
-        per_symbol_snapshots: Optional[Mapping[str, ExternalSnapshot]] = None
+        per_symbol_snapshots: Mapping[str, ExternalSnapshot] | None = None
         if external_snapshots_by_symbol is not None:
             per_symbol_snapshots = external_snapshots_by_symbol.get(sym)
         result = simulate_symbol(
@@ -1258,8 +1257,8 @@ def simulate_portfolio(
     act_reasons: Counter = Counter()
     risk_reasons: Counter = Counter()
     drawdowns: list[float] = []
-    best_sym: Optional[str] = None
-    worst_sym: Optional[str] = None
+    best_sym: str | None = None
+    worst_sym: str | None = None
     best_score = -math.inf
     worst_score = math.inf
     for sym, res in by_symbol.items():
@@ -1336,7 +1335,7 @@ def _adjusted_score(pf: PortfolioResult) -> float:
     return pf.net_pnl_pct - 0.5 * pf.max_drawdown_pct
 
 
-def _pick_cautious(top: Sequence[GridConfigResult]) -> Optional[dict[str, Any]]:
+def _pick_cautious(top: Sequence[GridConfigResult]) -> dict[str, Any] | None:
     """Pick a robust config: lowest drawdown among the top quartile."""
     if not top:
         return None
@@ -1362,15 +1361,15 @@ def _pick_cautious(top: Sequence[GridConfigResult]) -> Optional[dict[str, Any]]:
 def run_grid_search(
     symbols: Sequence[str],
     ohlc_by_symbol: Mapping[str, Sequence[Any]],
-    config: Optional[YAMLConfig] = None,
-    profile: Optional[str] = None,
-    grid: Optional[Mapping[str, Sequence[Any]]] = None,
+    config: YAMLConfig | None = None,
+    profile: str | None = None,
+    grid: Mapping[str, Sequence[Any]] | None = None,
     *,
     initial_cash: float = 10_000.0,
-    settings: Optional[Settings] = None,
+    settings: Settings | None = None,
     interval_minutes: int = 60,
     top_n_report: int = 10,
-    max_combos: Optional[int] = None,
+    max_combos: int | None = None,
 ) -> GridResult:
     """Evaluate ``grid`` combos and return the ranked top configs.
 
@@ -1485,7 +1484,7 @@ class SessionAggregate:
     symbols_count: int = 0
     avg_volume: float = 0.0
     median_volume: float = 0.0
-    avg_spread_bps: Optional[float] = None
+    avg_spread_bps: float | None = None
     buy_count: int = 0
     sell_count: int = 0
     hold_count: int = 0
@@ -1496,8 +1495,8 @@ class SessionAggregate:
     net_pnl: float = 0.0
     net_pnl_pct: float = 0.0
     max_drawdown_pct: float = 0.0
-    best_symbol: Optional[str] = None
-    worst_symbol: Optional[str] = None
+    best_symbol: str | None = None
+    worst_symbol: str | None = None
     top_rejection_reasons: list[tuple[str, int]] = field(default_factory=list)
     initial_cash_attribution: float = 0.0
 
@@ -1708,11 +1707,11 @@ def build_run_payload(
     *,
     symbols: Sequence[str],
     portfolio: PortfolioResult,
-    grid: Optional[GridResult] = None,
-    profile: Optional[str] = None,
+    grid: GridResult | None = None,
+    profile: str | None = None,
     interval_minutes: int = 60,
-    candles_per_symbol: Optional[Mapping[str, int]] = None,
-    extras: Optional[Mapping[str, Any]] = None,
+    candles_per_symbol: Mapping[str, int] | None = None,
+    extras: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Compose the canonical JSON payload written to disk + DB.
 
@@ -1786,9 +1785,9 @@ def _portfolio_totals(
 
 def _best_window_for_recommendation(
     sessions: Mapping[MarketSession, SessionAggregate],
-) -> tuple[Optional[MarketSession], float]:
+) -> tuple[MarketSession | None, float]:
     """Pick the session with the best risk-adjusted ratio (PnL / MDD)."""
-    best: Optional[MarketSession] = None
+    best: MarketSession | None = None
     best_ratio = -math.inf
     for session, agg in sessions.items():
         if session == MarketSession.WEEKEND:
@@ -1856,7 +1855,7 @@ def _top_us_core_tickers(
 def build_market_hours_report(
     *,
     symbols: Sequence[str],
-    profile: Optional[str],
+    profile: str | None,
     interval_minutes: int,
     candles_by_symbol: Mapping[str, Sequence[Candle]],
     variant_a: PortfolioResult,

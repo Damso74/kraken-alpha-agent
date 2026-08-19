@@ -1,6 +1,6 @@
 """Read-only HTTP collectors (injectable fetchers, JSON cache under ``data/collector_cache/``)."""
 
-from ._common import CollectorError, DEFAULT_HTTP_TIMEOUT_SECONDS
+from ._common import DEFAULT_HTTP_TIMEOUT_SECONDS, CollectorError
 from .defillama import (
     fetch_chain_tvl,
     fetch_stablecoin_supply,

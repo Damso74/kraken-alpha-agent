@@ -29,9 +29,9 @@ import os
 import sys
 import time
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
@@ -70,13 +70,13 @@ class SessionState:
 
 
 def _now_utc() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
-def _cest_now(now_utc: Optional[datetime] = None) -> datetime:
+def _cest_now(now_utc: datetime | None = None) -> datetime:
     now_utc = now_utc or _now_utc()
     return datetime.fromtimestamp(
-        now_utc.timestamp() + _CEST_OFFSET_SECONDS, tz=timezone.utc
+        now_utc.timestamp() + _CEST_OFFSET_SECONDS, tz=UTC
     )
 
 

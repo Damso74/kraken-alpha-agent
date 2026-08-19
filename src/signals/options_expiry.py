@@ -24,8 +24,9 @@ only a single expiry month drives results.
 from __future__ import annotations
 
 from calendar import monthrange
-from datetime import date, datetime, timezone
-from typing import Any, Mapping, Sequence
+from collections.abc import Mapping, Sequence
+from datetime import UTC, date, datetime
+from typing import Any
 
 from ._stats import extract_timestamp, sort_rows_by_timestamp
 
@@ -44,7 +45,7 @@ def _third_friday(year: int, month: int) -> date:
 
 
 def _is_third_friday_utc(ts: int) -> bool:
-    dt = datetime.fromtimestamp(ts, tz=timezone.utc)
+    dt = datetime.fromtimestamp(ts, tz=UTC)
     d = dt.date()
     if d.weekday() != 4:
         return False
@@ -63,7 +64,7 @@ def build_monthly_options_expiry_events(
         ts = extract_timestamp(row)
         if ts is None or not _is_third_friday_utc(ts):
             continue
-        day_key = datetime.fromtimestamp(ts, tz=timezone.utc).date().isoformat()
+        day_key = datetime.fromtimestamp(ts, tz=UTC).date().isoformat()
         if day_key in seen_days:
             continue
         seen_days.add(day_key)

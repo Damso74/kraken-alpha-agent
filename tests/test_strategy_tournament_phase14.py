@@ -7,12 +7,10 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
-
 from scripts.run_strategy_tournament import STRATEGIES, _load_candles
-from src.bot.metrics import MAX_RISK_DENIAL_RATE
 from src.bot.execution_simulator import ExecutionSimulator
 from src.bot.journal import BotJournal
+from src.bot.metrics import MAX_RISK_DENIAL_RATE
 from src.bot.paper_engine import run_paper_backtest
 from src.bot.portfolio import PaperPortfolio
 from src.bot.risk_manager import RiskManager

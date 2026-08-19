@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -121,10 +121,10 @@ def audit_cache_entry(
         row["first_timestamp"] = first_ts
         row["last_timestamp"] = last_ts
         row["first_date_utc"] = datetime.fromtimestamp(
-            first_ts, tz=timezone.utc
+            first_ts, tz=UTC
         ).strftime("%Y-%m-%d")
         row["last_date_utc"] = datetime.fromtimestamp(
-            last_ts, tz=timezone.utc
+            last_ts, tz=UTC
         ).strftime("%Y-%m-%d")
         span = last_ts - first_ts
         row["coverage_days"] = round(span / 86400.0, 2)

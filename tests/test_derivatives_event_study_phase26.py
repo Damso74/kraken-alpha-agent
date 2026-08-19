@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-
-import pytest
 
 from src.bot.derivatives_event_study import (
     classify_event_study_verdict,
@@ -16,7 +14,7 @@ from src.data.collectors.binance_derivatives_public import save_funding_cache, s
 
 
 def _candles(n: int, step: int = 14400) -> list[dict]:
-    t0 = int(datetime(2022, 1, 1, tzinfo=timezone.utc).timestamp())
+    t0 = int(datetime(2022, 1, 1, tzinfo=UTC).timestamp())
     out = []
     price = 100.0
     for i in range(n):

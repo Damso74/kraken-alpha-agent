@@ -25,6 +25,14 @@ jobs:
       - name: Ruff lint (src, tests, scripts)
         run: ruff check src tests scripts
 
+      # Les scripts d'ops (dont l'entrypoint du cron VPS) n'avaient jusqu'ici ni
+      # test ni lint, alors qu'ils sont le seul pipeline cense tourner en prod.
+      - name: Shell syntax check (ops scripts)
+        run: bash -n scripts/*.sh
+
+      - name: Shellcheck (errors only)
+        run: shellcheck -S error scripts/*.sh
+
       - name: Pytest collect sanity
         run: python -m pytest --collect-only -q
 
@@ -35,3 +43,10 @@ jobs:
           LIVE_TRADING: "false"
           ALLOW_LIVE_ORDERS: "false"
         run: python -m pytest -q
+
+      # Garde-fou : aucun test ni script ne doit reecrire un fichier suivi par git.
+      # Un rapport de recherche versionne a ete silencieusement remplace par la
+      # sortie d'une fixture pytest pendant trois mois faute de ce controle
+      # (scripts/audit_data_backbone_phase24.py ecrivait dans un chemin en dur).
+      - name: No tracked file was rewritten by the test run
+        run: git diff --exit-code

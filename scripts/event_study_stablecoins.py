@@ -20,9 +20,10 @@ from __future__ import annotations
 
 import argparse
 import sys
-from datetime import datetime, timezone
+from collections.abc import Sequence
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
 _REPO_ROOT = _SCRIPT_DIR.parent
@@ -32,18 +33,16 @@ if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
 
 from _event_study_common import (  # noqa: E402
-    DEFAULT_ALPHA,
-    DEFAULT_N_PLACEBOS,
-    DEFAULT_SEED,
     OHLC_SOURCE_BINANCE,
     REPO_ROOT,
     add_common_event_study_args,
     align_events_to_daily_candles,
     fetch_daily_ohlc,
     fetch_daily_ohlc_from_args,
-    write_json_report,
     window_iso_range,
+    write_json_report,
 )
+
 from src.crypto_ohlc_rest import CryptoOHLCFetchError
 from src.data.collectors._common import CollectorError
 from src.data.collectors.defillama import (
@@ -533,7 +532,7 @@ def _fetch_ohlc_for_tickers(
 
 def _append_run_log(entries: list[dict[str, Any]]) -> None:
     PHASE11_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    ts = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
     lines = [
         f"\n## Run {ts}\n",
         "| preregistration_id | metric | direction | events | BH rej | verdict |",

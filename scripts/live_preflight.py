@@ -30,7 +30,6 @@ import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
@@ -366,7 +365,7 @@ def _run(allow_live_env_check: bool) -> int:
     return 0
 
 
-def main(argv: Optional[list[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="Live-mode preflight checklist (read-only).")
     p.add_argument(
         "--allow-live-env-check",

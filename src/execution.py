@@ -15,7 +15,6 @@ Three modes:
 from __future__ import annotations
 
 import time
-from typing import Any
 
 from . import futures_kraken_cli, kraken_cli, portfolio
 from .config import get_settings

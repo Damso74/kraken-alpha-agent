@@ -4,54 +4,30 @@
 
 from __future__ import annotations
 
-
-
 import json
-from datetime import date, datetime, timezone
-
+from datetime import UTC, date, datetime
 from pathlib import Path
-
 from unittest.mock import MagicMock, patch
-
-
-
-import httpx
 
 import pytest
 
-
-
 from src.data.collectors.wikimedia import (
-
-    CollectorError,
-
     DEFAULT_WIKIMEDIA_USER_AGENT,
-
     WIKIMEDIA_USER_AGENT_ENV,
-
+    CollectorError,
     build_pageviews_url,
-
     default_pageviews_fetcher,
-
     fetch_pageviews,
-
     parse_pageviews_payload,
-
     resolve_wikimedia_user_agent,
-
     wikimedia_http_get_json,
-
     wikimedia_request_headers,
-
 )
-
-
-
 
 
 def _ts(d: date) -> int:
 
-    return int(datetime(d.year, d.month, d.day, tzinfo=timezone.utc).timestamp())
+    return int(datetime(d.year, d.month, d.day, tzinfo=UTC).timestamp())
 
 
 

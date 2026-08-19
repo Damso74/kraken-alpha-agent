@@ -10,7 +10,8 @@ from __future__ import annotations
 
 import pytest
 
-from src import config as cfg, execution as execution_mod, futures_kraken_cli
+from src import config as cfg
+from src import futures_kraken_cli
 from src.execution import _execute_futures
 from src.schemas import EnsembleResult, Features, StrategyVote
 

@@ -19,7 +19,8 @@ from __future__ import annotations
 
 import pytest
 
-from src import config as cfg, futures_kraken_cli
+from src import config as cfg
+from src import futures_kraken_cli
 from src.execution import _execute_futures
 from src.futures_kraken_cli import to_futures_symbol
 from src.schemas import EnsembleResult, Features, StrategyVote

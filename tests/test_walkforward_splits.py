@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from src.bot.walkforward import (
+    WalkForwardWindow,
+    WindowPeriod,
     apply_embargo_between_periods,
     assign_candles_to_periods,
     create_rolling_windows,
@@ -11,8 +13,6 @@ from src.bot.walkforward import (
     params_for_timeframe,
     summarize_windows,
     validate_no_overlap,
-    WalkForwardWindow,
-    WindowPeriod,
 )
 
 

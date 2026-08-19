@@ -30,8 +30,9 @@ post-event moves are explained by concurrent macro events alone.
 from __future__ import annotations
 
 import re
-from datetime import datetime, timezone
-from typing import Any, Literal, Mapping, Sequence
+from collections.abc import Mapping, Sequence
+from datetime import UTC, datetime
+from typing import Any, Literal
 
 from ._stats import extract_timestamp, sort_rows_by_timestamp
 
@@ -90,7 +91,7 @@ def incident_duration_minutes(row: Mapping[str, Any]) -> float | None:
         try:
             dt = datetime.fromisoformat(s.strip().replace("Z", "+00:00"))
             if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=timezone.utc)
+                dt = dt.replace(tzinfo=UTC)
             return dt
         except ValueError:
             return None

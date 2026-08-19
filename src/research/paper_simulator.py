@@ -9,9 +9,9 @@ See ``docs/PAPER_OBSERVATION_DESIGN.md`` for the full design.
 
 from __future__ import annotations
 
-import math
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Literal, Sequence
+from typing import Literal
 
 WeeklyVerdictLabel = Literal[
     "observe",

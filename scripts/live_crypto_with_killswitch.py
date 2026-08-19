@@ -52,11 +52,12 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Optional
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+
+from datetime import UTC
 
 from src import futures_kraken_cli  # noqa: E402
 from src.config import get_settings, reload_settings  # noqa: E402
@@ -187,10 +188,10 @@ def _fetch_futures_accounts_pnl() -> PnLSnapshot:
 
 
 def _now_iso() -> str:
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     return (
-        datetime.now(timezone.utc)
+        datetime.now(UTC)
         .isoformat(timespec="seconds")
         .replace("+00:00", "Z")
     )
@@ -345,7 +346,7 @@ def _spawn_agent_loop() -> subprocess.Popen:
     )
 
 
-def _terminate_subprocess(proc: Optional[subprocess.Popen]) -> None:
+def _terminate_subprocess(proc: subprocess.Popen | None) -> None:
     if proc is None:
         return
     if proc.poll() is not None:
@@ -396,7 +397,7 @@ def main() -> int:
     if not log_path.is_absolute():
         log_path = (ROOT / log_path).resolve()
 
-    agent_proc: Optional[subprocess.Popen] = None
+    agent_proc: subprocess.Popen | None = None
     if not args.skip_subprocess:
         agent_proc = _spawn_agent_loop()
         # Give the agent loop a few seconds to come up before we capture

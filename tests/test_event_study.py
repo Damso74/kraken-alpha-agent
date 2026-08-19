@@ -12,10 +12,10 @@ import math
 import pytest
 
 from src.research.event_study import (
+    METRIC_REGISTRY,
     EventStudyResult,
     EventStudyRow,
     EventStudyWindow,
-    METRIC_REGISTRY,
     make_post_event_windows,
     make_symmetric_windows,
     metric_log_return,
@@ -26,7 +26,6 @@ from src.research.event_study import (
     register_metric,
     run_event_study,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures: deterministic OHLC sequences

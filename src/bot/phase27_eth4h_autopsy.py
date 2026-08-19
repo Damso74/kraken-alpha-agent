@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import Any, Literal, Mapping, Sequence
+from collections.abc import Mapping, Sequence
+from datetime import UTC, datetime
+from typing import Any, Literal
 
 from src.bot.basis_crowding_overlay import classify_eth_overlay_autopsy_verdict
 from src.bot.crowding_overlay import CrowdingOverlayStrategy
@@ -31,7 +32,7 @@ PERIOD_SPLITS: tuple[tuple[str, int, int], ...] = (
 
 
 def _year_utc(ts: int) -> int:
-    return datetime.fromtimestamp(ts, tz=timezone.utc).year
+    return datetime.fromtimestamp(ts, tz=UTC).year
 
 
 def _slice_candles(candles: Sequence[Mapping[str, Any]], y0: int, y1: int) -> list:

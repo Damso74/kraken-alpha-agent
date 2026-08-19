@@ -7,13 +7,9 @@ from __future__ import annotations
 
 import math
 
-import pytest
-
 from src.research.paper_simulator import (
     DEFAULT_COST_MODEL,
     EligibilityInput,
-    PaperCostModel,
-    PaperTradeResult,
     check_paper_eligibility,
     compute_weekly_verdict,
     simulate_round_trip,

@@ -19,13 +19,14 @@ Normalized rows (one per incident update / incident)
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from collections.abc import Callable, Mapping, Sequence
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable, Mapping, Optional, Sequence
+from typing import Any
 
 from ._common import (
-    CollectorError,
     DEFAULT_COLLECTOR_CACHE_DIR,
+    CollectorError,
     default_http_fetcher,
     load_json_cache,
     save_json_cache,
@@ -57,7 +58,7 @@ def _parse_iso_timestamp(s: str) -> int | None:
     try:
         dt = datetime.fromisoformat(s)
         if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
+            dt = dt.replace(tzinfo=UTC)
         return int(dt.timestamp())
     except ValueError:
         return None

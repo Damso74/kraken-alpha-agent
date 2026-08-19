@@ -19,8 +19,6 @@ together with the :class:`Actionability` record explaining the decision.
 
 from __future__ import annotations
 
-from typing import Any, Optional
-
 from .config import Settings, get_settings
 from .external_signals import ExternalSnapshot, apply_external_gates
 from .schemas import Actionability, EnsembleResult, Features, Position
@@ -44,10 +42,10 @@ def apply_actionability_gates(
     *,
     ensemble: EnsembleResult,
     features: Features,
-    position: Optional[Position],
+    position: Position | None,
     liquidity_score: float,
-    settings: Optional[Settings] = None,
-    external_snapshot: Optional[ExternalSnapshot] = None,
+    settings: Settings | None = None,
+    external_snapshot: ExternalSnapshot | None = None,
 ) -> tuple[EnsembleResult, Actionability]:
     """Return ``(possibly_downgraded_ensemble, actionability)``.
 
@@ -87,7 +85,7 @@ def apply_actionability_gates(
     # buy/sell threshold checks so a macro block produces a clear
     # ``external_gate=...`` reason rather than masquerading as a
     # below-threshold rejection.
-    external_block: Optional[str] = None
+    external_block: str | None = None
     gates_cfg = getattr(s.config, "external_signals", None)
     if action == "BUY" and gates_cfg is not None and external_snapshot is not None:
         external_block = apply_external_gates(

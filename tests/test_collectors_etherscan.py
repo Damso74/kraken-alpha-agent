@@ -12,8 +12,8 @@ import pytest
 
 from src.data.collectors.etherscan import (
     BLOCKED_MISSING_GAS_HISTORY,
-    CollectorError,
     SYNTHETIC_GAS_HISTORY_EXAMPLE,
+    CollectorError,
     append_oracle_snapshot_to_history,
     default_gas_history_example_path,
     fetch_gas_oracle,

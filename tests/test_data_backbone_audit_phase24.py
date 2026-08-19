@@ -5,15 +5,15 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
 from src.bot.phase24_data_backbone import (
+    PHASE23_FACTORY_MAX_BARS,
     PHASE24_MIN_BARS,
     PHASE24_REQUIRED_ASSETS,
-    PHASE23_FACTORY_MAX_BARS,
     audit_cache_entry,
     build_inventory,
     discover_cached_assets,
@@ -26,7 +26,7 @@ PY = sys.executable
 
 
 def _make_candles(*, count: int, step_seconds: int) -> list[dict]:
-    start_ts = int(datetime(2020, 1, 1, tzinfo=timezone.utc).timestamp())
+    start_ts = int(datetime(2020, 1, 1, tzinfo=UTC).timestamp())
     out: list[dict] = []
     for i in range(count):
         ts = start_ts + i * step_seconds

@@ -41,7 +41,6 @@ from src.logger import setup_logging  # noqa: E402
 from src.universe import candidate_pair_forms, get_universe_tickers  # noqa: E402
 from src.utils import utc_now_iso  # noqa: E402
 
-
 _EXTRA_REQUESTED = ("AAPLx", "TSLAx", "NVDAx", "SPYx", "QQQx", "MSTRx")
 
 

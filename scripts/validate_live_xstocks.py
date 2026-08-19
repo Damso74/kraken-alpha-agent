@@ -29,9 +29,9 @@ import os
 import shlex
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
@@ -54,7 +54,7 @@ class MissingValidateError(RuntimeError):
 
 
 def _utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _stamp() -> str:
@@ -228,7 +228,7 @@ def _write_outputs(payload: dict[str, Any], output_dir: Path) -> tuple[Path, Pat
 # ---------------------------------------------------------------------------
 
 
-def _parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(
         description=(
             "Validate-only xStocks check. Calls 'kraken order buy <PAIR> "
@@ -263,7 +263,7 @@ def _parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
     return p.parse_args(argv)
 
 
-def main(argv: Optional[list[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
     keys_ok, key_error = _check_keys()
     timestamp = _utc_now().isoformat(timespec="seconds").replace("+00:00", "Z")
@@ -291,7 +291,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     )
 
     results: list[dict[str, Any]] = []
-    transport_seen: Optional[str] = None
+    transport_seen: str | None = None
     commands: list[list[str]] = []
     for sym in args.symbols:
         res = _run_one(

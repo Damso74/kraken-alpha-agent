@@ -25,7 +25,8 @@ or fail placebo tests vs random intraday anchors.
 
 from __future__ import annotations
 
-from typing import Any, Mapping, Sequence
+from collections.abc import Mapping, Sequence
+from typing import Any
 
 from ._stats import (
     events_from_z_threshold,

@@ -10,8 +10,8 @@ from __future__ import annotations
 import json
 import statistics
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
-from typing import Any, Iterable, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from .utils import safe_float
 
@@ -31,7 +31,7 @@ def _within_window(at: str | None, cutoff: datetime) -> bool:
     if parsed is None:
         return True  # keep records whose timestamp we cannot parse
     if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
+        parsed = parsed.replace(tzinfo=UTC)
     return parsed >= cutoff
 
 
@@ -39,7 +39,7 @@ def _within_window(at: str | None, cutoff: datetime) -> bool:
 class PaperRunReport:
     generated_at: str
     since_hours: float
-    profile: Optional[str]
+    profile: str | None
     cycles_count: int = 0
     cycles_avg_duration_ms: float = 0.0
     decisions_count: int = 0
@@ -162,7 +162,7 @@ def compute_report(
     profile: str | None,
     generated_at: str,
 ) -> PaperRunReport:
-    cutoff = datetime.now(timezone.utc) - timedelta(hours=since_hours)
+    cutoff = datetime.now(UTC) - timedelta(hours=since_hours)
     f_decisions = [d for d in decisions if _within_window(d.get("at"), cutoff)]
     f_orders = [o for o in orders if _within_window(o.get("at"), cutoff)]
     f_cycles = [c for c in cycles if _within_window(c.get("started_at"), cutoff)]

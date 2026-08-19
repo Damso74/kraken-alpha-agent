@@ -42,7 +42,8 @@ random-date placebos.
 
 from __future__ import annotations
 
-from typing import Any, Mapping, Optional, Sequence
+from collections.abc import Mapping, Sequence
+from typing import Any
 
 from ._stats import (
     extract_float,
@@ -72,7 +73,7 @@ EVENT_VARIANTS = (
 )
 
 
-def _hl_range_pct(row: Mapping[str, Any]) -> Optional[float]:
+def _hl_range_pct(row: Mapping[str, Any]) -> float | None:
     high = extract_float(row, "high")
     low = extract_float(row, "low")
     close = extract_float(row, "close")
@@ -84,8 +85,8 @@ def _hl_range_pct(row: Mapping[str, Any]) -> Optional[float]:
 
 
 def _abs_simple_return(
-    row: Mapping[str, Any], prev_close: Optional[float]
-) -> Optional[float]:
+    row: Mapping[str, Any], prev_close: float | None
+) -> float | None:
     close = extract_float(row, "close")
     if close is None or prev_close is None or prev_close <= 0:
         return None
@@ -102,7 +103,7 @@ def compute_volume_shock_features(
     range_pcts: list[float] = []
     abs_returns: list[float] = []
 
-    prev_close: Optional[float] = None
+    prev_close: float | None = None
     for row in sorted_rows:
         vol = extract_float(row, "volume")
         if vol is None or vol < 0:

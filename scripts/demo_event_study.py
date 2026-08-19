@@ -50,7 +50,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -190,7 +190,7 @@ def _fetch_fear_greed(
 def _fetch_btc_daily(ticker: str, days: int) -> list[dict[str, Any]]:
     """Pull daily OHLC for the requested ticker via Kraken public REST."""
     pair = normalize_crypto_pair(ticker)
-    since = int((datetime.now(timezone.utc) - timedelta(days=days + 5)).timestamp())
+    since = int((datetime.now(UTC) - timedelta(days=days + 5)).timestamp())
     rows = fetch_crypto_ohlc_paginated(
         pair,
         interval_min=1440,
@@ -221,7 +221,7 @@ def _events_from_fear_greed(
     """Pick candle timestamps whose F&G value is strictly below ``threshold``."""
     events: list[int] = []
     for c in candles:
-        d = datetime.fromtimestamp(int(c["timestamp"]), tz=timezone.utc).date()
+        d = datetime.fromtimestamp(int(c["timestamp"]), tz=UTC).date()
         val = pick_for_date(fg, d, fallback=None)
         if val is None:
             continue
@@ -263,7 +263,7 @@ def _placebo_replicate_metric(
 
 def main() -> int:
     args = parse_args()
-    today = datetime.now(timezone.utc).date()
+    today = datetime.now(UTC).date()
     start = today - timedelta(days=args.days)
     print(
         f"[demo] hypothesis: {args.ticker} daily 'F&G < {args.fear_threshold} → "
@@ -292,8 +292,8 @@ def main() -> int:
         return 3
     print(
         f"[demo] {args.ticker} daily OHLC: {len(candles)} candles "
-        f"({datetime.fromtimestamp(candles[0]['timestamp'], tz=timezone.utc).date()} → "
-        f"{datetime.fromtimestamp(candles[-1]['timestamp'], tz=timezone.utc).date()})"
+        f"({datetime.fromtimestamp(candles[0]['timestamp'], tz=UTC).date()} → "
+        f"{datetime.fromtimestamp(candles[-1]['timestamp'], tz=UTC).date()})"
     )
 
     events = _events_from_fear_greed(fg, candles, args.fear_threshold)

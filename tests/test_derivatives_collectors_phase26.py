@@ -4,20 +4,16 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from src.data.collectors.binance_derivatives_public import (
     LIQUIDATIONS_STATUS,
     audit_derivatives_readiness,
     default_funding_cache_path,
     default_oi_cache_path,
     fetch_funding_rate_history,
-    fetch_open_interest_history,
+    load_derivatives_cache,
     parse_funding_rows,
-    parse_oi_rows,
     save_funding_cache,
     save_oi_cache,
-    load_derivatives_cache,
 )
 
 

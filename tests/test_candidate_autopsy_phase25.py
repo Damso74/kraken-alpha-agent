@@ -5,25 +5,21 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
-import pytest
-
+from src.bot.phase23_presets import get_phase23_params
 from src.bot.phase25_autopsy import (
-    PHASE24_REFERENCE,
+    AutopsyTestResult,
+    BacktestSnapshot,
     CandidateSpec,
     build_trend_following_instrument,
+    check_drawdown_acceptability,
+    check_trade_concentration,
     classify_final_verdict,
     extract_round_trip_pnls,
     run_full_autopsy,
-    check_drawdown_acceptability,
-    check_reproducibility,
-    check_trade_concentration,
-    AutopsyTestResult,
-    BacktestSnapshot,
 )
-from src.bot.phase23_presets import get_phase23_params
 from src.data.collectors.binance_public import (
     MIN_ROWS_DATA_OK,
     default_ohlc_cache_path,
@@ -35,7 +31,7 @@ PY = sys.executable
 
 
 def _make_candles(*, count: int, step_seconds: int, start_year: int = 2020) -> list[dict]:
-    start_ts = int(datetime(start_year, 1, 1, tzinfo=timezone.utc).timestamp())
+    start_ts = int(datetime(start_year, 1, 1, tzinfo=UTC).timestamp())
     return [
         {
             "timestamp": start_ts + i * step_seconds,

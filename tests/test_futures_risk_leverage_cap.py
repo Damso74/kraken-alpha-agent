@@ -17,9 +17,9 @@ from __future__ import annotations
 import pytest
 
 from src import config as cfg
+from src.futures_kraken_cli import _build_order_args
 from src.risk import HARDCODED_MAX_LEVERAGE, evaluate_risk
 from src.schemas import EnsembleResult, Features, PortfolioSnapshot, StrategyVote
-from src.futures_kraken_cli import _build_order_args
 
 
 def _features(symbol: str = "AAPLx") -> Features:

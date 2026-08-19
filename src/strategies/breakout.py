@@ -31,7 +31,7 @@ def score(features: Features) -> StrategyVote:
 # --- Phase 14 paper-bot (rolling high/low on OHLC) -------------------------
 
 
-from typing import Sequence  # noqa: E402
+from collections.abc import Sequence  # noqa: E402
 
 from src.bot.paper_engine import BotCandle  # noqa: E402
 from src.bot.portfolio import PaperPortfolio  # noqa: E402

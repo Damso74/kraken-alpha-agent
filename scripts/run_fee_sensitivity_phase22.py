@@ -21,7 +21,10 @@ from scripts._phase22_common import (  # noqa: E402
     run_backtest_cell,
     write_matrix_csv,
 )
-from scripts.run_strategy_tournament import PHASE16_STRATEGY_NAMES, _instantiate_strategy  # noqa: E402
+from scripts.run_strategy_tournament import (  # noqa: E402
+    PHASE16_STRATEGY_NAMES,
+    _instantiate_strategy,
+)
 
 FEE_GRID = (0.0, 10.0, 25.0, 40.0)
 SLIPPAGE_GRID = (0.0, 5.0, 10.0)

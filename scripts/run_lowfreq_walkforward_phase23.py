@@ -30,7 +30,6 @@ from src.bot.phase23_presets import (
     PHASE23_ASSETS,
     PHASE23_LOWFREQ_STRATEGIES,
     PHASE23_TIMEFRAMES,
-    PHASE23_VARIANTS,
     phase23_run_id,
 )
 from src.bot.phase23_walkforward import classify_phase23_walkforward_verdict

@@ -7,11 +7,9 @@ calling :func:`record_fill`.
 
 from __future__ import annotations
 
-from typing import Iterable
-
 from . import kraken_cli, market_data, storage
 from .config import get_settings
-from .schemas import ExecutionResult, Position, PortfolioSnapshot
+from .schemas import ExecutionResult, PortfolioSnapshot, Position
 from .utils import safe_float, utc_now_iso
 
 

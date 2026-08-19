@@ -19,7 +19,7 @@ import importlib.util
 import json
 import sqlite3
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -188,7 +188,7 @@ def _make_test_db(tmp_path: Path, *, started_iso: str, ended_iso: str) -> Path:
 
 
 def test_exporter_produces_valid_submission_schema(tmp_path: Path, monkeypatch) -> None:
-    started = datetime(2026, 5, 18, 19, 0, 0, tzinfo=timezone.utc)
+    started = datetime(2026, 5, 18, 19, 0, 0, tzinfo=UTC)
     ended = started + timedelta(hours=2)
     started_iso = started.isoformat().replace("+00:00", "Z")
     ended_iso = ended.isoformat().replace("+00:00", "Z")
@@ -264,7 +264,7 @@ def test_exporter_produces_valid_submission_schema(tmp_path: Path, monkeypatch) 
 
 
 def test_monitor_once_renders_against_test_db(tmp_path: Path, monkeypatch) -> None:
-    started = datetime(2026, 5, 18, 19, 0, 0, tzinfo=timezone.utc)
+    started = datetime(2026, 5, 18, 19, 0, 0, tzinfo=UTC)
     ended = started + timedelta(hours=2)
     started_iso = started.isoformat().replace("+00:00", "Z")
     ended_iso = ended.isoformat().replace("+00:00", "Z")
@@ -331,8 +331,8 @@ def test_monitor_metadata_fallback_when_no_file(tmp_path: Path, monkeypatch) -> 
 
     monitor = _load_script("monitor_shadow_session")
     state = monitor.SessionState(
-        started_at_utc=datetime.now(timezone.utc),
-        cutoff_at_utc=datetime.now(timezone.utc) + timedelta(hours=24),
+        started_at_utc=datetime.now(UTC),
+        cutoff_at_utc=datetime.now(UTC) + timedelta(hours=24),
         db_path=db,
         log_path=tmp_path / "shadow_session.log",
         metadata={},

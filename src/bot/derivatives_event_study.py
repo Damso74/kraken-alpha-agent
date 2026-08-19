@@ -5,8 +5,9 @@ from __future__ import annotations
 import bisect
 import math
 import statistics
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Literal, Mapping, Sequence
+from typing import Any, Literal
 
 from src.data.collectors.binance_derivatives_public import (
     LIQUIDATIONS_BLOCKED_REASON,

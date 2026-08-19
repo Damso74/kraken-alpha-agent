@@ -15,7 +15,10 @@ if str(REPO_ROOT) not in sys.path:
 from scripts._phase23_common import DEFAULT_CACHE_ROOT, write_json, write_matrix_csv  # noqa: E402
 from src.bot.crowding_overlay import load_derivatives_for_asset  # noqa: E402
 from src.bot.data_loader import load_ohlcv_candles  # noqa: E402
-from src.bot.phase27_eth4h_autopsy import ETH4H_AUTOPSY_TARGETS, run_eth4h_autopsy_cell  # noqa: E402
+from src.bot.phase27_eth4h_autopsy import (  # noqa: E402
+    ETH4H_AUTOPSY_TARGETS,
+    run_eth4h_autopsy_cell,
+)
 
 DEFAULT_OUT = REPO_ROOT / "reports" / "phase27_eth4h_overlay_autopsy"
 

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from .schemas import Features, Regime
 
-
 # Thresholds tuned for hourly candles on US equities. Values are deliberately
 # conservative — the agent should err on the side of HOLD/UNKNOWN.
 TRENDING_RETURN_1H = 0.004        # 0.4% in one hour

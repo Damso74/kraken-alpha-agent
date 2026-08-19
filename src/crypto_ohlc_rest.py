@@ -48,8 +48,9 @@ recover history older than the wall.
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, Optional
+from typing import Any
 
 import httpx
 
@@ -137,13 +138,13 @@ def normalize_crypto_pair(ticker_or_pair: str) -> str:
 
 
 # Type alias for the injectable fetcher: (pair, interval_min, since) -> raw dict.
-FetcherFn = Callable[[str, int, Optional[int]], dict]
+FetcherFn = Callable[[str, int, int | None], dict]
 
 
 def default_rest_fetcher(
     pair: str,
     interval_min: int,
-    since: Optional[int],
+    since: int | None,
     *,
     timeout: float = DEFAULT_HTTP_TIMEOUT_SECONDS,
 ) -> dict:
@@ -181,7 +182,7 @@ def parse_rest_ohlc_payload(
     payload: Any,
     *,
     pair_hint: str | None = None,
-) -> tuple[list[OHLCRow], Optional[int]]:
+) -> tuple[list[OHLCRow], int | None]:
     """Parse a Kraken public REST OHLC payload into ``(rows, last_cursor)``.
 
     The REST shape is ``{"error": [...], "result": {"<canonical_pair>":
@@ -304,8 +305,8 @@ def fetch_crypto_ohlc_paginated(
     f = fetcher or default_rest_fetcher
 
     accumulated: dict[int, OHLCRow] = {}
-    cursor: Optional[int] = since
-    previous_cursor: Optional[int] = None
+    cursor: int | None = since
+    previous_cursor: int | None = None
     pages = 0
 
     while pages < max_pages and len(accumulated) < target_candles:

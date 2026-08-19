@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from src.backtest import _build_settings_override
 from src.config import Settings, get_settings
-from src.walk_forward import _passes_filter, WindowMetrics
+from src.walk_forward import WindowMetrics, _passes_filter
 
 
 def _base_settings() -> Settings:

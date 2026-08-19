@@ -8,9 +8,7 @@ config dicts.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
-
-import pytest
+from datetime import UTC, datetime, timedelta
 
 from src.exit_rules import (
     ExitDecision,
@@ -107,11 +105,11 @@ def test_momentum_exit_holds_when_score_above_floor() -> None:
 
 
 def test_time_exit_triggers_when_stale_pnl_and_old() -> None:
-    opened = (datetime.now(timezone.utc) - timedelta(minutes=120)).isoformat()
+    opened = (datetime.now(UTC) - timedelta(minutes=120)).isoformat()
     position = _make_position(avg=100.0, market=100.1, opened_at=opened)
     result = time_exit(
         position,
-        now=datetime.now(timezone.utc),
+        now=datetime.now(UTC),
         config=_Cfg(),
     )
     assert result.should_exit is True
@@ -121,21 +119,21 @@ def test_time_exit_triggers_when_stale_pnl_and_old() -> None:
 
 def test_time_exit_skipped_when_no_opened_at() -> None:
     position = _make_position(opened_at=None)
-    result = time_exit(position, now=datetime.now(timezone.utc), config=_Cfg())
+    result = time_exit(position, now=datetime.now(UTC), config=_Cfg())
     assert result.should_exit is False
 
 
 def test_time_exit_skipped_when_pnl_already_winning() -> None:
-    opened = (datetime.now(timezone.utc) - timedelta(minutes=200)).isoformat()
+    opened = (datetime.now(UTC) - timedelta(minutes=200)).isoformat()
     # market = 101.0 → pnl = +1% > stale_position_min_pnl_pct (0.3)
     position = _make_position(avg=100.0, market=101.0, opened_at=opened)
-    result = time_exit(position, now=datetime.now(timezone.utc), config=_Cfg())
+    result = time_exit(position, now=datetime.now(UTC), config=_Cfg())
     assert result.should_exit is False
 
 
 def test_flatten_before_close_triggers_inside_window() -> None:
     # 2026-05-15 19:50 UTC = 15:50 ET → 10 minutes to close.
-    now = datetime(2026, 5, 15, 19, 50, 0, tzinfo=timezone.utc)
+    now = datetime(2026, 5, 15, 19, 50, 0, tzinfo=UTC)
     position = _make_position()
     result = flatten_before_close_exit(position, now=now, config=_Cfg())
     assert result.should_exit is True
@@ -144,7 +142,7 @@ def test_flatten_before_close_triggers_inside_window() -> None:
 
 def test_flatten_before_close_skipped_outside_window() -> None:
     # 13:00 UTC = 09:00 ET → before open; rule must not fire.
-    now = datetime(2026, 5, 15, 13, 0, 0, tzinfo=timezone.utc)
+    now = datetime(2026, 5, 15, 13, 0, 0, tzinfo=UTC)
     position = _make_position()
     result = flatten_before_close_exit(position, now=now, config=_Cfg())
     assert result.should_exit is False
@@ -158,7 +156,7 @@ def test_flatten_before_close_skipped_outside_window() -> None:
 def test_no_position_never_opens_a_short() -> None:
     none_pos = _make_position(quantity=0.0)
     cfg = _Cfg()
-    now = datetime(2026, 5, 15, 19, 50, 0, tzinfo=timezone.utc)
+    now = datetime(2026, 5, 15, 19, 50, 0, tzinfo=UTC)
     # Each rule is structurally inert without a long.
     assert stop_loss_exit(none_pos, 98.0, cfg).should_exit is False
     assert take_profit_exit(none_pos, 102.0, cfg).should_exit is False
@@ -185,13 +183,13 @@ def test_no_position_never_opens_a_short() -> None:
 
 def test_evaluate_priorities_stop_loss_over_other_rules() -> None:
     # Stale + losing → stop-loss must win over time/momentum.
-    opened = (datetime.now(timezone.utc) - timedelta(minutes=180)).isoformat()
+    opened = (datetime.now(UTC) - timedelta(minutes=180)).isoformat()
     position = _make_position(avg=100.0, market=97.0, opened_at=opened)
     result = evaluate_exit_rules(
         position,
         current_price=97.0,
         opportunity_score=-0.20,
-        now=datetime.now(timezone.utc),
+        now=datetime.now(UTC),
         config=_Cfg(),
     )
     assert result.should_exit is True
@@ -199,10 +197,10 @@ def test_evaluate_priorities_stop_loss_over_other_rules() -> None:
 
 
 def test_evaluate_no_exit_when_clean() -> None:
-    opened = (datetime.now(timezone.utc) - timedelta(minutes=10)).isoformat()
+    opened = (datetime.now(UTC) - timedelta(minutes=10)).isoformat()
     position = _make_position(avg=100.0, market=100.5, opened_at=opened)
     # 13:00 UTC = 09:00 ET premarket → flatten cannot fire, momentum is fine.
-    now = datetime(2026, 5, 15, 13, 0, 0, tzinfo=timezone.utc)
+    now = datetime(2026, 5, 15, 13, 0, 0, tzinfo=UTC)
     result = evaluate_exit_rules(
         position,
         current_price=100.5,

@@ -15,14 +15,12 @@ if str(REPO_ROOT) not in sys.path:
 from scripts._phase23_common import (  # noqa: E402
     DEFAULT_CACHE_ROOT,
     OVERLAY_MODES,
-    OverlayMode,
     cap_candles,
     run_phase23_cell,
     write_json,
     write_matrix_csv,
 )
 from src.bot.data_loader import load_ohlcv_candles
-from src.bot.regime_features import precompute_regime_features
 from src.bot.phase23_presets import (
     PHASE23_ASSETS,
     PHASE23_LOWFREQ_STRATEGIES,
@@ -30,6 +28,7 @@ from src.bot.phase23_presets import (
     PHASE23_VARIANTS,
     build_phase23_strategy,
 )
+from src.bot.regime_features import precompute_regime_features
 
 
 def _parse_args() -> argparse.Namespace:

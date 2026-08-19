@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Literal, Mapping, Sequence
+from typing import Any, Literal
 
 from src.bot.walkforward import (
     DEFAULT_EMBARGO_BARS,
@@ -19,7 +20,6 @@ from src.bot.walkforward_metrics import (
     WalkForwardAggregate,
     WalkForwardVerdictResult,
     WindowRunMetrics,
-    aggregate_window_metrics,
     classify_walkforward_verdict,
 )
 

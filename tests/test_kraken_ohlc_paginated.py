@@ -25,7 +25,6 @@ from src.kraken_ohlc_paginated import (
     parse_ohlc_payload,
 )
 
-
 PAIR = "AAPLx/USD"
 
 

@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from src.bot.regime_classifier import classify_regime
 from src.bot.regime_features import (
@@ -52,7 +53,7 @@ class RegimeOverlayStrategy:
         self._candles_id = cid
 
     def warmup_bars(self) -> int:
-        return max(int(getattr(self._inner, "warmup_bars")()), self.ma_window + 5)
+        return max(int(self._inner.warmup_bars()), self.ma_window + 5)
 
     def _scale_for_regime(self, regime: str) -> float:
         if regime == "trend_up":

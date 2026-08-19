@@ -37,9 +37,9 @@ from __future__ import annotations
 
 import random
 from calendar import monthrange
-from collections.abc import Callable
-from datetime import date, datetime, timezone
-from typing import Any, Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
+from datetime import UTC, date, datetime
+from typing import Any
 from zoneinfo import ZoneInfo
 
 from ._stats import extract_timestamp, sort_rows_by_timestamp
@@ -169,7 +169,7 @@ def build_third_friday_events(
         ts = extract_timestamp(row)
         if ts is None:
             continue
-        dt = datetime.fromtimestamp(ts, tz=timezone.utc)
+        dt = datetime.fromtimestamp(ts, tz=UTC)
         d = dt.date()
         if d.weekday() != 4 or d != _third_friday_date(d.year, d.month):
             continue
@@ -193,7 +193,7 @@ def build_month_end_events(
         ts = extract_timestamp(row)
         if ts is None:
             continue
-        dt = datetime.fromtimestamp(ts, tz=timezone.utc)
+        dt = datetime.fromtimestamp(ts, tz=UTC)
         last_by_month[(dt.year, dt.month)] = ts
 
     return sorted(last_by_month.values())
@@ -226,7 +226,7 @@ def placebo_timezone_for_effect(effect_id: str) -> ZoneInfo:
         return _ET
     if effect_id == "monday_asia_open":
         return _TOKYO
-    return timezone.utc
+    return UTC
 
 
 def random_same_weekday_placebo_events(
@@ -272,7 +272,7 @@ def build_weekend_start_events(
         When True (default), Saturday is evaluated in UTC; when False,
         uses ``America/New_York`` (US equity weekend proxy for xStocks).
     """
-    tz = timezone.utc if use_utc else _ET
+    tz = UTC if use_utc else _ET
     sorted_rows = sort_rows_by_timestamp(rows)
     events: list[int] = []
     last_saturday: str | None = None
@@ -299,7 +299,7 @@ def build_weekend_end_events(
     use_utc: bool = True,
 ) -> list[int]:
     """First candle whose local calendar day is Monday (weekend exit)."""
-    tz = timezone.utc if use_utc else _ET
+    tz = UTC if use_utc else _ET
     sorted_rows = sort_rows_by_timestamp(rows)
     events: list[int] = []
     last_monday: str | None = None

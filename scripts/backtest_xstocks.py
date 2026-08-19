@@ -28,16 +28,19 @@ import json
 import os
 import sys
 import time
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 # Allow running from anywhere: ``python scripts/backtest_xstocks.py``
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src import backtest  # noqa: E402
-from src import market_data  # noqa: E402
+from src import (
+    backtest,  # noqa: E402
+    market_data,  # noqa: E402
+)
 from src.backtest import SOURCE_LABEL  # noqa: E402
 from src.config import get_settings, reload_settings  # noqa: E402
 from src.kraken_ohlc_paginated import (  # noqa: E402
@@ -47,7 +50,6 @@ from src.kraken_ohlc_paginated import (  # noqa: E402
 )
 from src.logger import get_logger  # noqa: E402
 from src.universe import get_universe_tickers, pair_format  # noqa: E402
-from src.utils import utc_now_iso  # noqa: E402
 
 logger = get_logger("backtest_xstocks")
 

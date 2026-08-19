@@ -3,17 +3,20 @@
 from __future__ import annotations
 
 import bisect
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Literal, Mapping, Sequence
+from typing import Any, Literal
 
 from src.bot.crowding_overlay import (
     _align_series,
     _rolling_z,
     compare_baseline_vs_overlay,
-    load_derivatives_for_asset,
 )
 from src.data.collectors.binance_basis_public import default_basis_cache_path, load_basis_cache
-from src.data.collectors.binance_derivatives_public import default_funding_cache_path, load_derivatives_cache
+from src.data.collectors.binance_derivatives_public import (
+    default_funding_cache_path,
+    load_derivatives_cache,
+)
 from src.strategies.base import StrategySignal
 
 BasisCrowdingFilter = Literal["allow", "reduce", "block"]
@@ -277,7 +280,7 @@ class BasisCrowdingOverlayStrategy:
         )
 
     def warmup_bars(self) -> int:
-        return max(int(getattr(self._inner, "warmup_bars")()), 65)
+        return max(int(self._inner.warmup_bars()), 65)
 
     def _state_at(self, index: int) -> BasisCrowdingState:
         if self._states is None or index >= len(self._states):

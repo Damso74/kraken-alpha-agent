@@ -17,14 +17,13 @@ in a closure so the network layer is never exercised.
 from __future__ import annotations
 
 import json
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 import pytest
 
 from src.external_signals import (
     ExternalSignalError,
-    VolRegimeBreakdown,
     compute_btc_dominance_from_markets,
     compute_realized_vol_regime,
     fetch_btc_dominance,
@@ -34,7 +33,6 @@ from src.external_signals import (
     pick_for_date,
 )
 
-
 # ---------------------------------------------------------------------------
 # Fear & Greed
 # ---------------------------------------------------------------------------
@@ -42,7 +40,7 @@ from src.external_signals import (
 
 def _fng_row(value: int, day: date) -> dict:
     """Build one row of the alternative.me Fear & Greed payload."""
-    ts = int(datetime(day.year, day.month, day.day, tzinfo=timezone.utc).timestamp())
+    ts = int(datetime(day.year, day.month, day.day, tzinfo=UTC).timestamp())
     return {"value": str(int(value)), "timestamp": str(ts), "value_classification": "Neutral"}
 
 
@@ -173,7 +171,7 @@ def test_fetch_btc_dominance_uses_global_and_persists_cache(
     tmp_path: Path,
 ) -> None:
     cache_path = tmp_path / "btc_dom.json"
-    today = datetime.now(timezone.utc).date()
+    today = datetime.now(UTC).date()
     yesterday = today - timedelta(days=1)
 
     def global_fetcher() -> dict:
@@ -196,7 +194,7 @@ def test_fetch_btc_dominance_global_failure_falls_back_to_markets(
     tmp_path: Path,
 ) -> None:
     cache_path = tmp_path / "btc_dom.json"
-    today = datetime.now(timezone.utc).date()
+    today = datetime.now(UTC).date()
 
     def global_fetcher() -> dict:
         raise ExternalSignalError("simulated /global failure")
@@ -384,10 +382,6 @@ def test_actionability_external_gate_downgrades_buy_to_hold() -> None:
     from src.actionability import apply_actionability_gates
     from src.config import (
         ExternalSignalsConfig,
-        Settings,
-        StrategyConfig,
-        TradingConfig,
-        YAMLConfig,
         get_settings,
     )
     from src.external_signals import ExternalSnapshot

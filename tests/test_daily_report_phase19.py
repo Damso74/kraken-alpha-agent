@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import json
-
 from src.bot.daily_report import build_daily_report, render_daily_report_md, write_daily_report
 from src.bot.state_store import DaemonState, StateBundle, append_equity, save_state
 

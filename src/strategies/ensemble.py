@@ -7,8 +7,6 @@ strong signal on a dead market does not produce an oversized position.
 
 from __future__ import annotations
 
-from typing import Optional
-
 from ..config import get_settings
 from ..regime import classify
 from ..schemas import Action, EnsembleResult, Features, StrategyVote
@@ -27,7 +25,7 @@ def combine(
     *,
     features: Features,
     votes: list[StrategyVote],
-    liquidity_score: Optional[float] = None,
+    liquidity_score: float | None = None,
 ) -> EnsembleResult:
     cfg = get_settings().config.strategy
     risk = get_settings().config.risk

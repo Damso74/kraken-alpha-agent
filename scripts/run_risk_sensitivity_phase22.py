@@ -22,7 +22,10 @@ from scripts._phase22_common import (  # noqa: E402
     run_backtest_cell,
     write_matrix_csv,
 )
-from scripts.run_strategy_tournament import PHASE16_STRATEGY_NAMES, _instantiate_strategy  # noqa: E402
+from scripts.run_strategy_tournament import (  # noqa: E402
+    PHASE16_STRATEGY_NAMES,
+    _instantiate_strategy,
+)
 from src.bot.metrics import MAX_RISK_DENIAL_RATE  # noqa: E402
 from src.bot.risk_manager import RiskConfig  # noqa: E402
 

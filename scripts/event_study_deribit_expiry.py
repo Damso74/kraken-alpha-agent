@@ -32,6 +32,7 @@ from _event_study_common import (  # noqa: E402
     run_event_study_pipeline,
     write_json_report,
 )
+
 from src.crypto_ohlc_rest import CryptoOHLCFetchError
 from src.signals.options_expiry import build_monthly_options_expiry_events
 

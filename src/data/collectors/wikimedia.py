@@ -18,16 +18,17 @@ from __future__ import annotations
 
 import os
 import time
-from datetime import date, datetime, timedelta, timezone
+from collections.abc import Callable, Mapping, Sequence
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
-from typing import Any, Callable, Mapping, Optional, Sequence
+from typing import Any
 
 import httpx
 
 from ._common import (
-    CollectorError,
     DEFAULT_COLLECTOR_CACHE_DIR,
     DEFAULT_HTTP_TIMEOUT_SECONDS,
+    CollectorError,
     filter_rows_by_date_range,
     load_json_cache,
     parse_iso_date,
@@ -198,7 +199,7 @@ def parse_pageviews_payload(
             views = int(views_raw)
         except (TypeError, ValueError):
             continue
-        ts_norm = int(datetime(d.year, d.month, d.day, tzinfo=timezone.utc).timestamp())
+        ts_norm = int(datetime(d.year, d.month, d.day, tzinfo=UTC).timestamp())
         rows.append(
             {
                 "timestamp": ts_norm,
@@ -275,7 +276,7 @@ def _covers_range(rows: list[dict[str, Any]], *, start: date, end: date) -> bool
     for row in rows:
         ts = row.get("timestamp")
         if isinstance(ts, int):
-            have.add(datetime.fromtimestamp(ts, tz=timezone.utc).date())
+            have.add(datetime.fromtimestamp(ts, tz=UTC).date())
     return needed <= have
 
 

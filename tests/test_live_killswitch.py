@@ -27,7 +27,7 @@ suite stays hermetic. No Kraken CLI calls, no real subprocess.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -39,7 +39,6 @@ from src.live_killswitch import (
     PnLSnapshot,
     cest_cutoff_reached,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -148,7 +147,7 @@ def test_config_clamps_tiny_max_duration_and_low_failure_limit() -> None:
 
 def test_cest_cutoff_fires_after_2155_local() -> None:
     # 2026-05-18 19:55 UTC = 21:55 CEST → triggers at the boundary.
-    boundary = datetime(2026, 5, 18, 19, 55, tzinfo=timezone.utc)
+    boundary = datetime(2026, 5, 18, 19, 55, tzinfo=UTC)
     assert cest_cutoff_reached(boundary, hour=21, minute=55) is True
     before = boundary - timedelta(minutes=1)
     assert cest_cutoff_reached(before, hour=21, minute=55) is False
@@ -171,7 +170,7 @@ def test_killswitch_fires_on_pnl_drop_calls_callbacks_in_order(tmp_log: Path) ->
     terminate = lambda: call_order.append("terminate")  # noqa: E731
 
     clock = _ScriptedClock(
-        start=datetime(2026, 5, 18, 18, 0, tzinfo=timezone.utc),
+        start=datetime(2026, 5, 18, 18, 0, tzinfo=UTC),
         step=timedelta(seconds=10),
     )
     orch = KillSwitchOrchestrator(
@@ -207,7 +206,7 @@ def test_killswitch_does_not_fire_when_pnl_stays_above_threshold(tmp_log: Path) 
     call_order: list[str] = []
 
     clock = _ScriptedClock(
-        start=datetime(2026, 5, 18, 18, 0, tzinfo=timezone.utc),
+        start=datetime(2026, 5, 18, 18, 0, tzinfo=UTC),
         step=timedelta(seconds=10),
     )
     cfg = KillSwitchConfig(
@@ -241,7 +240,7 @@ def test_killswitch_fires_on_cest_cutoff(tmp_log: Path) -> None:
     call_order: list[str] = []
 
     clock = _ScriptedClock(
-        start=datetime(2026, 5, 18, 19, 50, tzinfo=timezone.utc),
+        start=datetime(2026, 5, 18, 19, 50, tzinfo=UTC),
         step=timedelta(minutes=5),
     )
     cfg = KillSwitchConfig(
@@ -284,7 +283,7 @@ def test_killswitch_promotes_repeated_snapshot_failures_to_trigger(tmp_log: Path
     )
     call_order: list[str] = []
     clock = _ScriptedClock(
-        start=datetime(2026, 5, 18, 18, 0, tzinfo=timezone.utc),
+        start=datetime(2026, 5, 18, 18, 0, tzinfo=UTC),
         step=timedelta(seconds=10),
     )
     orch = KillSwitchOrchestrator(
@@ -312,7 +311,7 @@ def test_request_stop_exits_cleanly_and_still_flattens(tmp_log: Path) -> None:
     source = _ScriptedPnLSource([_snap(0.0), _snap(0.5)])
     call_order: list[str] = []
     clock = _ScriptedClock(
-        start=datetime(2026, 5, 18, 18, 0, tzinfo=timezone.utc),
+        start=datetime(2026, 5, 18, 18, 0, tzinfo=UTC),
         step=timedelta(seconds=10),
     )
     sleeper = _SilentSleep()
@@ -345,7 +344,7 @@ def test_request_stop_exits_cleanly_and_still_flattens(tmp_log: Path) -> None:
 def test_log_file_is_one_json_object_per_line(tmp_log: Path) -> None:
     source = _ScriptedPnLSource([_snap(0.0), _snap(-6.0)])
     clock = _ScriptedClock(
-        start=datetime(2026, 5, 18, 18, 0, tzinfo=timezone.utc),
+        start=datetime(2026, 5, 18, 18, 0, tzinfo=UTC),
         step=timedelta(seconds=10),
     )
     orch = KillSwitchOrchestrator(

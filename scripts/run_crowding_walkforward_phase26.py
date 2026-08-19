@@ -14,7 +14,6 @@ if str(REPO_ROOT) not in sys.path:
 
 from scripts._phase23_common import (  # noqa: E402
     DEFAULT_CACHE_ROOT,
-    build_phase23_instrument,
     run_buy_and_hold,
     write_json,
     write_matrix_csv,
@@ -28,7 +27,6 @@ from src.bot.metrics import metrics_to_dict
 from src.bot.paper_engine import run_paper_backtest
 from src.bot.phase23_presets import build_phase23_strategy
 from src.bot.phase24_walkforward import (
-    HOLDOUT_PCT_VARIANTS,
     classify_phase24_sensitivity_verdict,
     count_holdout_beats_bh,
     create_holdout_sensitivity_plan,

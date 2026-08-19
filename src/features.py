@@ -7,7 +7,7 @@ unit-tested without touching the network or the database.
 from __future__ import annotations
 
 import math
-from typing import Sequence
+from collections.abc import Sequence
 
 from .schemas import Features
 from .utils import pct, safe_float

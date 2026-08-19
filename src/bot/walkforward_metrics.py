@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import statistics
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Literal, Mapping, Sequence
+from typing import Any, Literal
 
 WalkForwardVerdict = Literal[
     "blocked_data",

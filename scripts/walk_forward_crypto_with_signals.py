@@ -89,7 +89,7 @@ import itertools
 import json
 import sys
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -312,10 +312,10 @@ def _ohlc_window_iso(ohlc: dict[str, list[dict[str, Any]]]) -> tuple[str, str]:
                 timestamps.append(int(ts))
     if not timestamps:
         raise SystemExit("no parseable timestamps in OHLC payload")
-    start = datetime.fromtimestamp(min(timestamps), tz=timezone.utc).date()
+    start = datetime.fromtimestamp(min(timestamps), tz=UTC).date()
     # +2d guard so the F&G fetch covers any forward-fill we need at the
     # tail of the test slice.
-    end = datetime.fromtimestamp(max(timestamps), tz=timezone.utc).date() + timedelta(days=2)
+    end = datetime.fromtimestamp(max(timestamps), tz=UTC).date() + timedelta(days=2)
     return start.isoformat(), end.isoformat()
 
 
@@ -398,9 +398,9 @@ def _build_external_snapshots(
                 ts_int = int(ts_raw)
             except (TypeError, ValueError):
                 continue
-            d = datetime.fromtimestamp(ts_int, tz=timezone.utc).date()
+            d = datetime.fromtimestamp(ts_int, tz=UTC).date()
             iso = (
-                datetime.fromtimestamp(ts_int, tz=timezone.utc)
+                datetime.fromtimestamp(ts_int, tz=UTC)
                 .isoformat(timespec="seconds")
                 .replace("+00:00", "Z")
             )
@@ -556,7 +556,7 @@ def _run_one_combo(
 
 def _utc_now_iso() -> str:
     return (
-        datetime.now(timezone.utc)
+        datetime.now(UTC)
         .isoformat(timespec="seconds")
         .replace("+00:00", "Z")
     )

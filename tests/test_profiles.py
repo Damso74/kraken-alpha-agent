@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-import os
-
 from src import config as cfg
-
 
 _BASE = {
     "profile": "balanced",

@@ -14,7 +14,6 @@ from src.data.collectors.status_pages import (
     parse_statuspage_incidents,
 )
 
-
 INCIDENTS_FIXTURE = {
     "incidents": [
         {

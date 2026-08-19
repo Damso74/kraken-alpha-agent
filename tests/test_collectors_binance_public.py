@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-import json
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -23,7 +22,7 @@ from src.data.collectors.binance_public import (
 
 
 def _ts(d: date) -> int:
-    return int(datetime(d.year, d.month, d.day, tzinfo=timezone.utc).timestamp())
+    return int(datetime(d.year, d.month, d.day, tzinfo=UTC).timestamp())
 
 
 def _candle(d: date, close: float) -> dict:
@@ -100,7 +99,7 @@ def test_default_ohlc_daily_cache_path() -> None:
 
 def test_save_and_load_ohlc_daily_cache(tmp_path: Path) -> None:
     cache_path = tmp_path / "ohlc_daily_BTC.json"
-    today = datetime.now(timezone.utc).date()
+    today = datetime.now(UTC).date()
     candles = [_candle(today - timedelta(days=i), 50_000 + i) for i in range(200, 0, -1)]
     save_ohlc_daily_cache(cache_path, ticker="BTC", rows=candles)
 
@@ -130,7 +129,7 @@ def test_fetch_binance_daily_klines_uses_injected_fetcher() -> None:
 
     def fake_fetcher(url: str, params: dict) -> list:
         calls.append(params)
-        today = datetime.now(timezone.utc).date()
+        today = datetime.now(UTC).date()
         out = []
         for i in range(35):
             d = today - timedelta(days=i)
@@ -157,7 +156,7 @@ def test_fetch_binance_daily_klines_uses_injected_fetcher() -> None:
 
 def test_fetch_ohlc_daily_with_cache_hit_skips_network(tmp_path: Path) -> None:
     cache_path = tmp_path / "ohlc_daily_BTC.json"
-    today = datetime.now(timezone.utc).date()
+    today = datetime.now(UTC).date()
     candles = [_candle(today - timedelta(days=i), 50_000 + i) for i in range(200, 0, -1)]
     save_ohlc_daily_cache(cache_path, ticker="BTC", rows=candles)
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from src.signals.calendar_effects import (
@@ -46,8 +46,8 @@ def test_pre_registered_registry_has_five_effects() -> None:
 
 def test_weekend_start_first_saturday_candle() -> None:
     # 2024-01-06 is Saturday UTC
-    sat = int(datetime(2024, 1, 6, 1, 0, tzinfo=timezone.utc).timestamp())
-    fri = int(datetime(2024, 1, 5, 23, 0, tzinfo=timezone.utc).timestamp())
+    sat = int(datetime(2024, 1, 6, 1, 0, tzinfo=UTC).timestamp())
+    fri = int(datetime(2024, 1, 5, 23, 0, tzinfo=UTC).timestamp())
     events = build_weekend_start_events([_ohlc(fri), _ohlc(sat)])
     assert events == [sat]
 
@@ -86,16 +86,16 @@ def test_monday_asia_open_picks_monday_tokyo() -> None:
 
 def test_third_friday_january_2024() -> None:
     # Third Friday Jan 2024 = 2024-01-19 (UTC daily candle)
-    third = int(datetime(2024, 1, 19, 0, 0, tzinfo=timezone.utc).timestamp())
-    second = int(datetime(2024, 1, 12, 0, 0, tzinfo=timezone.utc).timestamp())
+    third = int(datetime(2024, 1, 19, 0, 0, tzinfo=UTC).timestamp())
+    second = int(datetime(2024, 1, 12, 0, 0, tzinfo=UTC).timestamp())
     events = build_third_friday_events([_ohlc(second), _ohlc(third)])
     assert events == [third]
 
 
 def test_month_end_last_candle_per_month() -> None:
-    jan_mid = int(datetime(2024, 1, 15, 0, 0, tzinfo=timezone.utc).timestamp())
-    jan_end = int(datetime(2024, 1, 31, 0, 0, tzinfo=timezone.utc).timestamp())
-    feb_end = int(datetime(2024, 2, 29, 0, 0, tzinfo=timezone.utc).timestamp())
+    jan_mid = int(datetime(2024, 1, 15, 0, 0, tzinfo=UTC).timestamp())
+    jan_end = int(datetime(2024, 1, 31, 0, 0, tzinfo=UTC).timestamp())
+    feb_end = int(datetime(2024, 2, 29, 0, 0, tzinfo=UTC).timestamp())
     events = build_month_end_events(
         [_ohlc(jan_mid), _ohlc(jan_end), _ohlc(feb_end)]
     )
@@ -128,11 +128,11 @@ def test_random_same_weekday_preserves_weekday() -> None:
 def test_placebo_timezone_for_effect() -> None:
     assert placebo_timezone_for_effect("us_market_open_window") == _ET
     assert placebo_timezone_for_effect("monday_asia_open") == _TOKYO
-    assert placebo_timezone_for_effect("third_friday") == timezone.utc
+    assert placebo_timezone_for_effect("third_friday") == UTC
 
 
 def test_calendar_boundary_combines_flags() -> None:
-    sat = int(datetime(2024, 1, 6, 12, 0, tzinfo=timezone.utc).timestamp())
+    sat = int(datetime(2024, 1, 6, 12, 0, tzinfo=UTC).timestamp())
     mon_post = datetime(2024, 1, 8, 10, 0, tzinfo=_ET)
     rows = [_ohlc(sat), _ohlc(int(mon_post.timestamp()))]
     events = build_calendar_boundary_events(
@@ -149,7 +149,7 @@ def test_empty_ohlc_returns_empty() -> None:
 
 def test_monday_asia_is_daily_alias_of_sunday_us() -> None:
     """On one UTC daily candle per day, Sunday ET ≡ Monday Tokyo (Phase 11 red team)."""
-    start = datetime(2023, 6, 1, tzinfo=timezone.utc)
+    start = datetime(2023, 6, 1, tzinfo=UTC)
     rows = [
         _ohlc(int((start + timedelta(days=i)).timestamp())) for i in range(400)
     ]

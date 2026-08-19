@@ -9,20 +9,34 @@ from __future__ import annotations
 
 import os
 import time
-from typing import Iterable
+from collections.abc import Iterable
 
 from . import (
     actionability as actionability_mod,
+)
+from . import (
     execution as execution_mod,
+)
+from . import (
     exit_rules as exit_rules_mod,
+)
+from . import (
     features as features_mod,
+)
+from . import (
     llm_explainer,
     market_data,
-    pnl as pnl_mod,
     portfolio,
-    ranking as ranking_mod,
-    risk as risk_mod,
     storage,
+)
+from . import (
+    pnl as pnl_mod,
+)
+from . import (
+    ranking as ranking_mod,
+)
+from . import (
+    risk as risk_mod,
 )
 from .config import get_settings
 from .logger import get_logger

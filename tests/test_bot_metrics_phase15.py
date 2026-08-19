@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from src.bot.metrics import (
     BacktestMetrics,
-    RiskRunStats,
     classify_strategy_verdict,
     compute_verdict,
 )

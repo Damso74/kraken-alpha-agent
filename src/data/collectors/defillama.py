@@ -21,13 +21,14 @@ Timestamps use the UTC midnight of each daily sample.
 
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from collections.abc import Callable, Mapping, Sequence
+from datetime import UTC, date, datetime
 from pathlib import Path
-from typing import Any, Callable, Mapping, Optional, Sequence
+from typing import Any
 
 from ._common import (
-    CollectorError,
     DEFAULT_COLLECTOR_CACHE_DIR,
+    CollectorError,
     default_http_fetcher,
     filter_rows_by_date_range,
     load_json_cache,
@@ -61,8 +62,8 @@ def parse_stablecoin_charts(payload: Any) -> list[dict[str, Any]]:
         except (TypeError, ValueError):
             continue
         # API uses unix seconds; normalize to UTC midnight of that day.
-        d = datetime.fromtimestamp(ts, tz=timezone.utc).date()
-        ts_norm = int(datetime(d.year, d.month, d.day, tzinfo=timezone.utc).timestamp())
+        d = datetime.fromtimestamp(ts, tz=UTC).date()
+        ts_norm = int(datetime(d.year, d.month, d.day, tzinfo=UTC).timestamp())
 
         circulating = item.get("totalCirculating")
         mcap: float | None = None
@@ -117,8 +118,8 @@ def parse_chain_tvl(payload: Any, *, chain: str) -> list[dict[str, Any]]:
             tvl = float(tvl_raw)
         except (TypeError, ValueError):
             continue
-        d = datetime.fromtimestamp(ts, tz=timezone.utc).date()
-        ts_norm = int(datetime(d.year, d.month, d.day, tzinfo=timezone.utc).timestamp())
+        d = datetime.fromtimestamp(ts, tz=UTC).date()
+        ts_norm = int(datetime(d.year, d.month, d.day, tzinfo=UTC).timestamp())
         rows.append(
             {
                 "timestamp": ts_norm,
@@ -258,7 +259,7 @@ def _covers_range(rows: list[dict[str, Any]], *, start: date, end: date) -> bool
     for row in rows:
         ts = row.get("timestamp")
         if isinstance(ts, int):
-            have.add(datetime.fromtimestamp(ts, tz=timezone.utc).date())
+            have.add(datetime.fromtimestamp(ts, tz=UTC).date())
     return needed <= have
 
 

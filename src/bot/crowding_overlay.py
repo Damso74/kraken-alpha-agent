@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import bisect
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Literal, Mapping, Sequence
+from typing import Any, Literal
 
 from src.data.collectors.binance_derivatives_public import (
     default_funding_cache_path,
@@ -160,7 +161,7 @@ class CrowdingOverlayStrategy:
         self._states = precompute_crowding_states(candles, funding_rows, oi_rows)
 
     def warmup_bars(self) -> int:
-        return max(int(getattr(self._inner, "warmup_bars")()), 65)
+        return max(int(self._inner.warmup_bars()), 65)
 
     def _state_at(self, index: int) -> CrowdingState:
         if self._states is None or index >= len(self._states):

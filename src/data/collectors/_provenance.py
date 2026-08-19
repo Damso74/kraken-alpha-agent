@@ -5,10 +5,11 @@ from __future__ import annotations
 import hashlib
 import json
 import subprocess
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -90,7 +91,7 @@ def provenance_from_cache_path(
     mtime = None
     if resolved.is_file():
         mtime = datetime.fromtimestamp(
-            resolved.stat().st_mtime, tz=timezone.utc
+            resolved.stat().st_mtime, tz=UTC
         ).isoformat()
 
     return DataProvenance(

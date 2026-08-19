@@ -9,8 +9,8 @@ unix seconds (int).
 """
 
 from .collectors import (
-    CollectorError,
     DEFAULT_HTTP_TIMEOUT_SECONDS,
+    CollectorError,
     fetch_all_status_incidents,
     fetch_chain_tvl,
     fetch_gas_oracle,

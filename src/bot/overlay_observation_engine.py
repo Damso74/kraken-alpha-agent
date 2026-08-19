@@ -21,7 +21,6 @@ from src.bot.overlay_observation_kill import (
     write_observation_stop,
 )
 from src.bot.overlay_shadow_compare import (
-    ShadowComparisonRecord,
     append_shadow_comparison,
     build_shadow_record,
 )

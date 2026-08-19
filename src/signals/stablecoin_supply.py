@@ -39,8 +39,9 @@ post-event returns indistinguishable from baseline (see
 from __future__ import annotations
 
 import math
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from ._stats import (
     events_from_z_threshold,

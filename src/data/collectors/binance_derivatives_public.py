@@ -15,13 +15,14 @@ not suitable for long-horizon event studies. Phase 26 marks liquidations as
 from __future__ import annotations
 
 import time
-from datetime import datetime, timezone
+from collections.abc import Callable, Mapping, Sequence
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable, Mapping, Optional, Sequence
+from typing import Any
 
 from ._common import (
-    CollectorError,
     DEFAULT_COLLECTOR_CACHE_DIR,
+    CollectorError,
     default_http_fetcher,
     load_json_cache,
     save_json_cache,
@@ -335,7 +336,7 @@ def ms_from_unix(ts: int) -> int:
 
 
 def unix_from_iso_date(d: str) -> int:
-    dt = datetime.fromisoformat(d).replace(tzinfo=timezone.utc)
+    dt = datetime.fromisoformat(d).replace(tzinfo=UTC)
     return int(dt.timestamp())
 
 

@@ -121,8 +121,8 @@ def main() -> int:
         f"- Guardrail reason: {guard.reason}",
         f"- Order status: {result_status}",
         f"- Message: {result_message}",
-        f"- Real order submitted: **NO**",
-        f"- Kraken API called: **NO**",
+        "- Real order submitted: **NO**",
+        "- Kraken API called: **NO**",
         "",
     ]
     (args.output_dir / "guardrail_report.md").write_text("\n".join(report_lines), encoding="utf-8")

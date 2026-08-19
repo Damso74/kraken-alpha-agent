@@ -7,8 +7,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
-
 from scripts.run_strategy_tournament import STRATEGIES, _load_candles, _strategy_names
 from src.bot.metrics import MIN_TRADES_BY_TIMEFRAME
 from src.strategies.presets import build_strategy

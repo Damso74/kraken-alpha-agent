@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from src.bot.overlay_observation_engine import ObservationConfig, run_observation_once
@@ -20,7 +20,7 @@ REPO = Path(__file__).resolve().parents[1]
 
 
 def _write_eth4h_cache(cache: Path, n: int = 120) -> None:
-    t0 = int(datetime(2023, 1, 1, tzinfo=timezone.utc).timestamp())
+    t0 = int(datetime(2023, 1, 1, tzinfo=UTC).timestamp())
     step = 14400
     candles = [
         {

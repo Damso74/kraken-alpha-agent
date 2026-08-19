@@ -14,8 +14,9 @@ Hard contract
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any, Literal, Mapping
+from typing import Any, Literal
 
 # ---------------------------------------------------------------------------
 # Published defaults (Kraken spot, small account, conservative)

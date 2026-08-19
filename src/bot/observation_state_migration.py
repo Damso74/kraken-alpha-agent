@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 from src.bot.observation_ops_guards import (
     LEGACY_ASSETS,

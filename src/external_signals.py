@@ -37,10 +37,11 @@ from __future__ import annotations
 import json
 import math
 import statistics
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from pathlib import Path
-from typing import Any, Callable, Iterable, Mapping, Optional, Sequence
+from typing import Any
 
 import httpx
 
@@ -78,13 +79,13 @@ class ExternalSignalError(RuntimeError):
 
 def _utc_now_iso() -> str:
     return (
-        datetime.now(timezone.utc)
+        datetime.now(UTC)
         .isoformat(timespec="seconds")
         .replace("+00:00", "Z")
     )
 
 
-def _parse_iso_date(s: str) -> Optional[date]:
+def _parse_iso_date(s: str) -> date | None:
     """Best-effort ISO 8601 → :class:`datetime.date` (UTC).
 
     The Fear & Greed payload uses a unix timestamp string. We accept
@@ -96,7 +97,7 @@ def _parse_iso_date(s: str) -> Optional[date]:
     s = s.strip()
     if s.isdigit():
         try:
-            return datetime.fromtimestamp(int(s), tz=timezone.utc).date()
+            return datetime.fromtimestamp(int(s), tz=UTC).date()
         except (OverflowError, OSError, ValueError):
             return None
     try:
@@ -311,7 +312,7 @@ def default_btc_dominance_fetcher() -> dict:
         ) from exc
 
 
-def parse_btc_dominance_global(payload: Any) -> Optional[float]:
+def parse_btc_dominance_global(payload: Any) -> float | None:
     """Extract the **current** BTC dominance % from a ``/global`` payload.
 
     Returns ``None`` when the field is missing — the caller treats
@@ -363,7 +364,7 @@ def default_top_markets_fetcher(per_page: int = 10) -> list:
         ) from exc
 
 
-def compute_btc_dominance_from_markets(markets: Sequence[Mapping[str, Any]]) -> Optional[float]:
+def compute_btc_dominance_from_markets(markets: Sequence[Mapping[str, Any]]) -> float | None:
     """Compute BTC dominance % from a top-N markets snapshot.
 
     The payload from ``/coins/markets`` is a list ordered by market
@@ -474,7 +475,7 @@ def fetch_btc_dominance(
         logger.warning("BTC dominance /global fetch failed: %s", exc)
         current_dom = None
 
-    today_utc = datetime.now(timezone.utc).date()
+    today_utc = datetime.now(UTC).date()
     if current_dom is not None:
         cache_data[today_utc] = current_dom
 
@@ -549,13 +550,13 @@ class ExternalSnapshot:
     silently flip the agent's behaviour.
     """
 
-    fear_greed_index: Optional[int] = None
-    btc_dominance_pct: Optional[float] = None
-    btc_dominance_pct_24h_ago: Optional[float] = None
-    vol_regime: Optional[str] = None  # "low" | "normal" | "high"
+    fear_greed_index: int | None = None
+    btc_dominance_pct: float | None = None
+    btc_dominance_pct_24h_ago: float | None = None
+    vol_regime: str | None = None  # "low" | "normal" | "high"
 
     @property
-    def btc_dominance_change_24h_pp(self) -> Optional[float]:
+    def btc_dominance_change_24h_pp(self) -> float | None:
         """Return the 24-hour BTC dominance change in percentage points.
 
         Positive = BTC dominance increased over the last 24 h (capital
@@ -571,9 +572,9 @@ def apply_external_gates(
     *,
     action: str,
     symbol: str,
-    snapshot: Optional[ExternalSnapshot],
+    snapshot: ExternalSnapshot | None,
     gates: Any,
-) -> Optional[str]:
+) -> str | None:
     """Return a block reason string, or ``None`` if the gate passes.
 
     Logic:

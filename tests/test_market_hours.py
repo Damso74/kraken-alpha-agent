@@ -18,11 +18,10 @@ No test in this file invokes the real Kraken CLI — the conftest forces
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
-from src import backtest as bt
 from src.backtest import (
     Candle,
     MarketSession,
@@ -35,14 +34,13 @@ from src.backtest import (
     tag_candles_with_session,
 )
 
-
 # ---------------------------------------------------------------------------
 # 1) US_CORE — 14:00 UTC = 10:00 ET weekday
 # ---------------------------------------------------------------------------
 
 
 def test_classify_session_us_core() -> None:
-    ts = datetime(2026, 5, 15, 14, 0, 0, tzinfo=timezone.utc)
+    ts = datetime(2026, 5, 15, 14, 0, 0, tzinfo=UTC)
     assert classify_market_session(ts) == MarketSession.US_CORE
 
 
@@ -53,15 +51,15 @@ def test_classify_session_us_core() -> None:
 
 def test_classify_session_premarket() -> None:
     # 08:00 UTC = 04:00 ET (EDT, May) → start of PREMARKET (inclusive-left).
-    ts = datetime(2026, 5, 15, 8, 0, 0, tzinfo=timezone.utc)
+    ts = datetime(2026, 5, 15, 8, 0, 0, tzinfo=UTC)
     assert classify_market_session(ts) == MarketSession.US_PREMARKET
 
     # 09:29 ET → still PREMARKET (US_CORE is exclusive-right of 09:29).
-    ts_late = datetime(2026, 5, 15, 13, 29, 0, tzinfo=timezone.utc)
+    ts_late = datetime(2026, 5, 15, 13, 29, 0, tzinfo=UTC)
     assert classify_market_session(ts_late) == MarketSession.US_PREMARKET
 
     # 09:30:00 ET → boundary, must flip to US_CORE (inclusive-left).
-    ts_open = datetime(2026, 5, 15, 13, 30, 0, tzinfo=timezone.utc)
+    ts_open = datetime(2026, 5, 15, 13, 30, 0, tzinfo=UTC)
     assert classify_market_session(ts_open) == MarketSession.US_CORE
 
 
@@ -72,15 +70,15 @@ def test_classify_session_premarket() -> None:
 
 def test_classify_session_afterhours() -> None:
     # 17:00 ET = 21:00 UTC during EDT.
-    ts = datetime(2026, 5, 15, 21, 0, 0, tzinfo=timezone.utc)
+    ts = datetime(2026, 5, 15, 21, 0, 0, tzinfo=UTC)
     assert classify_market_session(ts) == MarketSession.US_AFTERHOURS
 
     # 16:00 ET → AFTERHOURS (US_CORE excludes 16:00).
-    ts_close = datetime(2026, 5, 15, 20, 0, 0, tzinfo=timezone.utc)
+    ts_close = datetime(2026, 5, 15, 20, 0, 0, tzinfo=UTC)
     assert classify_market_session(ts_close) == MarketSession.US_AFTERHOURS
 
     # 20:00 ET → OVERNIGHT (AFTERHOURS excludes 20:00).
-    ts_overnight = datetime(2026, 5, 16, 0, 0, 0, tzinfo=timezone.utc)
+    ts_overnight = datetime(2026, 5, 16, 0, 0, 0, tzinfo=UTC)
     assert classify_market_session(ts_overnight) == MarketSession.OVERNIGHT
 
 
@@ -91,10 +89,10 @@ def test_classify_session_afterhours() -> None:
 
 def test_classify_session_weekend() -> None:
     # 2026-05-16 18:00 UTC = Saturday 14:00 ET → WEEKEND.
-    saturday = datetime(2026, 5, 16, 18, 0, 0, tzinfo=timezone.utc)
+    saturday = datetime(2026, 5, 16, 18, 0, 0, tzinfo=UTC)
     assert classify_market_session(saturday) == MarketSession.WEEKEND
     # 2026-05-17 13:30 UTC = Sunday 09:30 ET → still WEEKEND.
-    sunday = datetime(2026, 5, 17, 13, 30, 0, tzinfo=timezone.utc)
+    sunday = datetime(2026, 5, 17, 13, 30, 0, tzinfo=UTC)
     assert classify_market_session(sunday) == MarketSession.WEEKEND
     # Naive datetime → ValueError (no timezone guessing).
     with pytest.raises(ValueError):
@@ -112,14 +110,14 @@ def test_classify_session_dst() -> None:
     # active offset:
     # - 2026-03-06 (Friday, EST, UTC-5): 13:30 UTC = 08:30 EST → PREMARKET.
     # - 2026-03-09 (Monday, EDT, UTC-4): 13:30 UTC = 09:30 EDT → US_CORE.
-    pre_dst_premarket = datetime(2026, 3, 6, 13, 30, 0, tzinfo=timezone.utc)
+    pre_dst_premarket = datetime(2026, 3, 6, 13, 30, 0, tzinfo=UTC)
     assert classify_market_session(pre_dst_premarket) == MarketSession.US_PREMARKET
-    post_dst_open = datetime(2026, 3, 9, 13, 30, 0, tzinfo=timezone.utc)
+    post_dst_open = datetime(2026, 3, 9, 13, 30, 0, tzinfo=UTC)
     assert classify_market_session(post_dst_open) == MarketSession.US_CORE
     # The DST Sunday itself (2026-03-08) is always WEEKEND regardless
     # of the offset shift — sanity check that zoneinfo doesn't confuse
     # the day-of-week field.
-    dst_sunday = datetime(2026, 3, 8, 13, 30, 0, tzinfo=timezone.utc)
+    dst_sunday = datetime(2026, 3, 8, 13, 30, 0, tzinfo=UTC)
     assert classify_market_session(dst_sunday) == MarketSession.WEEKEND
 
 

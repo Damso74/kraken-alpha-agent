@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from src.bot.basis_crowding_overlay import classify_eth_overlay_autopsy_verdict
 from src.bot.phase27_eth4h_autopsy import (
@@ -12,7 +12,7 @@ from src.bot.phase27_eth4h_autopsy import (
 
 
 def _candles(n: int, step: int = 14400) -> list[dict]:
-    t0 = int(datetime(2020, 1, 1, tzinfo=timezone.utc).timestamp())
+    t0 = int(datetime(2020, 1, 1, tzinfo=UTC).timestamp())
     return [
         {
             "timestamp": t0 + i * step,

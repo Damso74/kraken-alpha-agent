@@ -60,8 +60,8 @@ from __future__ import annotations
 
 import math
 import random
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import Iterable, Mapping, Optional, Sequence
 
 from ..logger import get_logger
 

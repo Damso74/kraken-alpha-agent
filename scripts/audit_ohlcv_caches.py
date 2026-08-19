@@ -8,7 +8,7 @@ import hashlib
 import json
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -65,7 +65,7 @@ def _audit_cache_file(
         "timezone": "UTC",
         "sha256": "",
         "source": OHLC_INTRADAY_CACHE_SOURCE,
-        "generated_at_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "generated_at_utc": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "commit_sha": _git_commit_sha(),
         "data_ok": False,
         "blocked_reason": "cache file missing",
@@ -189,7 +189,7 @@ def main() -> int:
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     payload = {
-        "generated_at_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "generated_at_utc": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "commit_sha": _git_commit_sha(),
         "can_run_full_tournament": can_run_full_tournament(manifest),
         "entries": manifest,

@@ -7,9 +7,10 @@ import argparse
 import csv
 import json
 import sys
+from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
@@ -285,7 +286,7 @@ def render_monitoring_md(payload: Mapping[str, Any]) -> str:
                 f"- Overlay: **{eq['overlay_usd']:.2f}** USD "
                 f"(return from 1k: {eq['overlay_return_pct_from_1k']}%)",
                 f"- B&H return proxy: {eq['buy_hold_return_pct_proxy']}%",
-                f"- Standalone return: n/a (not persisted)",
+                "- Standalone return: n/a (not persisted)",
                 f"- Max drawdown (overlay curve): {eq['max_drawdown_pct']}%",
                 "",
                 "### Shadow proxies",

@@ -15,7 +15,7 @@ from __future__ import annotations
 import os
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 
 import yaml
 from dotenv import load_dotenv
@@ -167,7 +167,7 @@ class ExitRulesConfig(BaseModel):
     # overrides ``max_hold_minutes`` so the time-stop fires earlier.
     # Backwards compatible: legacy profiles that only set ``max_hold_minutes``
     # keep working unchanged.
-    time_stop_minutes: Optional[float] = None
+    time_stop_minutes: float | None = None
     # Master switch for the ``flatten_before_close`` rule. Defaults to True
     # for backward compatibility with the xStocks engine that runs against
     # US equity hours. Crypto Perps (24/7 venue) set this to False so the
@@ -197,15 +197,15 @@ class ExternalSignalsConfig(BaseModel):
     # configured band. Both bounds are optional and inclusive on the
     # disabling side: ``block_buy_if_fear_greed_lt: 25`` blocks BUYs
     # when ``fg < 25`` (i.e. extreme fear).
-    block_buy_if_fear_greed_lt: Optional[int] = None
-    block_buy_if_fear_greed_gt: Optional[int] = None
+    block_buy_if_fear_greed_lt: int | None = None
+    block_buy_if_fear_greed_gt: int | None = None
 
     # BTC dominance gate: block BUY on **alt** symbols (everything
     # except BTC) when the 24 h dominance delta exceeds the threshold
     # in percentage points (``+1.0`` = BTC dominance gained 1 pp in
     # the last 24 h, i.e. capital rotating out of alts → block alt
     # BUYs). BTC itself is exempt.
-    block_alt_if_btc_dominance_rising_24h_pct: Optional[float] = None
+    block_alt_if_btc_dominance_rising_24h_pct: float | None = None
 
     # Realized-volatility regime filter: only allow BUY when the local
     # rolling-vol regime is in this list (``"low"`` / ``"normal"`` /
@@ -265,9 +265,9 @@ class EnvSettings(BaseSettings):
     # Optional env-level overrides for the actionability knobs. ``None`` means
     # "use the YAML value"; an explicit value here wins. The env wins so an
     # operator can lock down a host without editing config files.
-    shorting_enabled: Optional[bool] = None
-    min_opportunity_score_buy: Optional[float] = None
-    min_opportunity_score_sell: Optional[float] = None
+    shorting_enabled: bool | None = None
+    min_opportunity_score_buy: float | None = None
+    min_opportunity_score_sell: float | None = None
 
     kraken_api_key: str = ""
     kraken_api_secret: str = ""

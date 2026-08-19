@@ -10,14 +10,14 @@ Verifies that:
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
 from src import config as cfg
 from src import main as main_mod
 from src.schemas import Actionability, EnsembleResult, Features, Position, StrategyVote
-from src.sessions import MarketSession, current_session, is_entry_allowed
+from src.sessions import MarketSession, is_entry_allowed
 
 
 def _features(symbol: str = "AAPLx", last: float = 100.0) -> Features:
@@ -63,21 +63,21 @@ def _act(reason: str = "buy_eligible") -> Actionability:
 
 
 def test_is_entry_allowed_us_core() -> None:
-    ts = datetime(2026, 5, 15, 14, 0, 0, tzinfo=timezone.utc)  # 10:00 ET
+    ts = datetime(2026, 5, 15, 14, 0, 0, tzinfo=UTC)  # 10:00 ET
     ok, session = is_entry_allowed(["US_CORE"], now=ts)
     assert ok is True
     assert session == MarketSession.US_CORE
 
 
 def test_is_entry_allowed_premarket_blocks_us_core_only() -> None:
-    ts = datetime(2026, 5, 15, 12, 0, 0, tzinfo=timezone.utc)  # 08:00 ET
+    ts = datetime(2026, 5, 15, 12, 0, 0, tzinfo=UTC)  # 08:00 ET
     ok, session = is_entry_allowed(["US_CORE"], now=ts)
     assert ok is False
     assert session == MarketSession.US_PREMARKET
 
 
 def test_is_entry_allowed_empty_list_disables_guard() -> None:
-    ts = datetime(2026, 5, 16, 18, 0, 0, tzinfo=timezone.utc)  # weekend
+    ts = datetime(2026, 5, 16, 18, 0, 0, tzinfo=UTC)  # weekend
     ok, session = is_entry_allowed([], now=ts)
     assert ok is True
     assert session == MarketSession.WEEKEND

@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.run_strategy_tournament import PHASE16_STRATEGY_NAMES, _strategy_names
+from scripts.run_strategy_tournament import _strategy_names
 from src.strategies.presets import (
     PHASE16_ZOO_PRESETS,
     build_strategy,

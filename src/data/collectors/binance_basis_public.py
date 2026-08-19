@@ -17,13 +17,14 @@ from __future__ import annotations
 
 import statistics
 import time
-from datetime import datetime, timezone
+from collections.abc import Callable, Mapping, Sequence
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable, Mapping, Sequence
+from typing import Any
 
 from ._common import (
-    CollectorError,
     DEFAULT_COLLECTOR_CACHE_DIR,
+    CollectorError,
     default_http_fetcher,
     load_json_cache,
     save_json_cache,
@@ -31,17 +32,13 @@ from ._common import (
 )
 from .binance_derivatives_public import futures_symbol
 from .binance_public import (
-    BINANCE_KLINES_URL,
     BINANCE_SLEEP_BETWEEN_PAGES_SECONDS,
     TIMEFRAME_BINANCE_INTERVAL,
     TIMEFRAME_COVERAGE_DAYS,
-    TIMEFRAME_INTERVAL_MINUTES,
     _date_range_for_coverage_days,
     _interval_step_seconds,
     _merge_candles_by_timestamp,
     fetch_binance_klines,
-    normalize_binance_symbol,
-    parse_binance_klines_intraday,
 )
 
 BINANCE_MARK_PRICE_KLINES_URL = "https://fapi.binance.com/fapi/v1/markPriceKlines"
@@ -100,13 +97,13 @@ def fetch_mark_price_klines(
     start_date, end_date = _date_range_for_coverage_days(days)
     start_ms = int(
         datetime(
-            start_date.year, start_date.month, start_date.day, tzinfo=timezone.utc
+            start_date.year, start_date.month, start_date.day, tzinfo=UTC
         ).timestamp()
         * 1000
     )
     end_ms = int(
         datetime(
-            end_date.year, end_date.month, end_date.day, 23, 59, 59, tzinfo=timezone.utc
+            end_date.year, end_date.month, end_date.day, 23, 59, 59, tzinfo=UTC
         ).timestamp()
         * 1000
     )

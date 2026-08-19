@@ -47,13 +47,14 @@ from __future__ import annotations
 
 import os
 import time
-from datetime import datetime, timezone
+from collections.abc import Callable, Mapping, Sequence
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable, Mapping, Optional, Sequence
+from typing import Any
 
 from ._common import (
-    CollectorError,
     DEFAULT_COLLECTOR_CACHE_DIR,
+    CollectorError,
     default_http_fetcher,
     load_json_cache,
     save_json_cache,
@@ -64,7 +65,7 @@ ETHERSCAN_GAS_ORACLE_URL = "https://api.etherscan.io/api"
 ETHERSCAN_GAS_HISTORY_SOURCE = "etherscan_gas_history"
 BLOCKED_MISSING_GAS_HISTORY = "blocked: missing historical gas cache"
 
-GasOracleFetcherFn = Callable[[Optional[str]], Any]
+GasOracleFetcherFn = Callable[[str | None], Any]
 
 # Hermetic schema sample — NOT real historical gas (tests + examples only).
 SYNTHETIC_GAS_HISTORY_EXAMPLE: dict[str, Any] = {
@@ -94,7 +95,7 @@ SYNTHETIC_GAS_HISTORY_EXAMPLE: dict[str, Any] = {
 }
 
 
-def default_gas_oracle_fetcher(api_key: Optional[str] = None) -> Any:
+def default_gas_oracle_fetcher(api_key: str | None = None) -> Any:
     params: dict[str, str] = {"module": "gastracker", "action": "gasoracle"}
     if api_key:
         params["apikey"] = api_key
@@ -223,8 +224,8 @@ def normalize_gas_history_row(row: Mapping[str, Any]) -> dict[str, Any] | None:
         return None
     if gwei < 0:
         return None
-    d = datetime.fromtimestamp(ts, tz=timezone.utc).date()
-    ts_norm = int(datetime(d.year, d.month, d.day, tzinfo=timezone.utc).timestamp())
+    d = datetime.fromtimestamp(ts, tz=UTC).date()
+    ts_norm = int(datetime(d.year, d.month, d.day, tzinfo=UTC).timestamp())
     return {
         "timestamp": ts_norm,
         "fast_gwei": gwei,

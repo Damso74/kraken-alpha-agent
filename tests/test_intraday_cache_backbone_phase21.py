@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-
-import pytest
 
 from scripts.audit_ohlcv_caches import (
     audit_manifest,
@@ -32,7 +30,7 @@ def _make_candles(
 ) -> list[dict]:
     if start_ts is None:
         start_ts = int(
-            datetime(2020, 1, 1, tzinfo=timezone.utc).timestamp()
+            datetime(2020, 1, 1, tzinfo=UTC).timestamp()
         )
     out: list[dict] = []
     for i in range(count):

@@ -17,7 +17,6 @@ from src import config as cfg
 from src.risk import evaluate_risk
 from src.schemas import EnsembleResult, Features, PortfolioSnapshot, StrategyVote
 
-
 PROFILE = "micro_live_100eur"
 
 

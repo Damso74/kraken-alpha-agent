@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from src.bot.regime_classifier import RegimeClassification, RegimeLabel, classify_regime
 from src.bot.regime_features import (

@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import argparse
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -38,6 +38,7 @@ from _event_study_common import (  # noqa: E402
     run_event_study_pipeline,
     write_json_report,
 )
+
 from src.crypto_ohlc_rest import CryptoOHLCFetchError
 from src.data.collectors._common import CollectorError, load_json_cache, save_json_cache
 from src.data.collectors.etherscan import (
@@ -98,8 +99,8 @@ def _normalize_daily_row(row: dict[str, Any]) -> dict[str, Any] | None:
         return None
     if gwei < 0:
         return None
-    d = datetime.fromtimestamp(ts, tz=timezone.utc).date()
-    ts_norm = int(datetime(d.year, d.month, d.day, tzinfo=timezone.utc).timestamp())
+    d = datetime.fromtimestamp(ts, tz=UTC).date()
+    ts_norm = int(datetime(d.year, d.month, d.day, tzinfo=UTC).timestamp())
     return {"timestamp": ts_norm, "fast_gwei": gwei, "source": "etherscan_gas_history"}
 
 

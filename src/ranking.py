@@ -18,12 +18,11 @@ Score conventions
 from __future__ import annotations
 
 import math
+from collections.abc import Iterable, Sequence
 from dataclasses import asdict, dataclass, field
-from typing import Iterable, Optional, Sequence
 
 from .features import compute_return, compute_spread_bps, compute_volatility
 from .utils import clamp, safe_float, utc_now_iso
-
 
 # Targets used to map raw values into [0, 1] for the liquidity score.
 _VOLUME_TARGET_24H = 5_000.0
@@ -54,7 +53,7 @@ class RankedSymbol:
     opportunity_score: float = 0.0
     rank: int = 0
     selected: bool = False
-    skipped_reason: Optional[str] = None
+    skipped_reason: str | None = None
     source: str = "kraken_cli"
     as_of: str = field(default_factory=utc_now_iso)
 

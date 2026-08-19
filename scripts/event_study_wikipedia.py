@@ -19,9 +19,10 @@ from __future__ import annotations
 
 import argparse
 import sys
-from datetime import datetime, timezone
+from collections.abc import Sequence
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
 _REPO_ROOT = _SCRIPT_DIR.parent
@@ -41,9 +42,10 @@ from _event_study_common import (  # noqa: E402
     window_iso_range,
     write_json_report,
 )
-from src.data.collectors.binance_public import default_ohlc_daily_cache_path  # noqa: E402
+
 from src.crypto_ohlc_rest import CryptoOHLCFetchError
 from src.data.collectors._common import CollectorError
+from src.data.collectors.binance_public import default_ohlc_daily_cache_path  # noqa: E402
 from src.data.collectors.wikimedia import (
     default_wikimedia_cache_path,
     fetch_pageviews,
@@ -413,7 +415,7 @@ def _append_phase11_run_log(
     PHASE11_OUT_DIR.mkdir(parents=True, exist_ok=True)
     lines = [
         "",
-        f"## Wikipedia basket ({datetime.now(timezone.utc).date().isoformat()})",
+        f"## Wikipedia basket ({datetime.now(UTC).date().isoformat()})",
         "",
         f"- Window: {days}d | ticker: {report.get('ticker', 'BTC')}",
         f"- Pre-registered z: {list(PREREGISTERED_Z_THRESHOLDS)}",

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from typing import Sequence
+from collections.abc import Sequence
 
 from src.bot.paper_engine import BotCandle
 from src.bot.portfolio import PaperPortfolio
@@ -69,7 +69,7 @@ class VolatilityTargetingOverlay:
         self.name = f"{inner_name}+vol_target"
 
     def warmup_bars(self) -> int:
-        inner_warmup = int(getattr(self._inner, "warmup_bars")())
+        inner_warmup = int(self._inner.warmup_bars())
         return max(inner_warmup, self.vol_lookback + 2)
 
     def on_bar(

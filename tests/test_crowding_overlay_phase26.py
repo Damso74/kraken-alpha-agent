@@ -2,16 +2,19 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
 from src.bot.crowding_overlay import (
+    CrowdingOverlayStrategy,
     classify_crowding,
     compare_baseline_vs_overlay,
     precompute_crowding_states,
-    CrowdingOverlayStrategy,
 )
 from src.bot.phase26_walkforward import classify_phase26_overlay_verdict
+
+
 def _candles(n: int, step: int = 14400) -> list[dict]:
-    t0 = int(datetime(2020, 1, 1, tzinfo=timezone.utc).timestamp())
+    t0 = int(datetime(2020, 1, 1, tzinfo=UTC).timestamp())
     return [
         {
             "timestamp": t0 + i * step,

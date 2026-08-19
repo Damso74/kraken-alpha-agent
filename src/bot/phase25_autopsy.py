@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Literal, Sequence
+from typing import Any, Literal
 
 from src.bot.data_loader import load_ohlcv_candles
 from src.bot.execution_simulator import ExecutionConfig, ExecutionSimulator
@@ -24,7 +25,6 @@ from src.bot.risk_adjusted_metrics import (
     calmar_like,
     compute_risk_adjusted_bundle,
     drawdown_reduction_vs_bh,
-    ulcer_index_proxy,
 )
 from src.bot.risk_manager import RiskManager
 from src.bot.walkforward import context_candles_for_period
@@ -577,7 +577,7 @@ def check_fee_sensitivity(
 
 
 def _year_utc(ts: int) -> int:
-    return datetime.fromtimestamp(ts, tz=timezone.utc).year
+    return datetime.fromtimestamp(ts, tz=UTC).year
 
 
 def check_period_splits(

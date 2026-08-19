@@ -17,9 +17,10 @@ from __future__ import annotations
 
 import argparse
 import sys
-from datetime import datetime, timezone
+from collections.abc import Mapping, Sequence
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
 _REPO_ROOT = _SCRIPT_DIR.parent
@@ -37,6 +38,7 @@ from _event_study_common import (  # noqa: E402
     run_event_study_pipeline,
     write_json_report,
 )
+
 from src.crypto_ohlc_rest import CryptoOHLCFetchError
 from src.data.collectors._common import CollectorError
 from src.data.collectors.status_pages import (
@@ -48,7 +50,6 @@ from src.research.event_study import EventStudyWindow, run_event_study
 from src.research.placebo import empirical_p_value, shift_events_in_time
 from src.signals.exchange_status import (
     build_exchange_status_events,
-    classify_incident_kind,
     count_rows_by_impact,
     count_rows_by_kind,
     incident_duration_minutes,
@@ -615,7 +616,7 @@ def run_phase11_sprint(args: argparse.Namespace) -> int:
     master: dict[str, Any] = {
         "phase": 11,
         "agent": "exchange_status_deep_dive",
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "hypothesis_family": (
             "Exchange Statuspage incidents → forward BTC realized volatility "
             "(primary post_1/post_3) and return (secondary); never tradable."

@@ -14,7 +14,6 @@ from src.bot.metrics import metrics_to_dict
 from src.bot.paper_engine import run_paper_backtest
 from src.bot.phase23_presets import build_phase23_strategy, phase23_run_id
 from src.bot.portfolio import PaperPortfolio
-from src.bot.regime_features import precompute_regime_features
 from src.bot.regime_overlay import RegimeOverlayStrategy
 from src.bot.regime_router import BuyAndHoldStrategy
 from src.bot.risk_adjusted_metrics import compute_risk_adjusted_bundle

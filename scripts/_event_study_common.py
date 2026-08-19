@@ -10,18 +10,23 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import datetime, timedelta, timezone
+from collections.abc import Sequence
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any, Callable, Sequence
+from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from src.crypto_ohlc_rest import (
-    CryptoOHLCFetchError,
     fetch_crypto_ohlc_paginated,
     normalize_crypto_pair,
+)
+from src.data.collectors._provenance import (
+    DataProvenance,
+    merge_provenance_into_report,
+    provenance_from_cache_path,
 )
 from src.data.collectors.binance_public import (
     default_ohlc_daily_cache_path,
@@ -29,11 +34,6 @@ from src.data.collectors.binance_public import (
     fetch_ohlc_daily_with_cache,
 )
 from src.research.event_study import EventStudyWindow, run_event_study
-from src.data.collectors._provenance import (
-    DataProvenance,
-    merge_provenance_into_report,
-    provenance_from_cache_path,
-)
 from src.research.holdout import DEFAULT_HOLDOUT_FRACTION, evaluate_holdout_g4
 from src.research.placebo import (
     benjamini_hochberg,
@@ -190,7 +190,7 @@ def fetch_daily_ohlc(
         )
 
     pair = normalize_crypto_pair(ticker)
-    since = int((datetime.now(timezone.utc) - timedelta(days=days + 5)).timestamp())
+    since = int((datetime.now(UTC) - timedelta(days=days + 5)).timestamp())
     target_candles = max(days + 10, 30)
     rows = fetch_crypto_ohlc_paginated(
         pair,
@@ -233,13 +233,13 @@ def align_events_to_daily_candles(
     candle_by_day: dict[str, int] = {}
     for c in candles:
         ts = int(c["timestamp"])
-        day = datetime.fromtimestamp(ts, tz=timezone.utc).date().isoformat()
+        day = datetime.fromtimestamp(ts, tz=UTC).date().isoformat()
         candle_by_day[day] = ts
 
     aligned: list[int] = []
     seen: set[int] = set()
     for ev in raw_events:
-        day = datetime.fromtimestamp(int(ev), tz=timezone.utc).date().isoformat()
+        day = datetime.fromtimestamp(int(ev), tz=UTC).date().isoformat()
         ct = candle_by_day.get(day)
         if ct is None or ct in seen:
             continue
@@ -523,7 +523,7 @@ def write_json_report(path: Path, report: dict[str, Any], *, tag: str) -> None:
 
 
 def window_iso_range(days: int) -> tuple[str, str, datetime.date]:
-    today = datetime.now(timezone.utc).date()
+    today = datetime.now(UTC).date()
     start = today - timedelta(days=days)
     return start.isoformat(), today.isoformat(), today
 

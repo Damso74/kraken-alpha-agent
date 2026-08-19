@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from src.bot.basis_crowding_overlay import (
@@ -14,17 +14,17 @@ from src.bot.basis_crowding_overlay import (
     precompute_basis_crowding_states,
 )
 from src.data.collectors.binance_basis_public import (
+    audit_basis_readiness,
     build_basis_rows,
     default_basis_cache_path,
     load_basis_cache,
     parse_basis_rows,
     save_basis_cache,
-    audit_basis_readiness,
 )
 
 
 def _candles(n: int, step: int = 14400) -> list[dict]:
-    t0 = int(datetime(2020, 1, 1, tzinfo=timezone.utc).timestamp())
+    t0 = int(datetime(2020, 1, 1, tzinfo=UTC).timestamp())
     return [
         {
             "timestamp": t0 + i * step,
@@ -39,7 +39,7 @@ def _candles(n: int, step: int = 14400) -> list[dict]:
 
 
 def _spot_perp(n: int, step: int = 14400, basis: float = 0.001) -> tuple[list, list]:
-    t0 = int(datetime(2020, 1, 1, tzinfo=timezone.utc).timestamp())
+    t0 = int(datetime(2020, 1, 1, tzinfo=UTC).timestamp())
     spot, perp = [], []
     for i in range(n):
         ts = t0 + i * step

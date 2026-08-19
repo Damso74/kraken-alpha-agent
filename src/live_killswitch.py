@@ -46,11 +46,11 @@ from __future__ import annotations
 import json
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Callable, Optional, Protocol
-
+from typing import Protocol
 
 # ---------------------------------------------------------------------------
 # Public types
@@ -137,13 +137,13 @@ _CEST_OFFSET_SECONDS = 2 * 3600  # CEST = UTC+2; used as a fixed mapping here.
 
 
 def utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def iso(dt: datetime) -> str:
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    return dt.astimezone(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+        dt = dt.replace(tzinfo=UTC)
+    return dt.astimezone(UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
 def cest_cutoff_reached(
@@ -160,9 +160,9 @@ def cest_cutoff_reached(
     locked.
     """
     if now_utc.tzinfo is None:
-        now_utc = now_utc.replace(tzinfo=timezone.utc)
+        now_utc = now_utc.replace(tzinfo=UTC)
     cest_now = now_utc.timestamp() + _CEST_OFFSET_SECONDS
-    cest_dt = datetime.fromtimestamp(cest_now, tz=timezone.utc)
+    cest_dt = datetime.fromtimestamp(cest_now, tz=UTC)
     cutoff_minutes = hour * 60 + minute
     now_minutes = cest_dt.hour * 60 + cest_dt.minute
     return now_minutes >= cutoff_minutes
@@ -204,12 +204,12 @@ class KillSwitchOrchestrator:
         self._clock = clock
         self._sleep = sleep
         self._stop_event = threading.Event()
-        self._baseline: Optional[PnLSnapshot] = None
-        self._latest: Optional[PnLSnapshot] = None
+        self._baseline: PnLSnapshot | None = None
+        self._latest: PnLSnapshot | None = None
         self._triggered: bool = False
         self._trigger_reason: str = ""
         self._failure_streak: int = 0
-        self._started_at: Optional[datetime] = None
+        self._started_at: datetime | None = None
 
     # ------------------------------------------------------------------
     # Public accessors
@@ -224,11 +224,11 @@ class KillSwitchOrchestrator:
         return self._trigger_reason
 
     @property
-    def baseline(self) -> Optional[PnLSnapshot]:
+    def baseline(self) -> PnLSnapshot | None:
         return self._baseline
 
     @property
-    def latest_snapshot(self) -> Optional[PnLSnapshot]:
+    def latest_snapshot(self) -> PnLSnapshot | None:
         return self._latest
 
     def cumulative_pnl_usd(self) -> float:

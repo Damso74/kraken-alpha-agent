@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 from src.bot.observation_healthcheck import find_latest_log, load_json
 
@@ -172,8 +173,8 @@ def render_ops_digest_md(digest: Mapping[str, Any]) -> str:
         "",
         "## Status",
         "",
-        f"| Field | Value |",
-        f"|-------|-------|",
+        "| Field | Value |",
+        "|-------|-------|",
         f"| Overall | `{status}` |",
         f"| Healthcheck | `{digest.get('healthcheck_status', '')}` |",
         f"| Next action | **`{next_action}`** |",

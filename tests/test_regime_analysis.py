@@ -7,7 +7,7 @@ no filesystem, no subprocess.
 from __future__ import annotations
 
 import math
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -22,7 +22,6 @@ from src.research.regime_analysis import (
     classify_regime_stability,
     summarize_by_regime,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -136,7 +135,7 @@ def test_assign_volatility_regime_rejects_bad_quantile() -> None:
 
 
 def _ts(year: int, month: int, day: int) -> int:
-    return int(datetime(year, month, day, 12, 0, tzinfo=timezone.utc).timestamp())
+    return int(datetime(year, month, day, 12, 0, tzinfo=UTC).timestamp())
 
 
 def test_assign_calendar_regime_weekday_vs_weekend() -> None:

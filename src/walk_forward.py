@@ -53,18 +53,17 @@ from __future__ import annotations
 
 import math
 import time
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Mapping, Optional, Sequence
+from typing import Any
 
 from .backtest import (
-    PortfolioResult,
     SOURCE_LABEL,
-    build_replay_candles,
+    PortfolioResult,
     simulate_portfolio,
 )
 from .config import Settings, get_settings
 from .external_signals import ExternalSnapshot
-
 
 # ---------------------------------------------------------------------------
 # Dataclasses
@@ -91,16 +90,16 @@ class WalkForwardSplit:
     def test_len(self) -> int:
         return len(self.test)
 
-    def first_train_ts(self) -> Optional[int]:
+    def first_train_ts(self) -> int | None:
         return _first_timestamp(self.train)
 
-    def last_train_ts(self) -> Optional[int]:
+    def last_train_ts(self) -> int | None:
         return _last_timestamp(self.train)
 
-    def first_test_ts(self) -> Optional[int]:
+    def first_test_ts(self) -> int | None:
         return _first_timestamp(self.test)
 
-    def last_test_ts(self) -> Optional[int]:
+    def last_test_ts(self) -> int | None:
         return _last_timestamp(self.test)
 
 
@@ -165,10 +164,10 @@ class WalkForwardResult:
     train_fraction: float
     train_candles_per_symbol: dict[str, int]
     test_candles_per_symbol: dict[str, int]
-    train_first_ts: Optional[int]
-    train_last_ts: Optional[int]
-    test_first_ts: Optional[int]
-    test_last_ts: Optional[int]
+    train_first_ts: int | None
+    train_last_ts: int | None
+    test_first_ts: int | None
+    test_last_ts: int | None
     grid: dict[str, list[Any]]
     grid_size: int
     filter_min_test_pnl_usd: float
@@ -176,7 +175,7 @@ class WalkForwardResult:
     filter_min_test_trades_count: int = 1
     evaluated: list[WalkForwardCandidate] = field(default_factory=list)
     survivors: list[WalkForwardCandidate] = field(default_factory=list)
-    winner: Optional[WalkForwardCandidate] = None
+    winner: WalkForwardCandidate | None = None
     elapsed_seconds: float = 0.0
     source: str = SOURCE_LABEL
 
@@ -224,7 +223,7 @@ class WalkForwardResult:
 # ---------------------------------------------------------------------------
 
 
-def _first_timestamp(rows: Sequence[Mapping[str, Any]]) -> Optional[int]:
+def _first_timestamp(rows: Sequence[Mapping[str, Any]]) -> int | None:
     for r in rows:
         ts = r.get("timestamp") if isinstance(r, dict) else None
         if ts is not None:
@@ -235,7 +234,7 @@ def _first_timestamp(rows: Sequence[Mapping[str, Any]]) -> Optional[int]:
     return None
 
 
-def _last_timestamp(rows: Sequence[Mapping[str, Any]]) -> Optional[int]:
+def _last_timestamp(rows: Sequence[Mapping[str, Any]]) -> int | None:
     for r in reversed(list(rows)):
         ts = r.get("timestamp") if isinstance(r, dict) else None
         if ts is not None:
@@ -403,9 +402,7 @@ def _simulate_window(
     initial_cash: float,
     interval_minutes: int,
     disable_realtime_cooldown: bool,
-    external_snapshots_by_symbol: Optional[
-        Mapping[str, Mapping[str, ExternalSnapshot]]
-    ] = None,
+    external_snapshots_by_symbol: Mapping[str, Mapping[str, ExternalSnapshot]] | None = None,
 ) -> WindowMetrics:
     """Run one portfolio simulation on a single window and collect metrics."""
     pf = simulate_portfolio(
@@ -435,11 +432,9 @@ def run_walk_forward(
     min_test_pnl_usd: float = 0.0,
     min_test_win_rate: float = 0.50,
     min_test_trades_count: int = 1,
-    settings: Optional[Settings] = None,
+    settings: Settings | None = None,
     disable_realtime_cooldown: bool = True,
-    external_snapshots_by_symbol: Optional[
-        Mapping[str, Mapping[str, ExternalSnapshot]]
-    ] = None,
+    external_snapshots_by_symbol: Mapping[str, Mapping[str, ExternalSnapshot]] | None = None,
 ) -> WalkForwardResult:
     """End-to-end walk-forward run.
 

@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import time
-from typing import Iterable, Optional
+from collections.abc import Iterable
 
 from .config import Settings, get_settings
 from .schemas import EnsembleResult, Features, PortfolioSnapshot, RiskCheck, RiskResult
 from .universe import is_in_allowlist
-
 
 # Intransigeant ceiling for the futures pivot. The risk gate refuses any
 # value strictly above this no matter where it came from (config, env,
@@ -54,7 +53,7 @@ def evaluate_risk(
     settings: Settings | None = None,
     intended_mode: str | None = None,
     is_exit_action: bool = False,
-    intended_leverage: Optional[float] = None,
+    intended_leverage: float | None = None,
 ) -> RiskResult:
     """Evaluate the risk gates for an upcoming order.
 

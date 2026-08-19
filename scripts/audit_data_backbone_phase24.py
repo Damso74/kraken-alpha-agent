@@ -8,7 +8,7 @@ import csv
 import json
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -54,7 +54,7 @@ def _markdown_report(entries: list[dict], summary: dict) -> str:
     lines = [
         "# Phase 24 — Data backbone audit",
         "",
-        f"Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')} UTC",
+        f"Generated: {datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ')} UTC",
         "",
         "## Summary",
         "",
@@ -109,7 +109,7 @@ def main() -> int:
     summary = summarize_inventory(entries)
     payload = {
         "phase": 24,
-        "generated_at_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "generated_at_utc": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "commit_sha": _git_commit_sha(),
         "cache_root": str(args.cache_root),
         **summary,

@@ -41,8 +41,9 @@ import shlex
 import shutil
 import subprocess
 import time
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Any, Iterable, Literal
+from typing import Any, Literal
 
 from .logger import get_logger
 from .utils import utc_now_iso

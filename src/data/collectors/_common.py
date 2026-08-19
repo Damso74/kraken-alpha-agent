@@ -11,9 +11,10 @@ Conventions
 from __future__ import annotations
 
 import json
-from datetime import date, datetime, timezone
+from collections.abc import Callable, Mapping
+from datetime import UTC, date, datetime
 from pathlib import Path
-from typing import Any, Callable, Mapping, Optional
+from typing import Any
 
 import httpx
 
@@ -33,20 +34,20 @@ class CollectorError(RuntimeError):
 
 def utc_now_iso() -> str:
     return (
-        datetime.now(timezone.utc)
+        datetime.now(UTC)
         .isoformat(timespec="seconds")
         .replace("+00:00", "Z")
     )
 
 
-def parse_iso_date(s: str) -> Optional[date]:
+def parse_iso_date(s: str) -> date | None:
     """Best-effort ISO 8601 / unix string → UTC :class:`date`."""
     if not s:
         return None
     s = s.strip()
     if s.isdigit():
         try:
-            return datetime.fromtimestamp(int(s), tz=timezone.utc).date()
+            return datetime.fromtimestamp(int(s), tz=UTC).date()
         except (OverflowError, OSError, ValueError):
             return None
     try:
@@ -59,25 +60,25 @@ def parse_iso_date(s: str) -> Optional[date]:
 
 
 def date_to_unix_start(d: date) -> int:
-    return int(datetime(d.year, d.month, d.day, tzinfo=timezone.utc).timestamp())
+    return int(datetime(d.year, d.month, d.day, tzinfo=UTC).timestamp())
 
 
 def date_to_unix_end(d: date) -> int:
     return int(
-        datetime(d.year, d.month, d.day, 23, 59, 59, tzinfo=timezone.utc).timestamp()
+        datetime(d.year, d.month, d.day, 23, 59, 59, tzinfo=UTC).timestamp()
     )
 
 
 def date_in_range(ts: int, *, start: date, end: date) -> bool:
-    d = datetime.fromtimestamp(ts, tz=timezone.utc).date()
+    d = datetime.fromtimestamp(ts, tz=UTC).date()
     return start <= d <= end
 
 
 def http_get_json(
     url: str,
     *,
-    params: Optional[Mapping[str, Any]] = None,
-    headers: Optional[Mapping[str, str]] = None,
+    params: Mapping[str, Any] | None = None,
+    headers: Mapping[str, str] | None = None,
     timeout: float = DEFAULT_HTTP_TIMEOUT_SECONDS,
 ) -> Any:
     """Perform a GET and return parsed JSON or raise :class:`CollectorError`."""
@@ -95,11 +96,11 @@ def http_get_json(
         raise CollectorError(f"non-JSON response from {url}: {exc}") from exc
 
 
-HttpFetcherFn = Callable[[str, Optional[Mapping[str, Any]]], Any]
+HttpFetcherFn = Callable[[str, Mapping[str, Any] | None], Any]
 
 
 def default_http_fetcher(
-    url: str, params: Optional[Mapping[str, Any]] = None
+    url: str, params: Mapping[str, Any] | None = None
 ) -> Any:
     return http_get_json(url, params=params)
 

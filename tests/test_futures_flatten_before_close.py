@@ -9,7 +9,7 @@ accrual.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -45,7 +45,7 @@ def test_flatten_before_close_fires_15_min_before_us_core_close(
     """US_CORE closes at 16:00 ET = 20:00 UTC in DST. 19:50 UTC → 10 min left.
     The rule must fire (cap is 15 min). Use a Wednesday so weekday gating
     passes."""
-    now = datetime(2026, 5, 13, 19, 50, tzinfo=timezone.utc)
+    now = datetime(2026, 5, 13, 19, 50, tzinfo=UTC)
     pos = _position()
     pos = pos.model_copy(update={"opened_at": "2026-05-13T18:00:00Z"})
     decision = flatten_before_close_exit(pos, now, futures_profile.config)
@@ -57,7 +57,7 @@ def test_flatten_before_close_silent_when_outside_us_core(
     futures_profile,
 ) -> None:
     # Saturday — US_CORE window is closed entirely.
-    now = datetime(2026, 5, 16, 19, 50, tzinfo=timezone.utc)
+    now = datetime(2026, 5, 16, 19, 50, tzinfo=UTC)
     pos = _position()
     pos = pos.model_copy(update={"opened_at": "2026-05-16T18:00:00Z"})
     decision = flatten_before_close_exit(pos, now, futures_profile.config)
@@ -69,7 +69,7 @@ def test_flatten_before_close_never_opens_short_on_zero_qty(
 ) -> None:
     """The rule must not fire when we hold no long — protects against
     accidental short."""
-    now = datetime(2026, 5, 13, 19, 50, tzinfo=timezone.utc)
+    now = datetime(2026, 5, 13, 19, 50, tzinfo=UTC)
     pos = _position(quantity=0.0)
     pos = pos.model_copy(update={"opened_at": "2026-05-13T18:00:00Z"})
     decision = flatten_before_close_exit(pos, now, futures_profile.config)
@@ -82,7 +82,7 @@ def test_evaluate_exit_rules_picks_flatten_before_close(
     """Aggregate priority: SL/TP/momentum/time/flatten. With benign price
     and a fresh entry, the only rule that should fire near close is
     flatten_before_close."""
-    now = datetime(2026, 5, 13, 19, 55, tzinfo=timezone.utc)
+    now = datetime(2026, 5, 13, 19, 55, tzinfo=UTC)
     pos = _position(quantity=0.05, avg_entry=200.0)
     # Open 30 minutes ago: no SL/TP (same price), no time_exit (max_hold=90).
     pos = pos.model_copy(update={"opened_at": "2026-05-13T19:25:00Z"})

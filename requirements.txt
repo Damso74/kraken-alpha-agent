@@ -13,3 +13,8 @@ tzdata>=2024.1
 # discovery sweep (scripts/optuna_crypto_search.py). TPE sampler +
 # MedianPruner on top of the existing walk-forward harness.
 optuna>=3.4
+
+# Lint gate. La CI installe requirements.txt : sans cette ligne le step
+# ``ruff check`` echoue en exit 127 avant tout pytest (cf. runs 26225708783 /
+# 26225503049 du 2026-05-21).
+ruff>=0.4

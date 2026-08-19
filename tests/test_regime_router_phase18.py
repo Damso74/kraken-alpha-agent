@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+from src.bot.portfolio import PaperPortfolio
 from src.bot.regime_classifier import RegimeClassification
 from src.bot.regime_router import RegimeRouterStrategy, route_regime
-from src.bot.portfolio import PaperPortfolio
 from tests.conftest_bot import synthetic_uptrend
 
 

@@ -9,8 +9,6 @@ from scripts._phase23_common import (
     DEFAULT_CACHE_ROOT,
     run_buy_and_hold,
     run_phase23_cell,
-    write_json,
-    write_matrix_csv,
 )
 from src.bot.crowding_overlay import (
     CrowdingOverlayStrategy,
@@ -20,7 +18,6 @@ from src.bot.crowding_overlay import (
 from src.bot.data_loader import load_ohlcv_candles
 from src.bot.execution_simulator import ExecutionConfig, ExecutionSimulator
 from src.bot.journal import BotJournal
-from src.bot.metrics import metrics_to_dict
 from src.bot.paper_engine import run_paper_backtest
 from src.bot.phase23_presets import build_phase23_strategy
 from src.bot.phase26_walkforward import classify_phase26_overlay_verdict

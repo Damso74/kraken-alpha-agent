@@ -16,13 +16,14 @@ Normalized rows match :func:`scripts._event_study_common.fetch_daily_ohlc`:
 
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta, timezone
+from collections.abc import Callable, Mapping, Sequence
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
-from typing import Any, Callable, Mapping, Optional, Sequence
+from typing import Any
 
 from ._common import (
-    CollectorError,
     DEFAULT_COLLECTOR_CACHE_DIR,
+    CollectorError,
     default_http_fetcher,
     filter_rows_by_date_range,
     load_json_cache,
@@ -82,7 +83,7 @@ def _normalize_candle_row(
     raw: Mapping[str, Any],
     *,
     normalize_to_day: bool = True,
-) -> Optional[dict[str, Any]]:
+) -> dict[str, Any] | None:
     ts = raw.get("timestamp")
     if not isinstance(ts, int):
         return None
@@ -105,8 +106,8 @@ def _normalize_candle_row(
     else:
         vwap = (h + lo + c) / 3.0
     if normalize_to_day:
-        d = datetime.fromtimestamp(ts, tz=timezone.utc).date()
-        ts_norm = int(datetime(d.year, d.month, d.day, tzinfo=timezone.utc).timestamp())
+        d = datetime.fromtimestamp(ts, tz=UTC).date()
+        ts_norm = int(datetime(d.year, d.month, d.day, tzinfo=UTC).timestamp())
     else:
         ts_norm = ts
     return {
@@ -161,8 +162,8 @@ def parse_binance_klines(payload: Any) -> list[dict[str, Any]]:
         except (TypeError, ValueError):
             continue
         ts = open_ms // 1000
-        d = datetime.fromtimestamp(ts, tz=timezone.utc).date()
-        ts_norm = int(datetime(d.year, d.month, d.day, tzinfo=timezone.utc).timestamp())
+        d = datetime.fromtimestamp(ts, tz=UTC).date()
+        ts_norm = int(datetime(d.year, d.month, d.day, tzinfo=UTC).timestamp())
         quote_vol = float(item[7]) if len(item) > 7 else 0.0
         vwap = quote_vol / vol if vol > 0 else (h + lo + c) / 3.0
         rows.append(
@@ -199,7 +200,7 @@ def _min_rows_for_days(days: int) -> int:
 
 
 def _date_range_for_days(days: int) -> tuple[date, date]:
-    today = datetime.now(timezone.utc).date()
+    today = datetime.now(UTC).date()
     start = today - timedelta(days=max(days, 1) + 5)
     return start, today
 
@@ -262,13 +263,13 @@ def fetch_binance_daily_klines(
     start_date, end_date = _date_range_for_days(days)
     start_ms = int(
         datetime(
-            start_date.year, start_date.month, start_date.day, tzinfo=timezone.utc
+            start_date.year, start_date.month, start_date.day, tzinfo=UTC
         ).timestamp()
         * 1000
     )
     end_ms = int(
         datetime(
-            end_date.year, end_date.month, end_date.day, 23, 59, 59, tzinfo=timezone.utc
+            end_date.year, end_date.month, end_date.day, 23, 59, 59, tzinfo=UTC
         ).timestamp()
         * 1000
     )
@@ -315,7 +316,7 @@ def fetch_ohlc_daily_with_cache(
     ticker: str,
     days: int,
     *,
-    cache_path: Optional[Path] = None,
+    cache_path: Path | None = None,
     use_cache_only: bool = False,
     fetcher: BinanceFetcherFn = default_http_fetcher,
 ) -> list[dict[str, Any]]:
@@ -349,7 +350,7 @@ def fetch_ohlc_daily_cache_only(
     ticker: str,
     days: int,
     *,
-    cache_path: Optional[Path] = None,
+    cache_path: Path | None = None,
 ) -> list[dict[str, Any]]:
     """Load daily OHLC strictly from ``data/collector_cache/`` (no network)."""
     path = cache_path or default_ohlc_daily_cache_path(ticker)
@@ -461,7 +462,7 @@ def _interval_step_seconds(timeframe: str) -> int:
 
 
 def _date_range_for_coverage_days(days: int) -> tuple[date, date]:
-    today = datetime.now(timezone.utc).date()
+    today = datetime.now(UTC).date()
     start = today - timedelta(days=max(days, 1) + 5)
     return start, today
 
@@ -524,13 +525,13 @@ def fetch_binance_klines(
     start_date, end_date = _date_range_for_coverage_days(days)
     start_ms = int(
         datetime(
-            start_date.year, start_date.month, start_date.day, tzinfo=timezone.utc
+            start_date.year, start_date.month, start_date.day, tzinfo=UTC
         ).timestamp()
         * 1000
     )
     end_ms = int(
         datetime(
-            end_date.year, end_date.month, end_date.day, 23, 59, 59, tzinfo=timezone.utc
+            end_date.year, end_date.month, end_date.day, 23, 59, 59, tzinfo=UTC
         ).timestamp()
         * 1000
     )

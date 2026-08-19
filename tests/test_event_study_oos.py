@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
-
-import pytest
+from datetime import UTC, datetime, timedelta
 
 from src.research.event_study import EventStudyWindow
 from src.research.holdout import (
@@ -17,7 +15,7 @@ from src.research.holdout import (
 
 
 def _candle(offset_days: int) -> dict:
-    base = datetime(2024, 1, 1, tzinfo=timezone.utc)
+    base = datetime(2024, 1, 1, tzinfo=UTC)
     ts = int((base + timedelta(days=offset_days)).timestamp())
     return {
         "timestamp": ts,

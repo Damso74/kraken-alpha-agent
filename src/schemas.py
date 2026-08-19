@@ -8,12 +8,11 @@ compatible.
 
 from __future__ import annotations
 
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from .utils import new_id, utc_now_iso
-
 
 Action = Literal["BUY", "SELL", "HOLD"]
 Mode = Literal["dry_run", "paper", "live"]
@@ -32,8 +31,8 @@ class Features(BaseModel):
 
     symbol: str
     last_price: float
-    bid: Optional[float] = None
-    ask: Optional[float] = None
+    bid: float | None = None
+    ask: float | None = None
     spread_bps: float = 0.0
     return_5m: float = 0.0
     return_15m: float = 0.0
@@ -53,8 +52,8 @@ class Features(BaseModel):
     # the risk gate's funding cap (``risk.evaluate_risk``). Both stay
     # ``None`` for spot-engine cycles so legacy code paths see exactly
     # what they used to.
-    mark_price: Optional[float] = None
-    funding_rate_pct_per_hour: Optional[float] = None
+    mark_price: float | None = None
+    funding_rate_pct_per_hour: float | None = None
 
 
 class StrategyVote(BaseModel):
@@ -106,15 +105,15 @@ class ExecutionResult(BaseModel):
         "skipped",
     ]
     mode: Mode
-    order_id: Optional[str] = None
-    symbol: Optional[str] = None
+    order_id: str | None = None
+    symbol: str | None = None
     action: Action = "HOLD"
     requested_size_usd: float = 0.0
     filled_size_usd: float = 0.0
-    fill_price: Optional[float] = None
-    volume: Optional[float] = None
-    fee: Optional[float] = None
-    error: Optional[str] = None
+    fill_price: float | None = None
+    volume: float | None = None
+    fee: float | None = None
+    error: str | None = None
     raw: dict[str, Any] = Field(default_factory=dict)
     at: str = Field(default_factory=utc_now_iso)
 
@@ -131,7 +130,7 @@ class Position(BaseModel):
     # Optional for backwards compatibility with older positions persisted
     # before the exit_rules patch; time_exit and flatten_before_close
     # silently skip when it's missing.
-    opened_at: Optional[str] = None
+    opened_at: str | None = None
 
 
 class PortfolioSnapshot(BaseModel):
@@ -188,7 +187,7 @@ class Decision(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     id: str = Field(default_factory=lambda: new_id("dec"))
-    cycle_id: Optional[str] = None
+    cycle_id: str | None = None
     symbol: str
     action: Action
     final_score: float
@@ -200,8 +199,8 @@ class Decision(BaseModel):
     votes: list[StrategyVote] = Field(default_factory=list)
     risk: RiskResult
     execution: ExecutionResult
-    actionability: Optional[Actionability] = None
-    llm: Optional[LLMExplanation] = None
+    actionability: Actionability | None = None
+    llm: LLMExplanation | None = None
     mode: Mode = "dry_run"
     rationale: str = ""
     at: str = Field(default_factory=utc_now_iso)

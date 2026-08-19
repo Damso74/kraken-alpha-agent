@@ -19,7 +19,6 @@ from src.bot.crowding_overlay import compare_baseline_vs_overlay
 from src.bot.data_loader import load_ohlcv_candles
 from src.bot.execution_simulator import ExecutionConfig, ExecutionSimulator
 from src.bot.journal import BotJournal
-from src.bot.metrics import metrics_to_dict
 from src.bot.paper_engine import run_paper_backtest
 from src.bot.phase23_presets import build_phase23_strategy
 from src.bot.portfolio import PaperPortfolio

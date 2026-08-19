@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from src.research.cost_model import (
     SUSPECT_GROSS_RETURN_THRESHOLD_PCT,
     RoundTripCost,

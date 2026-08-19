@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Sequence
+from collections.abc import Sequence
 
 from src.bot.paper_engine import BotCandle
 from src.bot.portfolio import PaperPortfolio

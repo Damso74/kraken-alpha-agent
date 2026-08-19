@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 _REPO = Path(__file__).resolve().parent.parent
@@ -20,7 +20,7 @@ EventStudyWindow = _mod.EventStudyWindow
 
 
 def _candle(offset_days: int) -> dict:
-    base = datetime(2024, 1, 1, tzinfo=timezone.utc)
+    base = datetime(2024, 1, 1, tzinfo=UTC)
     ts = int((base + timedelta(days=offset_days)).timestamp())
     return {
         "timestamp": ts,

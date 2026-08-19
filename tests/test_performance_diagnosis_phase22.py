@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -35,7 +35,7 @@ SCRIPTS = (
 
 
 def _make_candles(*, count: int, step_seconds: int) -> list[dict]:
-    start_ts = int(datetime(2020, 1, 1, tzinfo=timezone.utc).timestamp())
+    start_ts = int(datetime(2020, 1, 1, tzinfo=UTC).timestamp())
     out: list[dict] = []
     for i in range(count):
         ts = start_ts + i * step_seconds

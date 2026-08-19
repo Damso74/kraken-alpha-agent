@@ -14,10 +14,6 @@ No test in this file shells out to the real Kraken CLI; the conftest forces
 
 from __future__ import annotations
 
-from collections import Counter
-from typing import Sequence
-from unittest.mock import patch
-
 import pytest
 
 from src import backtest as bt
@@ -25,18 +21,15 @@ from src.backtest import (
     Candle,
     GridConfigResult,
     PortfolioResult,
-    SymbolResult,
     _adjusted_score,
     _expand_grid,
     _pick_cautious,
-    build_replay_candles,
     parse_ohlc_rows,
     run_grid_search,
     simulate_portfolio,
     simulate_symbol,
 )
 from src.config import get_settings
-
 
 # ---------------------------------------------------------------------------
 # Helpers — deterministic candle fixtures

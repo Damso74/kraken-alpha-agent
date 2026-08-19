@@ -12,13 +12,13 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from src.data.collectors.binance_basis_public import audit_basis_readiness  # noqa: E402
 from src.data.collectors.binance_derivatives_public import (  # noqa: E402
     MAX_OI_LOOKBACK_DAYS,
     audit_derivatives_readiness,
     default_oi_cache_path,
     load_derivatives_cache,
 )
-from src.data.collectors.binance_basis_public import audit_basis_readiness  # noqa: E402
 
 DEFAULT_CACHE = REPO_ROOT / "data" / "collector_cache"
 DEFAULT_OI_REPORT = REPO_ROOT / "reports" / "PHASE27_OI_DATA_DEPTH.md"

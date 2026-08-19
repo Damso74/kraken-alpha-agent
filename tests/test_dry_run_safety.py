@@ -16,17 +16,15 @@ from __future__ import annotations
 import pytest
 
 from src import config as cfg
-from src import execution, futures_kraken_cli, kraken_cli
+from src import futures_kraken_cli, kraken_cli
 from src.execution import DryRunMutationError, _assert_not_dry_run, execute
 from src.schemas import (
     EnsembleResult,
     Features,
-    PortfolioSnapshot,
     RiskCheck,
     RiskResult,
     StrategyVote,
 )
-
 
 # ---------------------------------------------------------------------------
 # helpers

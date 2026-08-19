@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.bot.metrics import BacktestMetrics, RiskRunStats, compute_metrics, compute_verdict
+from src.bot.metrics import BacktestMetrics, RiskRunStats, compute_verdict
 
 
 def test_insufficient_trades_verdict() -> None:

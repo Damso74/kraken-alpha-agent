@@ -16,7 +16,6 @@ from dataclasses import dataclass
 
 from .config import get_settings
 
-
 # xStocks advertised as 24/7 in Kraken's xStocks FAQ.
 TWENTY_FOUR_SEVEN: frozenset[str] = frozenset(
     {"TSLAx", "QQQx", "SPYx", "NVDAx", "CRCLx", "AAPLx", "HOODx", "MSTRx", "GLDx", "GOOGLx"}

@@ -24,7 +24,7 @@ import math
 import sqlite3
 import sys
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -124,8 +124,8 @@ def _parse_iso(ts: str) -> datetime:
     s = ts.strip().replace("Z", "+00:00")
     dt = datetime.fromisoformat(s)
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    return dt.astimezone(timezone.utc)
+        dt = dt.replace(tzinfo=UTC)
+    return dt.astimezone(UTC)
 
 
 def _iso(dt: datetime) -> str:
@@ -133,7 +133,7 @@ def _iso(dt: datetime) -> str:
 
 
 def _now_utc() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _resolve_window(args: argparse.Namespace) -> tuple[datetime, datetime, dict[str, Any]]:

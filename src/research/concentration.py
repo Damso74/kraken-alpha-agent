@@ -26,8 +26,8 @@ offsetting wins/losses do not mask dominance by one large magnitude.
 from __future__ import annotations
 
 import math
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Mapping, Sequence
 
 # Canonical policy thresholds (documented in SIGNAL_REJECTION_POLICY.md G2b).
 SINGLE_EVENT_HIGH_RISK_SHARE = 0.20
@@ -189,7 +189,7 @@ class MaxMonthContribution:
 def _month_key_from_timestamp(ts: int) -> str:
     import datetime as _dt
 
-    return _dt.datetime.fromtimestamp(ts, tz=_dt.timezone.utc).strftime("%Y-%m")
+    return _dt.datetime.fromtimestamp(ts, tz=_dt.UTC).strftime("%Y-%m")
 
 
 def max_month_contribution(

@@ -17,9 +17,8 @@ inclusive-left and exclusive-right, matching the
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional
 
 try:
     from zoneinfo import ZoneInfo
@@ -50,7 +49,7 @@ def _parse_iso_to_utc(ts: str) -> datetime:
     parsed = datetime.fromisoformat(s)
     if parsed.tzinfo is None:
         raise ValueError("ISO timestamp without timezone is rejected")
-    return parsed.astimezone(timezone.utc)
+    return parsed.astimezone(UTC)
 
 
 def classify_market_session(ts_utc: datetime) -> MarketSession:
@@ -83,18 +82,18 @@ def classify_market_session(ts_utc: datetime) -> MarketSession:
     return MarketSession.OVERNIGHT
 
 
-def current_session(now: Optional[datetime] = None) -> MarketSession:
+def current_session(now: datetime | None = None) -> MarketSession:
     """Convenience helper returning the session for ``now`` (UTC)."""
     if now is None:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
     elif now.tzinfo is None:
-        now = now.replace(tzinfo=timezone.utc)
+        now = now.replace(tzinfo=UTC)
     return classify_market_session(now)
 
 
 def is_entry_allowed(
     allowed: list[str] | tuple[str, ...] | None,
-    now: Optional[datetime] = None,
+    now: datetime | None = None,
 ) -> tuple[bool, MarketSession]:
     """Return ``(allowed?, current_session)`` for the entry-session guard.
 
@@ -109,7 +108,7 @@ def is_entry_allowed(
     return session.value in allowed_norm, session
 
 
-def minutes_until_us_core_close(now: Optional[datetime] = None) -> Optional[float]:
+def minutes_until_us_core_close(now: datetime | None = None) -> float | None:
     """Return the minutes remaining before 16:00 ET *today*.
 
     ``None`` when ``now`` is outside the regular weekday window (so the
@@ -117,9 +116,9 @@ def minutes_until_us_core_close(now: Optional[datetime] = None) -> Optional[floa
     unavailable. The result is non-negative.
     """
     if now is None:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
     elif now.tzinfo is None:
-        now = now.replace(tzinfo=timezone.utc)
+        now = now.replace(tzinfo=UTC)
     if NY_TZ is None:  # pragma: no cover
         return None
     local = now.astimezone(NY_TZ)

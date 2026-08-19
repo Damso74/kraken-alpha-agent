@@ -7,9 +7,10 @@ N UTC calendar days of the train/test split (see ``apply_embargo``). See
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Any, Literal, Mapping, Sequence
+from datetime import UTC, datetime
+from typing import Any, Literal
 
 from src.research.event_study import EventStudyWindow, run_event_study
 from src.research.placebo import benjamini_hochberg, empirical_p_value
@@ -147,11 +148,11 @@ def apply_embargo(
     if embargo_days <= 0 or split_timestamp is None or not events:
         return sorted({int(e) for e in events}), 0
 
-    split_day = datetime.fromtimestamp(int(split_timestamp), tz=timezone.utc).date()
+    split_day = datetime.fromtimestamp(int(split_timestamp), tz=UTC).date()
     kept: list[int] = []
     removed = 0
     for ev in events:
-        ev_day = datetime.fromtimestamp(int(ev), tz=timezone.utc).date()
+        ev_day = datetime.fromtimestamp(int(ev), tz=UTC).date()
         delta_days = (ev_day - split_day).days
         if side == "train":
             if delta_days > -embargo_days:

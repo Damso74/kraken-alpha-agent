@@ -4,14 +4,15 @@ from __future__ import annotations
 
 import csv
 import json
+from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from scripts.run_strategy_tournament import PHASE16_STRATEGY_NAMES, _instantiate_strategy
 from src.bot.data_loader import load_ohlcv_candles
 from src.bot.execution_simulator import ExecutionConfig, ExecutionSimulator
 from src.bot.journal import BotJournal
-from src.bot.metrics import classify_strategy_verdict, metrics_to_dict
+from src.bot.metrics import classify_strategy_verdict
 from src.bot.paper_engine import run_paper_backtest
 from src.bot.portfolio import PaperPortfolio
 from src.bot.risk_manager import RiskConfig, RiskManager

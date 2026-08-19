@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-
-import pytest
 
 from src.bot.data_loader import summarize_candles
 
@@ -32,7 +30,7 @@ def _build_manifest_entry(asset: str, tf: str) -> dict:
         "coverage_end": summary.last_timestamp,
         "sha256": summary.sha256,
         "source": "local_cache",
-        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "generated_at_utc": datetime.now(UTC).isoformat(),
         "commit_sha": None,
         "can_run_strategy_zoo": data_ok,
     }

@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import math
 import statistics
-from typing import Any, Mapping, Optional, Sequence
+from collections.abc import Mapping, Sequence
+from typing import Any
 
 
-def extract_timestamp(row: Mapping[str, Any]) -> Optional[int]:
+def extract_timestamp(row: Mapping[str, Any]) -> int | None:
     val = row.get("timestamp")
     if val is None:
         return None
@@ -17,7 +18,7 @@ def extract_timestamp(row: Mapping[str, Any]) -> Optional[int]:
         return None
 
 
-def extract_float(row: Mapping[str, Any], key: str) -> Optional[float]:
+def extract_float(row: Mapping[str, Any], key: str) -> float | None:
     val = row.get(key)
     if val is None:
         return None
@@ -47,8 +48,8 @@ def rolling_z_scores(
     values: Sequence[float],
     lookback: int,
     *,
-    min_periods: Optional[int] = None,
-) -> list[Optional[float]]:
+    min_periods: int | None = None,
+) -> list[float | None]:
     """Rolling z-score of each point vs the prior ``lookback`` observations.
 
     For index ``i``, the reference window is ``values[i - lookback : i]``
@@ -68,7 +69,7 @@ def rolling_z_scores(
         return [None for _ in values]
     need = min_periods if min_periods is not None else lookback
     need = max(2, min(need, lookback))
-    out: list[Optional[float]] = []
+    out: list[float | None] = []
     for i, current in enumerate(values):
         start = max(0, i - lookback)
         window = [float(v) for v in values[start:i]]
@@ -94,7 +95,7 @@ def rolling_z_scores(
 
 def events_from_z_threshold(
     rows: Sequence[Mapping[str, Any]],
-    z_scores: Sequence[Optional[float]],
+    z_scores: Sequence[float | None],
     *,
     z_threshold: float,
     direction: str = "high",

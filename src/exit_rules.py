@@ -27,11 +27,10 @@ Configuration lookup order (the first one defined wins):
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from .sessions import minutes_until_us_core_close
-
 
 # ---------------------------------------------------------------------------
 # Public types
@@ -43,10 +42,10 @@ class ExitDecision:
     """Outcome of an exit-rules evaluation pass."""
 
     should_exit: bool
-    reason: Optional[str] = None
-    pnl_pct: Optional[float] = None
-    held_minutes: Optional[float] = None
-    rule: Optional[str] = None
+    reason: str | None = None
+    pnl_pct: float | None = None
+    held_minutes: float | None = None
+    rule: str | None = None
 
 
 # Internal helper view of the merged exit configuration.
@@ -128,7 +127,7 @@ def _resolve_params(config: Any) -> _ExitParams:
     )
 
 
-def _parse_iso(ts: str) -> Optional[datetime]:
+def _parse_iso(ts: str) -> datetime | None:
     if not ts or not isinstance(ts, str):
         return None
     s = ts.strip()
@@ -139,26 +138,26 @@ def _parse_iso(ts: str) -> Optional[datetime]:
     except ValueError:
         return None
     if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
-    return parsed.astimezone(timezone.utc)
+        parsed = parsed.replace(tzinfo=UTC)
+    return parsed.astimezone(UTC)
 
 
-def _ensure_utc(now: Optional[datetime]) -> datetime:
+def _ensure_utc(now: datetime | None) -> datetime:
     if now is None:
-        return datetime.now(timezone.utc)
+        return datetime.now(UTC)
     if now.tzinfo is None:
-        return now.replace(tzinfo=timezone.utc)
-    return now.astimezone(timezone.utc)
+        return now.replace(tzinfo=UTC)
+    return now.astimezone(UTC)
 
 
-def _pnl_pct(position: Any, current_price: float) -> Optional[float]:
+def _pnl_pct(position: Any, current_price: float) -> float | None:
     avg = float(_get_attr(position, "avg_entry_price", 0.0) or 0.0)
     if avg <= 0:
         return None
     return (float(current_price) - avg) / avg * 100.0
 
 
-def _held_minutes(position: Any, now: datetime) -> Optional[float]:
+def _held_minutes(position: Any, now: datetime) -> float | None:
     opened_at = _get_attr(position, "opened_at")
     parsed = _parse_iso(opened_at) if isinstance(opened_at, str) else None
     if parsed is None:
@@ -232,7 +231,7 @@ def momentum_exit(position: Any, opportunity_score: float, config: Any = None) -
     return ExitDecision(should_exit=False)
 
 
-def time_exit(position: Any, now: Optional[datetime], config: Any = None) -> ExitDecision:
+def time_exit(position: Any, now: datetime | None, config: Any = None) -> ExitDecision:
     """SELL when the position is older than ``max_hold_minutes`` AND PnL is stale.
 
     The "stale" guard prevents flushing a still-winning position that just
@@ -262,7 +261,7 @@ def time_exit(position: Any, now: Optional[datetime], config: Any = None) -> Exi
 
 
 def flatten_before_close_exit(
-    position: Any, now: Optional[datetime], config: Any = None
+    position: Any, now: datetime | None, config: Any = None
 ) -> ExitDecision:
     """SELL when the US_CORE close is closer than ``flatten_before_close_minutes``."""
     if not _is_long(position):
@@ -296,7 +295,7 @@ def evaluate_exit_rules(
     position: Any,
     current_price: float,
     opportunity_score: float,
-    now: Optional[datetime],
+    now: datetime | None,
     config: Any = None,
 ) -> ExitDecision:
     """Walk the configured rules in priority order and return the first hit.

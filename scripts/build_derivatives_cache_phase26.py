@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import argparse
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -13,12 +13,10 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from src.data.collectors.binance_derivatives_public import (  # noqa: E402
-    TIMEFRAME_TO_OI_PERIOD,
     default_funding_cache_path,
     default_oi_cache_path,
     fetch_funding_rate_history,
     fetch_open_interest_history,
-    ms_from_unix,
     save_funding_cache,
     save_oi_cache,
 )
@@ -42,7 +40,7 @@ def _parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = _parse_args()
-    end = datetime.now(timezone.utc)
+    end = datetime.now(UTC)
     end_ms = int(end.timestamp() * 1000)
     funding_start_ms = int((end - timedelta(days=args.funding_days)).timestamp() * 1000)
     oi_start_ms = int((end - timedelta(days=args.oi_days)).timestamp() * 1000)

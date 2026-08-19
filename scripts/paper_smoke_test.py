@@ -203,7 +203,7 @@ def main() -> int:
                 ),
             }
             if result.ok:
-                print(f"[paper-smoke] test paper order OK (paper, not live).")
+                print("[paper-smoke] test paper order OK (paper, not live).")
             elif xstocks_unsupported:
                 err_blob = result.stderr or json.dumps(result.stdout_json or {})
                 print(f"[paper-smoke] test paper order REJECTED by Kraken: {err_blob[:200]}")

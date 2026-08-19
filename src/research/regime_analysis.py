@@ -29,9 +29,10 @@ from __future__ import annotations
 
 import math
 import statistics
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Any, Mapping, Optional, Sequence
+from datetime import UTC, datetime
+from typing import Any, Optional
 from zoneinfo import ZoneInfo
 
 from ..logger import get_logger
@@ -62,7 +63,7 @@ class RegimeSummary:
     count: int
     mean: float
     median: float
-    stdev: Optional[float]
+    stdev: float | None
 
 
 @dataclass(frozen=True)
@@ -70,10 +71,10 @@ class RegimeStabilityResult:
     """Verdict on whether a metric is stable across regime slices."""
 
     label: str
-    dominant_regime: Optional[str]
-    min_mean: Optional[float]
-    max_mean: Optional[float]
-    spread_ratio: Optional[float]
+    dominant_regime: str | None
+    min_mean: float | None
+    max_mean: float | None
+    spread_ratio: float | None
     per_regime: tuple[RegimeSummary, ...]
     notes: str
 
@@ -110,11 +111,11 @@ def _log_returns(closes: Sequence[float]) -> list[float]:
     return out
 
 
-def _rolling_stdev(values: Sequence[float], window: int) -> list[Optional[float]]:
+def _rolling_stdev(values: Sequence[float], window: int) -> list[float | None]:
     """Sample stdev of ``values[start:i+1]`` with width ``window``."""
     if window < 2:
         return [None for _ in values]
-    out: list[Optional[float]] = []
+    out: list[float | None] = []
     for i in range(len(values)):
         start = max(0, i - window + 1)
         chunk = [float(v) for v in values[start : i + 1] if math.isfinite(v)]
@@ -142,7 +143,7 @@ def _quantile(sorted_values: Sequence[float], p: float) -> float:
     return sorted_values[lo] * (1.0 - weight) + sorted_values[hi] * weight
 
 
-def _extract_close(row: Mapping[str, Any]) -> Optional[float]:
+def _extract_close(row: Mapping[str, Any]) -> float | None:
     val = row.get("close")
     if val is None:
         return None
@@ -155,7 +156,7 @@ def _extract_close(row: Mapping[str, Any]) -> Optional[float]:
     return c
 
 
-def _extract_timestamp(row: Mapping[str, Any]) -> Optional[int]:
+def _extract_timestamp(row: Mapping[str, Any]) -> int | None:
     val = row.get("timestamp")
     if val is None:
         return None
@@ -269,7 +270,7 @@ def assign_calendar_regime(
     UTC (``use_utc=True``), matching the daily-crypto convention in
     :mod:`src.signals.calendar_effects`.
     """
-    tz = timezone.utc if use_utc else _ET
+    tz = UTC if use_utc else _ET
     out: list[CalendarRegime] = []
     for ts in timestamps:
         try:
@@ -305,7 +306,7 @@ def assign_calendar_regime_from_rows(
 
 def summarize_by_regime(
     values: Sequence[float],
-    regimes: Sequence[Optional[str]],
+    regimes: Sequence[str | None],
     *,
     min_count: int = 1,
 ) -> tuple[RegimeSummary, ...]:
@@ -338,7 +339,7 @@ def summarize_by_regime(
             continue
         mean = statistics.mean(chunk)
         med = statistics.median(chunk)
-        sd: Optional[float]
+        sd: float | None
         if len(chunk) >= 2:
             try:
                 sd = statistics.stdev(chunk)

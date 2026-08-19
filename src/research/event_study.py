@@ -51,8 +51,9 @@ from __future__ import annotations
 import bisect
 import math
 import statistics
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Callable, Iterable, Mapping, Optional, Sequence
+from typing import Any
 
 from ..logger import get_logger
 
@@ -121,7 +122,7 @@ class EventAnchor:
     """
 
     event_timestamp: int
-    candle_index: Optional[int]
+    candle_index: int | None
     in_bounds: bool
 
 
@@ -138,8 +139,8 @@ class EventStudyRow:
     std: float
     q25: float
     q75: float
-    t_stat: Optional[float]
-    p_value_approx: Optional[float]
+    t_stat: float | None
+    p_value_approx: float | None
 
     @property
     def hit_rate(self) -> float:
@@ -162,7 +163,7 @@ class EventStudyResult:
     rows: tuple[EventStudyRow, ...]
     baseline: Mapping[str, float] = field(default_factory=dict)
 
-    def row(self, metric: str, window_label: str) -> Optional[EventStudyRow]:
+    def row(self, metric: str, window_label: str) -> EventStudyRow | None:
         """Lookup helper. Returns ``None`` when the cell is not present."""
         for r in self.rows:
             if r.metric == metric and r.window_label == window_label:
@@ -175,7 +176,7 @@ class EventStudyResult:
 # ---------------------------------------------------------------------------
 
 
-MetricFn = Callable[[Sequence[Mapping[str, Any]], Sequence[Mapping[str, Any]]], Optional[float]]
+MetricFn = Callable[[Sequence[Mapping[str, Any]], Sequence[Mapping[str, Any]]], float | None]
 """Signature: ``(window_candles, baseline_lookback_candles) -> value | None``.
 
 ``window_candles`` is the slice of the OHLC series corresponding to
@@ -192,7 +193,7 @@ from the aggregation but reported through ``EventStudyRow.n_events``.
 def metric_simple_return(
     window: Sequence[Mapping[str, Any]],
     baseline_lookback: Sequence[Mapping[str, Any]],  # noqa: ARG001
-) -> Optional[float]:
+) -> float | None:
     """Arithmetic return ``(close_last - close_first) / close_first``.
 
     Computed on the window itself: the close at the *first* candle of
@@ -213,7 +214,7 @@ def metric_simple_return(
 def metric_log_return(
     window: Sequence[Mapping[str, Any]],
     baseline_lookback: Sequence[Mapping[str, Any]],  # noqa: ARG001
-) -> Optional[float]:
+) -> float | None:
     """``log(close_last / close_first)``. ``None`` when either close <= 0."""
     if not window:
         return None
@@ -227,7 +228,7 @@ def metric_log_return(
 def metric_realized_vol(
     window: Sequence[Mapping[str, Any]],
     baseline_lookback: Sequence[Mapping[str, Any]],  # noqa: ARG001
-) -> Optional[float]:
+) -> float | None:
     """Sample stdev of the within-window log returns. ``None`` when n<2."""
     closes = [c for c in (_close(r) for r in window) if c is not None and c > 0]
     if len(closes) < 2:
@@ -246,7 +247,7 @@ def metric_realized_vol(
 def metric_volume_ratio(
     window: Sequence[Mapping[str, Any]],
     baseline_lookback: Sequence[Mapping[str, Any]],
-) -> Optional[float]:
+) -> float | None:
     """``mean(window.volume) / mean(baseline_lookback.volume)``.
 
     Returns ``None`` when either slice is empty or the baseline mean
@@ -269,7 +270,7 @@ def metric_volume_ratio(
 def metric_max_drawdown(
     window: Sequence[Mapping[str, Any]],
     baseline_lookback: Sequence[Mapping[str, Any]],  # noqa: ARG001
-) -> Optional[float]:
+) -> float | None:
     """Most negative running drawdown observed within the window.
 
     Defined on closes only (intra-bar wicks are ignored on purpose:
@@ -321,7 +322,7 @@ def register_metric(name: str, fn: MetricFn) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _close(row: Mapping[str, Any]) -> Optional[float]:
+def _close(row: Mapping[str, Any]) -> float | None:
     if not isinstance(row, Mapping):
         return None
     val = row.get("close")
@@ -336,7 +337,7 @@ def _close(row: Mapping[str, Any]) -> Optional[float]:
     return f
 
 
-def _volume(row: Mapping[str, Any]) -> Optional[float]:
+def _volume(row: Mapping[str, Any]) -> float | None:
     if not isinstance(row, Mapping):
         return None
     val = row.get("volume")
@@ -351,7 +352,7 @@ def _volume(row: Mapping[str, Any]) -> Optional[float]:
     return f
 
 
-def _timestamp(row: Mapping[str, Any]) -> Optional[int]:
+def _timestamp(row: Mapping[str, Any]) -> int | None:
     if not isinstance(row, Mapping):
         return None
     val = row.get("timestamp")
@@ -384,7 +385,7 @@ def _normalize_candles(rows: Sequence[Mapping[str, Any]]) -> list[Mapping[str, A
 def _aligned_indices(
     candles: Sequence[Mapping[str, Any]],
     events: Iterable[int],
-) -> list[Optional[int]]:
+) -> list[int | None]:
     """Forward as-of: ``candles[i].timestamp >= event_timestamp``.
 
     Returns ``None`` for events that fall strictly after the last
@@ -394,7 +395,7 @@ def _aligned_indices(
     if not candles:
         return [None for _ in events]
     timestamps = [int(c["timestamp"]) for c in candles]
-    out: list[Optional[int]] = []
+    out: list[int | None] = []
     for ev in events:
         try:
             ev_int = int(ev)
@@ -443,7 +444,7 @@ def _erf(x: float) -> float:
     return math.erf(x)
 
 
-def _approx_two_sided_p(t_stat: float, df: int) -> Optional[float]:
+def _approx_two_sided_p(t_stat: float, df: int) -> float | None:
     """Crude two-sided p-value approximation for a one-sample t statistic.
 
     Uses the standard normal approximation, valid for ``df`` of a few
@@ -623,8 +624,8 @@ def run_event_study(
                 std = 0.0
             q25, median, q75 = _safe_quantiles(values)
             n_positive = sum(1 for v in values if v > 0)
-            t_stat: Optional[float] = None
-            p_val: Optional[float] = None
+            t_stat: float | None = None
+            p_val: float | None = None
             if n >= 2 and std > 0:
                 t_stat = mean / (std / math.sqrt(n))
                 p_val = _approx_two_sided_p(t_stat, df=n - 1)

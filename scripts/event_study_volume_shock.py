@@ -42,15 +42,16 @@ from _event_study_common import (  # noqa: E402
     run_event_study_pipeline,
     write_json_report,
 )
-from src.data.collectors.binance_public import default_ohlc_daily_cache_path
-from src.data.collectors._provenance import safe_git_commit
+
 from src.crypto_ohlc_rest import CryptoOHLCFetchError
 from src.data.collectors._common import CollectorError
+from src.data.collectors._provenance import safe_git_commit
+from src.data.collectors.binance_public import default_ohlc_daily_cache_path
 from src.research.event_study import EventStudyWindow, run_event_study
 from src.research.placebo import empirical_p_value, shift_events_in_time, shuffle_labels
 from src.signals.volume_shock import (
-    EVENT_VARIANTS,
     EVENT_VARIANT_VOL_Z20,
+    EVENT_VARIANTS,
     build_volume_shock_events,
     event_rate_fraction,
     is_blocked_by_event_rate,
