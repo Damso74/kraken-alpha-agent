@@ -396,7 +396,6 @@ def _shift_placebo_p(
             placebo_values.append(val)
     if not placebo_values:
         return None
-    p_real = empirical_p_value(observed=real_row.mean, placebo_values=placebo_values)
     p_shift = empirical_p_value(
         observed=shifted_row.mean, placebo_values=placebo_values
     )

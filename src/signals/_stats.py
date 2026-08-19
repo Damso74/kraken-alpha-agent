@@ -109,7 +109,7 @@ def events_from_z_threshold(
         raise ValueError("rows and z_scores must have the same length")
     events: list[int] = []
     seen: set[int] = set()
-    for row, z in zip(rows, z_scores):
+    for row, z in zip(rows, z_scores, strict=True):
         if z is None:
             continue
         fire = False

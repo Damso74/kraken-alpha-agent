@@ -32,7 +32,7 @@ import statistics
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Any, Optional
+from typing import Any
 from zoneinfo import ZoneInfo
 
 from ..logger import get_logger
@@ -50,8 +50,8 @@ DEFAULT_VOL_QUANTILE = 0.5
 DEFAULT_MIN_REGIME_COUNT = 5
 DEFAULT_MAX_SPREAD_RATIO = 0.5
 
-TrendRegime = Optional[str]
-VolRegime = Optional[str]
+TrendRegime = str | None
+VolRegime = str | None
 CalendarRegime = str
 
 
@@ -321,7 +321,7 @@ def summarize_by_regime(
         raise ValueError("min_count must be >= 1")
 
     buckets: dict[str, list[float]] = {}
-    for val, regime in zip(values, regimes):
+    for val, regime in zip(values, regimes, strict=True):
         if regime is None:
             continue
         try:

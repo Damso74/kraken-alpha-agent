@@ -8,6 +8,7 @@ checked for stability across runs.
 
 from __future__ import annotations
 
+import dataclasses
 import math
 
 import pytest
@@ -292,7 +293,9 @@ def test_empirical_p_value_rejects_non_finite_observed() -> None:
 def test_empirical_p_value_result_is_immutable() -> None:
     r = empirical_p_value(observed=1.0, placebo_values=[0.0, 0.5, 1.0])
     assert isinstance(r, EmpiricalPValueResult)
-    with pytest.raises(Exception):
+    # Idem test_event_study : on veut prouver le gel du dataclass, pas
+    # attraper n'importe quelle erreur d'attribut.
+    with pytest.raises(dataclasses.FrozenInstanceError):
         r.observed = 999.0  # type: ignore[misc]
 
 

@@ -221,9 +221,6 @@ def resolve_universe(settings=None) -> tuple[list[str], dict[str, float], str]:
     if mode != "dynamic":
         return allowlist, {}, "static"
 
-    # Lazy import to avoid a circular dependency on script startup.
-    from . import ranking as _ranking_mod  # noqa: F401  (alias for clarity)
-
     rank_data: list = []
     for sym in allowlist:
         try:

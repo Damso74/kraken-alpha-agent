@@ -79,7 +79,6 @@ def compute_features(
     candle_interval_minutes: int = 60,
 ) -> Features:
     """Compose the canonical Features record from raw inputs."""
-    closes = _closes(candles)
     last_price = _last_close(candles) or safe_float(ticker.get("last"))
     bid = safe_float(ticker.get("bid"))
     ask = safe_float(ticker.get("ask"))

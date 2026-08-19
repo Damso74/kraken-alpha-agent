@@ -41,7 +41,7 @@ def test_assign_trend_regime_warmup_is_none() -> None:
     closes = _linear_closes(30, start=100.0, step=0.5)
     labels = assign_trend_regime(closes, lookback=5)
     assert labels[:5] == [None] * 5
-    assert all(l is not None for l in labels[5:])
+    assert all(label is not None for label in labels[5:])
 
 
 def test_assign_trend_regime_bull_on_uptrend() -> None:
@@ -93,7 +93,7 @@ def test_assign_volatility_regime_warmup_is_none() -> None:
     closes = _linear_closes(40)
     labels = assign_volatility_regime(closes, lookback=5)
     assert labels[0] is None
-    assert any(l is None for l in labels[:8])
+    assert any(label is None for label in labels[:8])
 
 
 def test_assign_volatility_regime_high_after_spike() -> None:
@@ -265,7 +265,7 @@ def test_regime_pipeline_on_hand_built_returns() -> None:
     closes = _linear_closes(50, start=100.0, step=0.2)
     trend = assign_trend_regime(closes, lookback=DEFAULT_TREND_LOOKBACK)
     returns = [0.005 if t == "bull" else 0.001 for t in trend]
-    paired = [(r, t) for r, t in zip(returns, trend) if t is not None]
+    paired = [(r, t) for r, t in zip(returns, trend, strict=True) if t is not None]
     values = [r for r, _ in paired]
     regimes = [t for _, t in paired]
     summaries = summarize_by_regime(values, regimes, min_count=5)

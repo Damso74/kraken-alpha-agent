@@ -144,7 +144,7 @@ def _fifo_pnl(orders: list[dict[str, Any]]) -> list[dict[str, Any]]:
             trades.append({
                 "symbol": symbol,
                 "exit_at": row.get("at"),
-                "qty": sum(l["qty"] for l in legs),
+                "qty": sum(leg["qty"] for leg in legs),
                 "pnl_usd": realised,
                 "legs": legs,
             })

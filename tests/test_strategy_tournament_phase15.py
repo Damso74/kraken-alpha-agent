@@ -9,6 +9,7 @@ from pathlib import Path
 
 from scripts.run_strategy_tournament import STRATEGIES, _load_candles, _strategy_names
 from src.bot.metrics import MIN_TRADES_BY_TIMEFRAME
+from src.bot.portfolio import PaperPortfolio
 from src.strategies.presets import build_strategy
 from tests.conftest_bot import synthetic_uptrend
 
@@ -75,9 +76,24 @@ def test_tournament_writes_matrix(tmp_path: Path) -> None:
 
 
 def test_preset_build_on_synthetic() -> None:
+    """Le preset doit etre construit ET exploitable sur des bougies synthetiques.
+
+    ``candles`` etait construit puis jamais utilise : le test ne verifiait que
+    ``warmup_bars()``, donc rien de ce que son nom annonce. On fait maintenant
+    tourner la strategie sur la serie haussiere : avant le warm-up elle doit
+    rester en ``hold``, apres elle doit emettre un ``buy`` (SMA rapide > lente).
+    """
     candles = synthetic_uptrend(120)
     strat = build_strategy("trend_following", "1d")
     assert strat.warmup_bars() == 51
+
+    portfolio = PaperPortfolio(cash_usd=1000.0)
+    warming = strat.on_bar(10, candles, portfolio, "XX")
+    assert warming is not None and warming.action == "hold"
+
+    signal = strat.on_bar(len(candles) - 1, candles, portfolio, "XX")
+    assert signal is not None and signal.action == "buy"
+    assert 0.0 < signal.size_fraction <= 1.0
 
 
 def test_min_trades_by_timeframe() -> None:

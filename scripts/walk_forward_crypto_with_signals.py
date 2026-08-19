@@ -503,7 +503,7 @@ def _gate_permutations() -> list[dict[str, Any]]:
     values = [GATE_LADDERS[k] for k in keys]
     permutations: list[dict[str, Any]] = []
     for combo in itertools.product(*values):
-        permutations.append(dict(zip(keys, combo)))
+        permutations.append(dict(zip(keys, combo, strict=True)))
     return permutations
 
 

@@ -18,7 +18,7 @@ inclusive-left and exclusive-right, matching the
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from enum import Enum
+from enum import StrEnum
 
 try:
     from zoneinfo import ZoneInfo
@@ -29,7 +29,7 @@ except ImportError:  # pragma: no cover — Python <3.9
 NY_TZ = ZoneInfo("America/New_York") if ZoneInfo is not None else None
 
 
-class MarketSession(str, Enum):
+class MarketSession(StrEnum):
     """Coarse US-equity session bucket for a UTC timestamp."""
 
     US_CORE = "US_CORE"

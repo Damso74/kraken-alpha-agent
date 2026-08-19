@@ -130,7 +130,7 @@ def compute_volume_shock_features(
 
     out: list[dict[str, Any]] = []
     for i, (row, vz20, vz60, rz, az) in enumerate(
-        zip(scored, vol_z20, vol_z60, range_z20, abs_ret_z20)
+        zip(scored, vol_z20, vol_z60, range_z20, abs_ret_z20, strict=True)
     ):
         ts = extract_timestamp(row)
         if ts is None:

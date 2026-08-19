@@ -193,7 +193,7 @@ def build_stablecoin_supply_events(
     changes = _supply_change_series(sorted_rows, lag=lag)
     values: list[float] = []
     scored_rows: list[Mapping[str, Any]] = []
-    for row, chg in zip(sorted_rows, changes):
+    for row, chg in zip(sorted_rows, changes, strict=True):
         if math.isnan(chg) or extract_timestamp(row) is None:
             continue
         values.append(chg)

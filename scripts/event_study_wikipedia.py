@@ -221,7 +221,7 @@ def _primary_vol_significant(cells: Sequence[dict[str, Any]]) -> bool:
 
 def _primary_bh_rejected(cells: Sequence[dict[str, Any]], mask: Sequence[bool]) -> int:
     n = 0
-    for cell, rej in zip(cells, mask):
+    for cell, rej in zip(cells, mask, strict=True):
         if not rej:
             continue
         if cell.get("metric") in PHASE11_PRIMARY_METRICS:

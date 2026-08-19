@@ -7,7 +7,7 @@ verdicts. No path in this module authorizes production or live orders.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from .concentration import classify_concentration_risk
@@ -24,7 +24,7 @@ TURNOVER_REJECT_THRESHOLD = 0.30
 REFERENCE_RETURN_WINDOWS = ("post_7", "post_3", "post_1")
 
 
-class TradeabilityVerdict(str, Enum):
+class TradeabilityVerdict(StrEnum):
     """Ordered from worst to best — still research-only."""
 
     ECONOMICALLY_IMPOSSIBLE = "economically impossible"

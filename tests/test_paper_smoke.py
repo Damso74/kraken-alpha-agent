@@ -50,14 +50,45 @@ def test_is_initialised_false_for_garbage(paper_smoke) -> None:
     assert paper_smoke._is_initialised({"data": "not-a-dict"}) is False
 
 
-def test_paper_status_wrapper_handles_mock_transport() -> None:
-    """In test mode the wrapper is forced to mock — the helper must not raise."""
+def test_paper_status_wrapper_labels_mock_transport_as_mock() -> None:
+    """Sous transport mock, le wrapper doit etiqueter la sortie comme simulee.
+
+    L'assertion d'origine etait ``using_mock is True or source == "mock"`` : une
+    disjonction que ``tests/conftest.py`` (qui force ``KRAKEN_CLI_TRANSPORT=mock``)
+    rendait vraie par construction, et qui passait meme si un seul des deux champs
+    etait pose. On exige desormais les deux, ce qui detecte une sortie simulee
+    partiellement etiquetee.
+    """
     from src import kraken_cli
 
     status = kraken_cli.fetch_paper_status()
     assert isinstance(status, dict)
-    # In mock transport the wrapper labels it as a mock fallback.
-    assert status.get("using_mock") is True or status.get("source") == "mock"
+    assert status["source"] == "mock"
+    assert status["using_mock"] is True
+    assert isinstance(status["data"], dict)
+
+
+def test_paper_status_wrapper_labels_real_cli_payload_as_cli(monkeypatch) -> None:
+    """Contre-epreuve : sans elle, le test mock ci-dessus ne discrimine rien.
+
+    Si le wrapper etiquetait *tout* en ``mock``, le test precedent passerait
+    quand meme. On force donc un ``run_cli`` qui reussit et on verifie que la
+    charge utile n'est PAS maquillee en repli simule.
+    """
+    from src import kraken_cli
+
+    payload = {"balance": {"USD": "10000"}, "open_orders": []}
+    monkeypatch.setattr(
+        kraken_cli,
+        "run_cli",
+        lambda *a, **k: kraken_cli.CLIResult(
+            ok=True, status="ok", stdout_json=payload, transport="subprocess"
+        ),
+    )
+    status = kraken_cli.fetch_paper_status()
+    assert status["source"] == "kraken_cli"
+    assert status.get("using_mock") is not True
+    assert status["data"] == payload
 
 
 def test_xstocks_paper_unsupported_detects_stderr(paper_smoke) -> None:

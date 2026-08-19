@@ -7,6 +7,7 @@ assert against them. No network, no filesystem, no subprocess.
 
 from __future__ import annotations
 
+import dataclasses
 import math
 
 import pytest
@@ -499,5 +500,7 @@ def test_event_study_result_is_immutable(linear_candles: list[dict]) -> None:
         compute_baseline=False,
     )
     assert isinstance(result, EventStudyResult)
-    with pytest.raises(Exception):
+    # Le gel doit venir de ``@dataclass(frozen=True)`` : un ``Exception`` nu
+    # passerait aussi sur un simple AttributeError ou TypeError sans rapport.
+    with pytest.raises(dataclasses.FrozenInstanceError):
         result.events_count = 999  # type: ignore[misc]
