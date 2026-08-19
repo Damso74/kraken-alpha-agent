@@ -12,6 +12,89 @@ les schémas détaillés et les limites API.
 
 ---
 
+## Reconstruire les caches depuis les manifests
+
+**Outil : [`scripts/reseed_collector_cache.py`](../../scripts/reseed_collector_cache.py).**
+
+Les résultats des phases 21 à 30 ont été produits avec des caches qui
+ne sont pas dans le dépôt. Les **manifests versionnés** sous `reports/`
+décrivent en revanche exactement ce qui manque (actif, timeframe,
+nombre de barres, bornes temporelles, `sha256`) :
+
+| Manifest | Séries décrites |
+|----------|-----------------|
+| `reports/data_manifests_phase21/ohlcv_backbone_manifest.json` | OHLCV 1d / 4h / 1h — avec `sha256` |
+| `reports/phase24_data_backbone/data_quality.json` | OHLCV 1d / 4h — avec `sha256` |
+| `reports/data_manifests_phase26/derivatives_readiness.json` | funding, open interest 4h / 1d |
+| `reports/data_manifests_phase27/basis_readiness.json` | basis 4h |
+| `reports/data_manifests_phase27/derivatives_depth.json` | profondeur OI + rappel funding / basis |
+
+Ces manifests portent des **chemins absolus de la machine d'origine**
+(`C:\Users\credo\...`) : l'outil ne garde que le nom de fichier et le
+réécrit sous `--cache-root` (défaut `data/collector_cache/`).
+
+```powershell
+# 1. Inventaire hors ligne : que manque-t-il ? (aucun réseau, aucune écriture)
+python scripts/reseed_collector_cache.py --dry-run
+
+# 2. Reconstruction réelle (appelle les collectors publics Binance)
+python scripts/reseed_collector_cache.py
+
+# Un seul actif / un seul manifest
+python scripts/reseed_collector_cache.py --only BTC
+python scripts/reseed_collector_cache.py --manifest reports/data_manifests_phase21/ohlcv_backbone_manifest.json
+
+# Rapport machine
+python scripts/reseed_collector_cache.py --dry-run --json
+```
+
+### Statuts et codes de sortie
+
+| Statut | Signification |
+|--------|---------------|
+| `match` | Fichier présent, `sha256` identique au manifest |
+| `mismatch` | Fichier présent mais **différent** — jamais écrasé sans `--force` |
+| `absent` | Fichier manquant (dry-run, ou reconstruction impossible) |
+| `rebuilt` | Fetch effectué et cache écrit |
+| `skipped` | Série jamais collectée à l'origine (voir plus bas) |
+| `error` | Échec fetch / parse / écriture (rapporté, le lot continue) |
+
+Sortie **0** = rien d'anormal, **1** = erreur, **2** = divergence ou
+cache toujours absent.
+
+### Le `sha256` ne peut pas matcher après reconstruction
+
+Les caches embarquent leur propre horodatage (`generated_at` /
+`fetched_at`) et sont fetchés sur une fenêtre qui se termine
+**aujourd'hui**. Un re-fetch ne reproduit donc **jamais** le fichier
+octet pour octet : un `sha256` différent après `rebuilt` est **attendu**,
+pas un bug. Le `sha256` du manifest répond à une seule question : *« ai-je
+exactement le fichier d'origine ? »*. Pour juger un cache reconstruit,
+comparer plutôt `row_count` / bornes temporelles rapportés par l'outil
+à ceux du manifest.
+
+### Ce qui n'est pas reconstructible
+
+| Série | Raison |
+|-------|--------|
+| `liquidations` | Aucune source publique historique (`/fapi/v1/allForceOrders` = fenêtre glissante courte) |
+| funding / OI / basis **SOL** | `blocked_data` dans les manifests d'origine : ces caches n'ont jamais existé |
+| `oi_{ASSET}_{période}.json` | Binance `openInterestHist` ≈ **30 j glissants** : on peut refaire *un* cache de 30 j, **pas** celui de mai 2026. Les résultats phases 26/27 dépendant de l'OI ne sont donc **pas** reproductibles à l'identique |
+
+### Garde-fous
+
+- Un cache existant qui diffère du manifest n'est **jamais** écrasé
+  silencieusement (`--force` requis, explicite).
+- L'écriture est **refusée** partout dans le dépôt hors
+  `data/collector_cache/` — en particulier dans `reports/`.
+- Écriture atomique (fichier temporaire `*.reseed-tmp` puis remplacement) :
+  aucun cache partiel en cas d'échec réseau.
+- Le fetcher HTTP est injectable :
+  `tests/test_reseed_collector_cache.py` couvre l'outil de bout en bout
+  **sans réseau**.
+
+---
+
 ## Inventaire
 
 | Fichier | Source API | Granularité | Script(s) qui le consomment | Rafraîchir |

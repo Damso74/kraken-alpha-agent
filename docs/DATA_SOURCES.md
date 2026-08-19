@@ -523,6 +523,79 @@ validée.
 
 ---
 
+## Reconstruire les caches
+
+Un clone frais ne contient **aucun** cache collector : les résultats des
+phases 21 à 30 ne sont donc pas reproductibles tant que
+`data/collector_cache/` n'a pas été repeuplé. Les manifests versionnés
+sous `reports/` décrivent précisément les fichiers attendus, et
+[`scripts/reseed_collector_cache.py`](../scripts/reseed_collector_cache.py)
+s'en sert pour les reconstruire via les collectors publics existants.
+
+### Manifests lus
+
+| Manifest | Séries | `sha256` |
+|----------|--------|----------|
+| `reports/data_manifests_phase21/ohlcv_backbone_manifest.json` | OHLCV 1d / 4h / 1h (BTC, ETH, SOL) | Oui |
+| `reports/phase24_data_backbone/data_quality.json` | OHLCV 1d / 4h | Oui |
+| `reports/data_manifests_phase26/derivatives_readiness.json` | funding, open interest 4h / 1d | Non |
+| `reports/data_manifests_phase27/basis_readiness.json` | basis 4h | Non |
+| `reports/data_manifests_phase27/derivatives_depth.json` | profondeur OI + rappel funding / basis | Non |
+
+Les chemins qu'ils contiennent sont ceux de la machine d'origine
+(`C:\Users\credo\...`) : seul le **nom de fichier** est repris, puis
+réécrit sous `--cache-root` (défaut `data/collector_cache/`).
+
+### Commandes
+
+```powershell
+python scripts/reseed_collector_cache.py --dry-run          # inventaire hors ligne
+python scripts/reseed_collector_cache.py                    # reconstruction réelle
+python scripts/reseed_collector_cache.py --only BTC
+python scripts/reseed_collector_cache.py --manifest reports/data_manifests_phase27/basis_readiness.json
+```
+
+Options : `--cache-root`, `--force`, `--funding-days` (défaut 730),
+`--oi-days` (défaut 30), `--coverage-days`, `--json`.
+
+### Collectors appelés
+
+| Cible | Fonction (aucune réimplémentation) |
+|-------|------------------------------------|
+| `ohlc_{daily,4h,1h}_{ASSET}.json` | `binance_public.fetch_binance_klines` + `save_ohlc_cache` |
+| `funding_{ASSET}.json` | `binance_derivatives_public.fetch_funding_rate_history` + `save_funding_cache` |
+| `oi_{ASSET}_{période}.json` | `binance_derivatives_public.fetch_open_interest_history` + `save_oi_cache` |
+| `basis_{ASSET}_{tf}.json` | `binance_basis_public.fetch_basis_history` + `save_basis_cache` |
+
+Le `fetcher` est injectable (même convention que les collectors) :
+les tests tournent sans réseau.
+
+### Limites de reproductibilité (à ne pas maquiller)
+
+- **`sha256` non reproductible** : les caches embarquent leur horodatage
+  de génération et sont fetchés sur une fenêtre finissant *aujourd'hui*.
+  Un `mismatch` après reconstruction est **attendu**. Le `sha256` du
+  manifest sert uniquement à vérifier qu'on détient le fichier d'origine ;
+  pour un cache reconstruit, comparer `row_count` et bornes temporelles.
+- **Open interest** : `openInterestHist` ne remonte qu'à ~30 jours. Le
+  cache reconstruit couvre les 30 derniers jours, pas ceux de mai 2026 →
+  les résultats phases 26/27 dépendant de l'OI ne sont **pas** rejouables
+  à l'identique.
+- **SOL derivatives / basis** et **liquidations** : marqués `blocked_data`
+  dans les manifests d'origine, ils n'ont jamais été collectés — l'outil
+  les rapporte `skipped` au lieu de fabriquer des données.
+- **Binance geo-blocking** : selon la juridiction, le fetch échoue
+  (`error`) ; l'outil rapporte l'exception et poursuit le lot.
+
+### Garde-fous d'écriture
+
+- Aucun cache existant divergent n'est écrasé sans `--force`.
+- Toute racine d'écriture interne au dépôt hors
+  `data/collector_cache/` est refusée (jamais `reports/`).
+- Écriture atomique via fichier temporaire : pas de cache tronqué.
+
+---
+
 ## Mode offline / CI
 
 Flag commun : **`--use-cache-only`** sur les scripts event study.
@@ -576,5 +649,6 @@ Signaux **weird** testables sans nouveau collector majeur :
 - [`HYPOTHESIS_BACKLOG_PHASE_9.md`](HYPOTHESIS_BACKLOG_PHASE_9.md) — 100 hypothèses Phase 9
 - [`WEIRD_BUT_TESTABLE_SIGNALS.md`](WEIRD_BUT_TESTABLE_SIGNALS.md) — sous-ensemble weird
 - [`data/collector_cache/README.md`](../data/collector_cache/README.md) — chemins cache, refresh, schéma gas history
+- [`scripts/reseed_collector_cache.py`](../scripts/reseed_collector_cache.py) — reconstruction des caches depuis les manifests versionnés (§ Reconstruire les caches)
 - [`SIGNAL_REJECTION_POLICY.md`](SIGNAL_REJECTION_POLICY.md) — quand ignorer un feed malgré des chiffres « intéressants »
 - Tests hermétiques : `tests/test_collectors_*.py`
