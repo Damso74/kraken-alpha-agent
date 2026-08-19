@@ -11,6 +11,21 @@ from src.bot.overlay_shadow_compare import load_shadow_comparisons, summarize_sh
 
 DEFAULT_STOP_FILE = Path("reports/paper_observation_phase28/STOP_OBSERVATION")
 
+# Statuts explicites de la comparaison overlay vs standalone. Tant que la courbe
+# standalone n'etait fournie par aucun appelant, le critere d'underperformance
+# etait silencieusement mort: on expose desormais l'impossibilite d'evaluer.
+STANDALONE_EVALUATED = "evaluated"
+STANDALONE_NOT_EVALUABLE = "not_evaluable"
+
+# Raisons machine-lisibles (vocabulaire unique, partage avec l'agregateur Phase 29).
+STANDALONE_REASON_MISSING = "standalone_curve_missing"
+STANDALONE_REASON_OVERLAY_MISSING = "overlay_curve_missing"
+STANDALONE_REASON_TOO_SHORT = "curve_too_short"
+STANDALONE_REASON_INVALID = "invalid_standalone_equity"
+# Les deux courbes PERSISTEES (equity_curve.csv vs standalone_equity.csv) n'ont pas
+# la meme semantique: cf. l'argumentaire dans aggregate_observation_metrics_phase29.
+STANDALONE_REASON_HETEROGENEOUS = "heterogeneous_run_level_curves"
+
 
 @dataclass
 class OverlayKillConfig:
@@ -76,12 +91,46 @@ def _rolling_equity_gap(
     return o_ret - s_ret
 
 
+def standalone_gap_status(
+    overlay_equity: Sequence[float] | None,
+    standalone_equity: Sequence[float] | None,
+    window: int,
+    *,
+    disabled_reason: str | None = None,
+) -> tuple[float | None, str, str]:
+    """Return ``(gap_pp, status, reason)`` for the overlay-vs-standalone criterion.
+
+    ``status`` is ``not_evaluable`` with a machine-readable ``reason`` whenever the
+    gap cannot be computed, so a missing standalone curve is reported instead of
+    silently disabling the kill criterion.
+
+    ``disabled_reason`` permet a un appelant qui SAIT que les deux courbes ne sont
+    pas comparables (courbes heterogenes cote agregateur, cf. Phase 30.5) de
+    court-circuiter le calcul en conservant le meme vocabulaire de statut, plutot
+    que de passer ``None`` et de faire remonter une raison fausse
+    (``standalone_curve_missing`` alors que le fichier existe).
+    """
+    if disabled_reason:
+        return None, STANDALONE_NOT_EVALUABLE, disabled_reason
+    if not overlay_equity:
+        return None, STANDALONE_NOT_EVALUABLE, STANDALONE_REASON_OVERLAY_MISSING
+    if not standalone_equity:
+        return None, STANDALONE_NOT_EVALUABLE, STANDALONE_REASON_MISSING
+    if len(overlay_equity) < 2 or len(standalone_equity) < 2:
+        return None, STANDALONE_NOT_EVALUABLE, STANDALONE_REASON_TOO_SHORT
+    gap = _rolling_equity_gap(overlay_equity, standalone_equity, window)
+    if gap is None:
+        return None, STANDALONE_NOT_EVALUABLE, STANDALONE_REASON_INVALID
+    return gap, STANDALONE_EVALUATED, ""
+
+
 def evaluate_overlay_kill(
     state_dir: Path | str,
     *,
     config: OverlayKillConfig | None = None,
     overlay_equity_curve: Sequence[float] | None = None,
     standalone_equity_curve: Sequence[float] | None = None,
+    standalone_disabled_reason: str | None = None,
     trade_count: int = 0,
     stop_file: Path | str | None = None,
 ) -> OverlayKillResult:
@@ -113,12 +162,19 @@ def evaluate_overlay_kill(
     if incoherent >= cfg.max_incoherent_blocks:
         reasons.append(f"incoherent_blocks count={incoherent}")
 
-    if overlay_equity_curve and standalone_equity_curve:
-        gap = _rolling_equity_gap(
-            overlay_equity_curve, standalone_equity_curve, cfg.rolling_window
-        )
-        metrics["equity_gap_pct"] = gap
-        if gap is not None and gap < cfg.min_equity_vs_standalone_pct:
-            reasons.append(f"overlay_underperforms_standalone gap={gap:.2f}pp")
+    gap, gap_status, gap_reason = standalone_gap_status(
+        overlay_equity_curve,
+        standalone_equity_curve,
+        cfg.rolling_window,
+        disabled_reason=standalone_disabled_reason,
+    )
+    metrics["equity_gap_pct"] = gap
+    metrics["standalone_comparison"] = {"status": gap_status, "reason": gap_reason}
+    if (
+        gap_status == STANDALONE_EVALUATED
+        and gap is not None
+        and gap < cfg.min_equity_vs_standalone_pct
+    ):
+        reasons.append(f"overlay_underperforms_standalone gap={gap:.2f}pp")
 
     return OverlayKillResult(should_kill=bool(reasons), reasons=reasons, metrics=metrics)

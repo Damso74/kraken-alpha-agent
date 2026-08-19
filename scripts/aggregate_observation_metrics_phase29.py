@@ -16,8 +16,17 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from src.bot.overlay_observation_engine import PHASE28_TARGETS, default_state_dir
+from src.bot.overlay_observation_engine import (
+    PHASE28_TARGETS,
+    STANDALONE_EQUITY_FILENAME,
+    default_state_dir,
+    load_standalone_equity,
+)
 from src.bot.overlay_observation_kill import (
+    STANDALONE_EVALUATED,
+    STANDALONE_NOT_EVALUABLE,
+    STANDALONE_REASON_HETEROGENEOUS,
+    STANDALONE_REASON_MISSING,
     OverlayKillConfig,
     evaluate_overlay_kill,
     observation_stop_active,
@@ -28,7 +37,14 @@ DEFAULT_BASE = REPO_ROOT / "reports" / "paper_observation_phase28"
 DEFAULT_OUT = REPO_ROOT / "reports" / "phase29_observation_metrics"
 DEFAULT_MD = REPO_ROOT / "reports" / "PHASE29_OBSERVATION_MONITORING.md"
 STOP_FILE = DEFAULT_BASE / "STOP_OBSERVATION"
-STARTING_EQUITY = 1000.0
+
+# Capital initial suppose des runs d'observation. Les artefacts persistes
+# (state.json, equity_curve.csv) ne memorisent PAS ObservationConfig.cash: la seule
+# facon honnete de traiter un capital != 1000 est donc de le passer explicitement
+# (--starting-equity), pas de le deviner. La valeur est ensuite l'UNIQUE source du
+# denominateur de tous les rendements calcules ici, et elle est reexposee dans
+# summary.json (equity.starting_equity_usd) pour que le document soit auto-decrit.
+DEFAULT_STARTING_EQUITY = 1000.0
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -140,7 +156,72 @@ def _avoided_drawdown_proxy(rows: Sequence[Mapping[str, Any]]) -> int:
     return count
 
 
-def _kill_status(state_dir: Path, shadows: Sequence[Mapping[str, Any]], trade_count: int) -> dict[str, Any]:
+def _standalone_summary(state_dir: Path) -> dict[str, Any]:
+    """Courbe standalone persistee par le moteur d'observation — NON comparable.
+
+    Pourquoi aucun ``return_pct`` n'est expose ici (Phase 30.5, residu #1).
+
+    Les deux courbes persistees ont un point par run cron, mais pas la meme
+    semantique:
+
+    * ``equity_curve.csv`` est une courbe de COMPTE. ``run_observation_once``
+      reconstruit ``portfolio_overlay`` depuis l'etat persiste
+      (``bundle.state.cash_usd`` + positions) puis rejoue toute la serie: le
+      rendement de la serie est donc COMPOSE une fois par run.
+    * ``standalone_equity.csv`` est une courbe de SERIE. ``replay_standalone_baseline``
+      repart de ``cfg.cash`` a chaque run: aucune composition.
+
+    Mesure sur 6 runs a cache croissant (voir
+    ``test_persisted_curves_are_heterogeneous`` dans
+    tests/test_overlay_observation_phase28.py): overlay 1021.62 -> 1136.96 alors que
+    le standalone reste fige a 1021.62 — meme strategie, meme serie. Comparer
+    ``standalone_return_pct`` a ``overlay_return_pct_from_1k`` revient donc a
+    comparer un rendement N-fois-compose a un rendement une-fois: l'alerte
+    d'underperformance ne se declenche quasiment jamais sur une serie gagnante, et
+    le gap roulant produit un FAUX POSITIF de kill sur une serie perdante.
+
+    Choix retenu: cesser d'exposer la comparaison inter-runs plutot que de rendre
+    les courbes homogenes. Justification: l'observation est ARCHIVEE — le
+    ``standalone_equity.csv`` deja sur disque contient des points non composes, et
+    aucune reecriture de la semantique cote moteur ne peut corriger cet historique
+    (aucun cron ne sera relance). La seule comparaison defendable est INTRA-RUN
+    (les deux equity curves d'une meme serie, meme base de depart), et elle est
+    deja faite par le moteur — c'est elle qui ecrit STOP_OBSERVATION.
+
+    ``usd`` reste expose: c'est un fait brut (equity du standalone sur la serie
+    complete du dernier run), ce qui n'est pas comparable c'est le RENDEMENT
+    relatif a la courbe overlay.
+    """
+    curve = load_standalone_equity(state_dir)
+    if not curve:
+        return {
+            "curve": [],
+            "usd": None,
+            "return_pct": None,
+            "status": STANDALONE_NOT_EVALUABLE,
+            "reason": STANDALONE_REASON_MISSING,
+            "detail": f"{STANDALONE_EQUITY_FILENAME} absent in {state_dir.name}",
+        }
+    return {
+        "curve": curve,
+        "usd": round(curve[-1], 4),
+        "return_pct": None,
+        "status": STANDALONE_NOT_EVALUABLE,
+        "reason": STANDALONE_REASON_HETEROGENEOUS,
+        "detail": (
+            "equity_curve.csv compounds across runs (resumed from persisted state) "
+            "while standalone_equity.csv restarts from cfg.cash each run"
+        ),
+    }
+
+
+def _kill_status(
+    state_dir: Path,
+    shadows: Sequence[Mapping[str, Any]],
+    trade_count: int,
+    standalone_curve: Sequence[float] | None = None,
+    standalone_disabled_reason: str | None = None,
+) -> dict[str, Any]:
     stale_deriv = any(
         str(r.get("derivatives_status", "")).lower() == "funding_only"
         for r in _load_jsonl(state_dir / "decisions.jsonl")
@@ -150,6 +231,10 @@ def _kill_status(state_dir: Path, shadows: Sequence[Mapping[str, Any]], trade_co
         state_dir,
         config=OverlayKillConfig(stale_data=stale_deriv),
         overlay_equity_curve=equity_values or None,
+        standalone_equity_curve=list(standalone_curve) if standalone_curve else None,
+        # Meme (status, reason) que le bloc equity de summary.json: un seul verdict
+        # par document, au lieu de "available"/"not_evaluable" contradictoires.
+        standalone_disabled_reason=standalone_disabled_reason,
         trade_count=trade_count,
         stop_file=STOP_FILE,
     )
@@ -160,7 +245,11 @@ def _kill_status(state_dir: Path, shadows: Sequence[Mapping[str, Any]], trade_co
     }
 
 
-def aggregate_target_metrics(state_dir: Path) -> dict[str, Any]:
+def aggregate_target_metrics(
+    state_dir: Path,
+    *,
+    starting_equity: float = DEFAULT_STARTING_EQUITY,
+) -> dict[str, Any]:
     state = _load_json(state_dir / "state.json")
     decisions = _load_jsonl(state_dir / "decisions.jsonl")
     shadows = load_shadow_comparisons(state_dir)
@@ -171,16 +260,17 @@ def aggregate_target_metrics(state_dir: Path) -> dict[str, Any]:
     decision_counts = _overlay_decision_counts(decisions)
 
     equities = [eq for _, eq in equity_rows]
-    overlay_equity = float(state.get("equity", equities[-1] if equities else STARTING_EQUITY))
-    overlay_return = _return_pct(STARTING_EQUITY, overlay_equity)
+    overlay_equity = float(state.get("equity", equities[-1] if equities else starting_equity))
+    overlay_return = _return_pct(starting_equity, overlay_equity)
 
     bh_return: float | None = None
     if shadows:
         bh_return = _return_pct(float(shadows[0]["price"]), float(shadows[-1]["price"]))
 
+    standalone = _standalone_summary(state_dir)
+
     total_decisions = len(decisions)
     reduce_count = decision_counts["reduce"]
-    block_count = decision_counts["block"]
     block_rate = shadow_summary["block_rate_on_signals"]
     reduce_rate = round(reduce_count / total_decisions, 4) if total_decisions else 0.0
 
@@ -198,10 +288,17 @@ def aggregate_target_metrics(state_dir: Path) -> dict[str, Any]:
         "error_count": len(errors),
         "errors_tail": errors[-5:],
         "equity": {
+            "starting_equity_usd": starting_equity,
             "overlay_usd": round(overlay_equity, 4),
+            # Nom de cle historique (consomme par le dashboard et le digest Phase 30):
+            # il designe le rendement depuis starting_equity_usd, pas depuis 1000 en dur.
             "overlay_return_pct_from_1k": overlay_return,
             "buy_hold_return_pct_proxy": bh_return,
-            "standalone_return_pct": None,
+            "standalone_usd": standalone["usd"],
+            "standalone_return_pct": standalone["return_pct"],
+            "standalone_status": standalone["status"],
+            "standalone_status_reason": standalone["reason"],
+            "standalone_status_detail": standalone["detail"],
             "max_drawdown_pct": _max_drawdown_pct(equities),
         },
         "shadow_proxies": {
@@ -210,7 +307,13 @@ def aggregate_target_metrics(state_dir: Path) -> dict[str, Any]:
             "blocks": shadow_summary["blocks"],
             "reductions": shadow_summary["reductions"],
         },
-        "kill_criteria": _kill_status(state_dir, shadows, len(trades)),
+        "kill_criteria": _kill_status(
+            state_dir,
+            shadows,
+            len(trades),
+            standalone["curve"],
+            standalone_disabled_reason=standalone["reason"] or None,
+        ),
         "state_meta": {
             "iteration": state.get("iteration"),
             "last_processed_timestamp": state.get("last_processed_timestamp"),
@@ -223,9 +326,13 @@ def aggregate_all(
     state_base: Path = DEFAULT_BASE,
     *,
     targets: Sequence[tuple[str, str, str]] = PHASE28_TARGETS,
+    starting_equity: float = DEFAULT_STARTING_EQUITY,
 ) -> dict[str, Any]:
     per_target = [
-        aggregate_target_metrics(default_state_dir(state_base, strategy, variant))
+        aggregate_target_metrics(
+            default_state_dir(state_base, strategy, variant),
+            starting_equity=starting_equity,
+        )
         for strategy, variant, _overlay in targets
     ]
     stop_active = observation_stop_active(STOP_FILE)
@@ -284,9 +391,17 @@ def render_monitoring_md(payload: Mapping[str, Any]) -> str:
                 "",
                 "### Equity",
                 f"- Overlay: **{eq['overlay_usd']:.2f}** USD "
-                f"(return from 1k: {eq['overlay_return_pct_from_1k']}%)",
+                f"(return from {eq.get('starting_equity_usd', DEFAULT_STARTING_EQUITY):.0f}: "
+                f"{eq['overlay_return_pct_from_1k']}%)",
                 f"- B&H return proxy: {eq['buy_hold_return_pct_proxy']}%",
-                "- Standalone return: n/a (not persisted)",
+                (
+                    f"- Standalone return: {eq['standalone_return_pct']}%"
+                    if eq["standalone_status"] == STANDALONE_EVALUATED
+                    else (
+                        f"- Standalone return: {STANDALONE_NOT_EVALUABLE} "
+                        f"({eq['standalone_status_reason']})"
+                    )
+                ),
                 f"- Max drawdown (overlay curve): {eq['max_drawdown_pct']}%",
                 "",
                 "### Shadow proxies",
@@ -332,9 +447,15 @@ def main() -> int:
     p.add_argument("--state-base", type=Path, default=DEFAULT_BASE)
     p.add_argument("--json-out", type=Path, default=DEFAULT_OUT / "summary.json")
     p.add_argument("--md-out", type=Path, default=DEFAULT_MD)
+    p.add_argument(
+        "--starting-equity",
+        type=float,
+        default=DEFAULT_STARTING_EQUITY,
+        help="ObservationConfig.cash used by the runs (returns denominator)",
+    )
     args = p.parse_args()
 
-    payload = aggregate_all(args.state_base)
+    payload = aggregate_all(args.state_base, starting_equity=args.starting_equity)
     json_path, md_path = write_outputs(payload, json_path=args.json_out, md_path=args.md_out)
     print(json.dumps({"summary_json": str(json_path), "monitoring_md": str(md_path)}, indent=2))
     return 0

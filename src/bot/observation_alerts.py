@@ -12,6 +12,7 @@ from typing import Any
 from src.bot.observation_ops_guards import check_all_target_state_warnings
 from src.bot.observation_state_migration import TARGET_METADATA
 from src.bot.overlay_observation_engine import PHASE28_TARGETS, default_state_dir
+from src.bot.overlay_observation_kill import STANDALONE_EVALUATED
 
 DEFAULT_BASE = Path("reports/paper_observation_phase28")
 DEFAULT_SUMMARY = Path("reports/phase29_observation_metrics/summary.json")
@@ -136,11 +137,24 @@ def collect_observation_alerts(
         equity = target.get("equity") or {}
         overlay_ret = equity.get("overlay_return_pct_from_1k")
         standalone_ret = equity.get("standalone_return_pct")
-        if (
-            overlay_ret is not None
-            and standalone_ret is not None
-            and float(overlay_ret) < float(standalone_ret)
-        ):
+        standalone_status = str(equity.get("standalone_status") or "")
+        # Le verdict fait autorite, pas la seule presence d'un chiffre: un summary.json
+        # ancien porte encore standalone_status="available" avec un return_pct calcule
+        # sur une courbe NON homogene a la courbe overlay (cf. _standalone_summary,
+        # Phase 30.5). Comparer ces deux rendements produirait un warning faux.
+        if standalone_ret is None or standalone_status != STANDALONE_EVALUATED:
+            reason = str(
+                equity.get("standalone_status_reason") or "standalone curve unavailable"
+            )
+            alerts.append(
+                Alert(
+                    code="standalone_comparison_not_evaluable",
+                    severity="info",
+                    message=f"overlay vs standalone not evaluable: {reason}",
+                    target=name,
+                )
+            )
+        elif overlay_ret is not None and float(overlay_ret) < float(standalone_ret):
             alerts.append(
                 Alert(
                     code="overlay_underperforms_standalone",

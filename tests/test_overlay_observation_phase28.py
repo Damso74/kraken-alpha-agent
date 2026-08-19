@@ -8,15 +8,65 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-from src.bot.overlay_observation_engine import ObservationConfig, run_observation_once
+from src.bot.execution_simulator import ExecutionConfig
+from src.bot.overlay_observation_engine import (
+    STANDALONE_EQUITY_FILENAME,
+    ObservationConfig,
+    load_standalone_equity,
+    replay_standalone_baseline,
+    run_observation_once,
+)
 from src.bot.overlay_observation_kill import (
     OverlayKillConfig,
     evaluate_overlay_kill,
     observation_stop_active,
     write_observation_stop,
 )
+from src.bot.paper_engine import BotCandle
+from src.bot.portfolio import PaperPortfolio
+from src.strategies.trend_following import TrendFollowingStrategy
 
 REPO = Path(__file__).resolve().parents[1]
+EXEC_CFG = ExecutionConfig(fee_bps=40.0, slippage_bps=5.0)
+
+
+def crossover_candles() -> list[BotCandle]:
+    """Serie deterministe: baisse, hausse, baisse.
+
+    SMA20 croise SMA50 une fois a la hausse puis une fois a la baisse — donc
+    exactement un 'buy' puis un 'sell' pour la strategie standalone.
+    """
+    prices: list[float] = []
+    price = 200.0
+    for _ in range(60):
+        price -= 1.0
+        prices.append(price)
+    for _ in range(80):
+        price += 1.0
+        prices.append(price)
+    for _ in range(80):
+        price -= 1.0
+        prices.append(price)
+    t0 = int(datetime(2023, 1, 1, tzinfo=UTC).timestamp())
+    return [
+        BotCandle(
+            timestamp=t0 + i * 14400,
+            open=p,
+            high=p + 1.0,
+            low=p - 1.0,
+            close=p,
+            volume=10.0,
+        )
+        for i, p in enumerate(prices)
+    ]
+
+
+def _standalone_strategy() -> TrendFollowingStrategy:
+    strat = TrendFollowingStrategy()
+    # 10% d'exposition: le garde-fou max_position_fraction du RiskManager (25%)
+    # ne peut pas refuser la sortie apres une hausse, on teste bien le replay.
+    strat.max_position_fraction = 0.10
+    return strat
 
 
 def _write_eth4h_cache(cache: Path, n: int = 120) -> None:
@@ -98,6 +148,104 @@ def test_observation_once_idempotent_skip(tmp_path: Path) -> None:
     assert second["reason"] == "duplicate_candle"
 
 
+def test_standalone_replay_emits_buy_then_sell() -> None:
+    """Le baseline standalone doit franchir buy PUIS sell (defaut #1).
+
+    Sans replay reel, portfolio_standalone reste vide: la garde
+    ``pos.quantity > 1e-12`` interdit tout 'sell' et un 'buy' est re-emis a
+    chaque barre haussiere.
+    """
+    candles = crossover_candles()
+    strat = _standalone_strategy()
+    actions: list[tuple[int, str]] = []
+    for idx in range(strat.warmup_bars(), len(candles)):
+        portfolio = PaperPortfolio(cash_usd=1000.0)
+        signal, curve = replay_standalone_baseline(
+            _standalone_strategy(),
+            candles,
+            portfolio,
+            symbol="ETH",
+            exec_cfg=EXEC_CFG,
+            bar_index=idx,
+            starting_equity=1000.0,
+            timeframe="4h",
+        )
+        assert len(curve) == idx + 1
+        if signal is not None and signal.action in ("buy", "sell"):
+            actions.append((idx, signal.action))
+
+    assert [a for _, a in actions] == ["buy", "sell"]
+    buy_idx, sell_idx = actions[0][0], actions[1][0]
+    assert buy_idx < sell_idx
+
+
+def test_standalone_replay_holds_position_between_crossovers() -> None:
+    """Entre les deux croisements la position standalone reste ouverte."""
+    candles = crossover_candles()
+    portfolio = PaperPortfolio(cash_usd=1000.0)
+    signal, _ = replay_standalone_baseline(
+        _standalone_strategy(),
+        candles,
+        portfolio,
+        symbol="ETH",
+        exec_cfg=EXEC_CFG,
+        bar_index=120,
+        starting_equity=1000.0,
+        timeframe="4h",
+    )
+    assert portfolio.position("ETH").quantity > 1e-12
+    assert signal is not None and signal.action == "hold"
+
+
+def test_observation_once_persists_standalone_curve(tmp_path: Path) -> None:
+    cache = tmp_path / "cache"
+    _write_eth4h_cache(cache)
+    state = tmp_path / "state"
+    out = run_observation_once(ObservationConfig(state_dir=state, cache_root=cache))
+    assert out["status"] == "ok"
+    assert (state / STANDALONE_EQUITY_FILENAME).is_file()
+    assert load_standalone_equity(state) == [out["standalone_equity"]]
+    assert out["kill"]["standalone_comparison"]["status"] == "evaluated"
+
+
+def test_kill_underperformance_triggers() -> None:
+    result = evaluate_overlay_kill(
+        "nonexistent_state_dir_for_test",
+        overlay_equity_curve=[1000.0, 1000.0, 1000.0],
+        standalone_equity_curve=[1000.0, 1050.0, 1100.0],
+        stop_file=Path("nonexistent_stop_file_for_test"),
+    )
+    assert result.metrics["standalone_comparison"]["status"] == "evaluated"
+    assert any("overlay_underperforms_standalone" in r for r in result.reasons)
+
+
+def test_kill_underperformance_not_triggered() -> None:
+    result = evaluate_overlay_kill(
+        "nonexistent_state_dir_for_test",
+        overlay_equity_curve=[1000.0, 1050.0, 1100.0],
+        standalone_equity_curve=[1000.0, 1000.0, 1000.0],
+        stop_file=Path("nonexistent_stop_file_for_test"),
+    )
+    assert result.metrics["standalone_comparison"]["status"] == "evaluated"
+    assert not any("overlay_underperforms_standalone" in r for r in result.reasons)
+    assert result.metrics["equity_gap_pct"] > 0
+
+
+def test_kill_underperformance_not_evaluable() -> None:
+    """Sans courbe standalone le critere est explicitement non evaluable."""
+    result = evaluate_overlay_kill(
+        "nonexistent_state_dir_for_test",
+        overlay_equity_curve=[1000.0, 1050.0],
+        standalone_equity_curve=None,
+        stop_file=Path("nonexistent_stop_file_for_test"),
+    )
+    comparison = result.metrics["standalone_comparison"]
+    assert comparison["status"] == "not_evaluable"
+    assert comparison["reason"] == "standalone_curve_missing"
+    assert result.metrics["equity_gap_pct"] is None
+    assert not any("overlay_underperforms_standalone" in r for r in result.reasons)
+
+
 def test_kill_criteria_stop_file(tmp_path: Path) -> None:
     stop = tmp_path / "STOP_OBSERVATION"
     write_observation_stop(stop, "test kill")
@@ -110,7 +258,7 @@ def test_kill_criteria_stop_file(tmp_path: Path) -> None:
 def test_kill_block_rate(tmp_path: Path) -> None:
     shadow = tmp_path / "shadow_comparison.jsonl"
     rows = []
-    for i in range(10):
+    for _ in range(10):
         rows.append(
             {
                 "overlay_blocks": True,

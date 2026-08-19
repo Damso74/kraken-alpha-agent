@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
@@ -24,7 +25,7 @@ from src.bot.overlay_shadow_compare import (
     append_shadow_comparison,
     build_shadow_record,
 )
-from src.bot.paper_engine import _normalize_candles, run_paper_backtest
+from src.bot.paper_engine import BotCandle, _normalize_candles, run_paper_backtest
 from src.bot.phase23_presets import build_phase23_strategy
 from src.bot.portfolio import PaperPortfolio
 from src.bot.risk_manager import RiskManager
@@ -46,6 +47,23 @@ PHASE28_TARGETS: tuple[tuple[str, str, str], ...] = (
     ("trend_following", "baseline", "funding_basis"),
     ("ema_crossover", "baseline", "funding_basis"),
 )
+
+# Courbe d'equity du baseline standalone, persistee a cote de equity_curve.csv.
+# Une ligne par run cron, meme FORMAT (timestamp,equity) que le chemin overlay —
+# mais PAS la meme semantique, et c'est volontairement assume ici:
+#   * equity_curve.csv    = courbe de COMPTE. portfolio_overlay repart de l'etat
+#     persiste puis rejoue toute la serie => le rendement de la serie est compose
+#     une fois par run.
+#   * standalone_equity.csv = courbe de SERIE. replay_standalone_baseline repart de
+#     cfg.cash a chaque run => aucune composition.
+# Les deux fichiers ne sont donc PAS comparables run a run. L'agregateur Phase 29
+# refuse explicitement cette comparaison inter-runs (statut not_evaluable, raison
+# heterogeneous_run_level_curves) et seule la comparaison INTRA-RUN — les deux
+# equity curves d'une meme serie, meme base de depart, faite plus bas via
+# evaluate_overlay_kill — sert de critere de kill. On ne "corrige" pas la
+# semantique d'ecriture: l'observation est archivee, les fichiers deja produits
+# contiennent des points non composes qu'aucune reecriture ne rendrait homogenes.
+STANDALONE_EQUITY_FILENAME = "standalone_equity.csv"
 
 
 @dataclass(frozen=True)
@@ -128,6 +146,95 @@ def _sync_bundle_from_portfolio(
     bundle.state.equity = equity
 
 
+def append_standalone_equity(
+    state_dir: Path | str,
+    timestamp: str | int,
+    equity: float,
+) -> None:
+    """Append one standalone equity point (same format as ``equity_curve.csv``)."""
+    root = Path(state_dir)
+    root.mkdir(parents=True, exist_ok=True)
+    path = root / STANDALONE_EQUITY_FILENAME
+    write_header = not path.is_file()
+    with path.open("a", encoding="utf-8") as fh:
+        if write_header:
+            fh.write("timestamp,equity\n")
+        fh.write(f"{timestamp},{equity}\n")
+
+
+def load_standalone_equity(state_dir: Path | str) -> list[float]:
+    """Read the persisted standalone equity curve; empty list when unavailable."""
+    path = Path(state_dir) / STANDALONE_EQUITY_FILENAME
+    if not path.is_file():
+        return []
+    out: list[float] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        row = line.strip()
+        if not row or row.startswith("timestamp"):
+            continue
+        _, _, raw = row.partition(",")
+        try:
+            out.append(float(raw))
+        except ValueError:
+            continue
+    return out
+
+
+def replay_standalone_baseline(
+    strategy: Any,
+    candles: Sequence[BotCandle],
+    portfolio: PaperPortfolio,
+    *,
+    symbol: str,
+    exec_cfg: ExecutionConfig,
+    bar_index: int,
+    starting_equity: float,
+    timeframe: str,
+) -> tuple[Any, list[float]]:
+    """Rejoue la strategie interne barre par barre jusqu'a ``bar_index`` inclus.
+
+    Pourquoi ce replay: sans lui ``portfolio`` reste vide jusqu'a la derniere barre.
+    Or trend_following et ema_crossover gardent leur signal 'sell' derriere
+    ``pos.quantity > 1e-12`` et leur 'buy' derriere ``pos.quantity <= 1e-12`` — avec
+    un portefeuille toujours vide le baseline n'emet jamais 'sell' et re-emet 'buy'
+    a chaque barre haussiere au lieu du seul croisement. Le "standalone" auquel
+    l'overlay etait compare n'etait donc pas la strategie standalone.
+
+    Le replay porte sur toutes les barres du cache (meme borne que le chemin
+    overlay, qui rejoue lui aussi la serie complete via ``run_paper_backtest``) et
+    reutilise exactement le meme mecanisme d'execution (RiskManager +
+    ExecutionSimulator + sizing), afin que les deux courbes restent comparables.
+
+    Retourne le signal standalone de la barre ``bar_index`` (calcule sur l'etat de
+    position reel a cette barre) et la courbe d'equity du replay.
+    """
+    prefix = list(candles[:bar_index])
+    curve: list[float] = []
+    if prefix:
+        prefix_result = run_paper_backtest(
+            prefix,
+            strategy,
+            portfolio,
+            RiskManager(),
+            ExecutionSimulator(exec_cfg),
+            BotJournal(),
+            {
+                "starting_equity": starting_equity,
+                "timeframe": timeframe,
+                "use_classify_verdict": False,
+            },
+            symbol=symbol,
+            data_ok=True,
+        )
+        curve = list(prefix_result.equity_curve)
+
+    signal = strategy.on_bar(bar_index, candles, portfolio, symbol)
+    # Meme convention que run_paper_backtest: l'equity de la barre est relevee
+    # apres on_bar mais avant l'application du fill.
+    curve.append(portfolio.equity({symbol: float(candles[bar_index].close)}))
+    return signal, curve
+
+
 def run_observation_once(cfg: ObservationConfig) -> dict[str, Any]:
     if observation_stop_active(cfg.state_dir.parent / "STOP_OBSERVATION"):
         return {"status": "stopped", "reason": "STOP_OBSERVATION flag"}
@@ -188,15 +295,21 @@ def run_observation_once(cfg: ObservationConfig) -> dict[str, Any]:
         return {"status": "stale_data"}
 
     bar_index = len(candles) - 1
+    exec_cfg = ExecutionConfig(fee_bps=cfg.fees_bps, slippage_bps=cfg.slippage_bps)
     portfolio_overlay = PaperPortfolio(cash_usd=bundle.state.cash_usd)
     portfolio_standalone = PaperPortfolio(cash_usd=cfg.cash)
     _sync_portfolio(bundle, portfolio_overlay, sym)
 
-    # Replay to bar_index-1 for signal context
-    for i in range(warmup, bar_index):
-        portfolio_standalone  # standalone not persisted; shadow only on latest bar
-
-    standalone_sig = inner.on_bar(bar_index, norm_candles, portfolio_standalone, sym)
+    standalone_sig, standalone_curve = replay_standalone_baseline(
+        inner,
+        norm_candles,
+        portfolio_standalone,
+        symbol=sym,
+        exec_cfg=exec_cfg,
+        bar_index=bar_index,
+        starting_equity=cfg.cash,
+        timeframe=cfg.timeframe,
+    )
     overlay_sig = overlay_inst.on_bar(bar_index, norm_candles, portfolio_overlay, sym)
     overlay_state = overlay_inst._state_at(bar_index)
 
@@ -213,7 +326,6 @@ def run_observation_once(cfg: ObservationConfig) -> dict[str, Any]:
     )
     append_shadow_comparison(cfg.state_dir, shadow)
 
-    exec_cfg = ExecutionConfig(fee_bps=cfg.fees_bps, slippage_bps=cfg.slippage_bps)
     journal = BotJournal()
     result = run_paper_backtest(
         norm_candles,
@@ -238,7 +350,9 @@ def run_observation_once(cfg: ObservationConfig) -> dict[str, Any]:
     bundle.state.iteration += 1
     save_state(cfg.state_dir, bundle)
 
+    standalone_eq = standalone_curve[-1] if standalone_curve else cfg.cash
     append_equity(cfg.state_dir, latest_ts, final_eq)
+    append_standalone_equity(cfg.state_dir, latest_ts, standalone_eq)
     decision_record = {
         "timestamp": latest_ts,
         "observation_only": cfg.observation_only,
@@ -250,6 +364,7 @@ def run_observation_once(cfg: ObservationConfig) -> dict[str, Any]:
         "basis_z": shadow.basis_z,
         "price": shadow.price,
         "equity": final_eq,
+        "standalone_equity": standalone_eq,
         "derivatives_status": deriv_status,
     }
     append_decision(cfg.state_dir, decision_record)
@@ -260,6 +375,7 @@ def run_observation_once(cfg: ObservationConfig) -> dict[str, Any]:
         cfg.state_dir,
         config=OverlayKillConfig(stale_data=stale_deriv),
         overlay_equity_curve=result.equity_curve,
+        standalone_equity_curve=standalone_curve,
         trade_count=result.metrics.trade_count,
         stop_file=cfg.state_dir.parent / "STOP_OBSERVATION",
     )
@@ -273,9 +389,14 @@ def run_observation_once(cfg: ObservationConfig) -> dict[str, Any]:
         "status": "ok",
         "iteration": bundle.state.iteration,
         "equity": final_eq,
+        "standalone_equity": standalone_eq,
         "trades": result.metrics.trade_count,
         "shadow": decision_record,
-        "kill": {"should_kill": kill.should_kill, "reasons": kill.reasons},
+        "kill": {
+            "should_kill": kill.should_kill,
+            "reasons": kill.reasons,
+            "standalone_comparison": kill.metrics.get("standalone_comparison"),
+        },
         "derivatives_status": deriv_status,
         "observation_only": cfg.observation_only,
     }
