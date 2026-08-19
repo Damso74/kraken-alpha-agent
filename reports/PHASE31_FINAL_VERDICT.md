@@ -14,9 +14,10 @@
 |------|--------|
 | Signal tradable identifié | **0** |
 | Candidat out-of-sample | **0** |
-| Overlay retenu | **0** — le seul survivant ne passe pas l'audit de ses données |
+| Overlay retenu | **0** — `proceed_to_overlay` mesuré à 0/4 bundles sur données reconstruites |
 | Observation forward | **archivée** (jamais démarrée : 1 barre au 2026-05-21, 0 depuis) |
 | Micro-live | **NO-GO** (inchangé — PEDSL-CY, cf. ADR-003) |
+| Dernière piste ouverte (`funding_zscore`) | **`not supported`** — rejeu du 2026-08-19 |
 | Reprise d'une phase 32 sur le même univers | **non recommandée** |
 
 Ce document remplace `reports/PHASE30_NEXT_DECISION.md` comme dernière décision
@@ -95,7 +96,8 @@ placebo, ni correction BH-FDR. Son unique filtre était un seuil brut non
 pré-enregistré de 0,15 pp, appliqué **en valeur absolue** : un excès *négatif*
 comptait comme preuve favorable. Sur ETH 4h, deux des trois « signaux non
 triviaux » retenus l'étaient par excès négatif (−1,12 et −1,53 pp) sur n = 9 à 11.
-Le gate `proceed_to_overlay` rendait `true` sur 4 bundles sur 4.
+Le gate `proceed_to_overlay` rendait `true` sur 4 bundles sur 4 ; sur données
+reconstruites et avec les gates ajoutés, il rend `false` sur 4 sur 4 (section 4).
 
 **d) Un défaut découvert en fin d'audit, plus lourd que tous les autres : le risk
 manager du moteur de recherche refusait les sorties de position.**
@@ -186,27 +188,49 @@ et non un simple arbitrage de coût.
 
 ---
 
-## 4. La seule piste encore ouverte, et pourquoi elle est fermée aussi
+## 4. La dernière question ouverte a été tranchée — par la mesure
 
-Un signal du corpus mérite d'être nommé parce qu'il est le seul à cocher les
-critères que tous les autres ratent : `funding_zscore` avec |z| ≥ 2 comme signal
-directionnel autonome.
+Un signal du corpus était le seul à cocher les critères que tous les autres
+ratent : `funding_zscore` avec |z| ≥ 2 comme signal directionnel autonome.
+Publié avec n > 100, un excès positif **monotone en horizon** et une cohérence
+entre deux actifs, il n'avait jamais été soumis à placebo, BH-FDR ni hold-out.
 
-| | n | excès 24h | excès 48h | excès 72h | sign_rate |
-|---|---|---|---|---|---|
-| ETH 4h | 142 | +0,155 pp | +0,637 pp | +0,786 pp | 0,521 / 0,641 / 0,606 |
-| BTC 4h | 126 | +0,040 pp | +0,482 pp | +0,931 pp | 0,548 / 0,564 / 0,564 |
+Il l'a été le 2026-08-19, sur les caches **reconstruits** (`funding_rows` :
+1 000 → **2 190**) et avec les gates d'inférence ajoutés à la clôture.
+Artefacts : `reports/phase31_rerun/`.
 
-C'est le seul signal du dépôt avec n > 100, un excès positif **monotone en
-horizon**, et une cohérence entre deux actifs. Il n'a jamais été soumis à
-placebo, BH-FDR ni hold-out, ni utilisé comme signal d'entrée.
+| | n publié | n réel | excès 72 h publié | excès 72 h réel | p (two-sided) | q (BH) |
+|---|---|---|---|---|---|---|
+| ETH 4h | 142 | **266** | +0,786 pp | **−0,177 pp** | 0,647 | 0,826 |
+| BTC 4h | 126 | **243** | +0,931 pp | **+0,222 pp** | 0,428 | 0,965 |
 
-Il est néanmoins fermé, et par arithmétique plutôt que par statistique :
-**+0,79 pp à 72 h contre 1,00 % de round-trip pessimiste donne un net de
-−0,21 pp**. Le signal est mort par construction sur ce venue, quelle que soit sa
-significativité. Le tester proprement reste possible — les gates d'inférence
-manquants ont été ajoutés au pipeline dans le cadre de cette clôture — mais le
-résultat attendu est `cost dominated`, pas `not supported`.
+**L'excès positif monotone était un artefact de la troncature du cache.** Sur la
+fenêtre complète, l'effet ETH change de signe et l'effet BTC est divisé par
+quatre ; les `sign_rate` s'établissent entre 0,486 et 0,580. Aucune cellule ne
+survit à Benjamini-Hochberg — les q-values les plus favorables sont à 0,83 et
+0,97, très loin d'un seuil α = 0,05.
+
+Le verdict n'est donc pas `cost dominated` comme on pouvait le projeter à partir
+des chiffres publiés (+0,79 pp à 72 h contre 1,00 % de round-trip), mais
+**`not supported`** : le signal échoue à l'inférence, avant même que la question
+des coûts se pose. C'est un résultat plus fort, et il ferme la dernière question
+ouverte du dépôt par la mesure et non par l'arithmétique.
+
+### Effet sur les verdicts publiés de la phase 26
+
+Le même rejeu, comparé aux artefacts publiés :
+
+| bundle | publié | rejeu 2026-08-19 |
+|---|---|---|
+| BTC 4h | `non_trivial=4`, `proceed_to_overlay=true`, **`overlay_only`** | `non_trivial=0`, `proceed=false`, **`weak`** |
+| ETH 4h | `non_trivial=3`, `proceed_to_overlay=true`, **`overlay_only`** | `non_trivial=0`, `proceed=false`, **`weak`** |
+| BTC 1d | `non_trivial=2`, `proceed=true`, `blocked_data` | `non_trivial=0`, `proceed=false`, `blocked_data` |
+| ETH 1d | `non_trivial=2`, `proceed=true`, `blocked_data` | `non_trivial=0`, `proceed=false`, `blocked_data` |
+
+`proceed_to_overlay` passe de **4 bundles sur 4** à **0 sur 4**. Les deux verdicts
+`overlay_only` qui fondaient l'existence de l'overlay ETH 4h deviennent `weak`.
+Répartition des rejets sur ETH 4h : 10 en puissance, 6 en direction, 0 en
+inférence — aucune cellule n'atteint même la couche statistique.
 
 ---
 

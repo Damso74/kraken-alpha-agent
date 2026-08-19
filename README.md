@@ -25,6 +25,14 @@
 > placebo, no BH-FDR — with a threshold taken in absolute value, so a *negative*
 > excess counted as favourable evidence.
 >
+> Those defects were fixed and the phase 26 event study was **re-run on rebuilt
+> caches** on 2026-08-19: `funding_rows` 1 000 → 2 190, and `proceed_to_overlay`
+> goes from 4 bundles out of 4 to **0 out of 4**. The last open candidate,
+> `funding_zscore`, turns out to be `not supported` rather than merely cost
+> dominated — its published monotone positive excess was an artifact of the
+> truncated cache, and on the full window the ETH effect changes sign (q = 0.83).
+> Artifacts in [`reports/phase31_rerun/`](./reports/phase31_rerun/).
+>
 > The forward paper observation planned for a VPS cron was **never started**:
 > 1 bar on 2026-05-21, 0 since. It is now archived rather than resumed — the
 > measurement harness itself was defective (see

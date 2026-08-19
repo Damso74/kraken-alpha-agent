@@ -1,0 +1,91 @@
+{
+  "generated_at_utc": "2026-08-19T20:00:00Z",
+  "note": "Caches reconstruits par scripts/reseed_collector_cache.py apres correction de la pagination funding.",
+  "entries": {
+    "basis_BTC_4h.json": {
+      "sha256": "580f5aca563983c8b26dbc8b064e52e27bcb213a7e97eacc45c699c0af4640ce",
+      "row_count": 6605,
+      "bytes": 2080666
+    },
+    "basis_ETH_4h.json": {
+      "sha256": "f71f3d0e34b9b79a0d6026a9793945c1f665c68d0757bfbaffad9d69db922082",
+      "row_count": 6605,
+      "bytes": 2068099
+    },
+    "funding_BTC.json": {
+      "sha256": "30dbfef978aea46bb2677d30ea8f059a71894801e0e668256c8eb23a86513972",
+      "row_count": 2190,
+      "bytes": 257470
+    },
+    "funding_ETH.json": {
+      "sha256": "b88521f24f0147ae817010f1f4f380be8a7c37071921deefe688bfd12a3c7f8c",
+      "row_count": 2190,
+      "bytes": 257535
+    },
+    "ohlc_1h_BTC.json": {
+      "sha256": "dd450121d17ecfa23c662737962866141b6c40bfeb6b5294b589acf973dcbe7c",
+      "row_count": 20108,
+      "bytes": 4551993
+    },
+    "ohlc_1h_ETH.json": {
+      "sha256": "c9433f25d372f5dfce8e139aea62be46fe15a459cb23436ef588f994e69c2a2e",
+      "row_count": 20108,
+      "bytes": 4468804
+    },
+    "ohlc_1h_SOL.json": {
+      "sha256": "3416d6cec4bfd592bf6e1d8fb621b58225dbffc6d7c9533fbf12a460d4f05bbc",
+      "row_count": 20108,
+      "bytes": 4373782
+    },
+    "ohlc_4h_BTC.json": {
+      "sha256": "98cb96920025dbf41e4256e28b05e8cbd625a8a0179d2bb52f592f7e017f84f3",
+      "row_count": 7217,
+      "bytes": 1637108
+    },
+    "ohlc_4h_ETH.json": {
+      "sha256": "59600b685606c4c2c1f0e52fbce4f76692f00b91379c7700e261f71d7524fb4d",
+      "row_count": 7217,
+      "bytes": 1608122
+    },
+    "ohlc_4h_SOL.json": {
+      "sha256": "83496cb0f51bd312009ba26a31136fc2e12bd1103cf32bb66cd29bf7878d9b79",
+      "row_count": 7217,
+      "bytes": 1567960
+    },
+    "ohlc_daily_BTC.json": {
+      "sha256": "ca11490b39726e8b730f8ee8954d14bd162e1e6e5987deb7c6507bd9716e8067",
+      "row_count": 1933,
+      "bytes": 440264
+    },
+    "ohlc_daily_ETH.json": {
+      "sha256": "928a843dac39e051dcd159c019966a32004553624195a8607b7f79f531acb06b",
+      "row_count": 1933,
+      "bytes": 432614
+    },
+    "ohlc_daily_SOL.json": {
+      "sha256": "66057874df55820038008dccab6ed0bf8c434c8a062d2b05d61b94b8ed383e18",
+      "row_count": 1933,
+      "bytes": 420481
+    },
+    "oi_BTC_1d.json": {
+      "sha256": "4607324b549852da0bf442c03a59e8fa8343261e043a1eaf1e49ed7c1794874b",
+      "row_count": 30,
+      "bytes": 5079
+    },
+    "oi_BTC_4h.json": {
+      "sha256": "36a55747f79c3b57f4d9e22e83e03e0131c7962988542934db55ec2963c35284",
+      "row_count": 180,
+      "bytes": 29357
+    },
+    "oi_ETH_1d.json": {
+      "sha256": "33bd0bfcd616501070ddeebd657b4567a1bd13c5b960fa17be5e16e6cb86b85a",
+      "row_count": 30,
+      "bytes": 5115
+    },
+    "oi_ETH_4h.json": {
+      "sha256": "820befa32f97b273cf02be869f6d0c8a3248af6aeba3db757eb221a30f617f36",
+      "row_count": 180,
+      "bytes": 29548
+    }
+  }
+}
