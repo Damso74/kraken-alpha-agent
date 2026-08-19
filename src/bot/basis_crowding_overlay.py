@@ -8,11 +8,19 @@ from dataclasses import dataclass
 from typing import Any, Literal
 
 from src.bot.crowding_overlay import (
+    DEFAULT_FUNDING_MAX_STALENESS_S,
+    ZStatus,
     _align_series,
-    _rolling_z,
+    _rolling_z_status,
+    _status_of,
     compare_baseline_vs_overlay,
+    staleness_bound_for,
 )
-from src.data.collectors.binance_basis_public import default_basis_cache_path, load_basis_cache
+from src.data.collectors.binance_basis_public import (
+    _coerce_z_status,
+    default_basis_cache_path,
+    load_basis_cache,
+)
 from src.data.collectors.binance_derivatives_public import (
     default_funding_cache_path,
     load_derivatives_cache,
@@ -22,6 +30,10 @@ from src.strategies.base import StrategySignal
 BasisCrowdingFilter = Literal["allow", "reduce", "block"]
 
 OverlayMode = Literal["funding_only", "funding_basis"]
+
+# Le collecteur Phase 27 produit une ligne de basis par bougie (4h ou 1d):
+# ce fallback ne sert que si le pas natif ne peut pas etre infere.
+DEFAULT_BASIS_MAX_STALENESS_S = 2 * 86400
 
 
 @dataclass(frozen=True)
@@ -34,23 +46,60 @@ class BasisCrowdingState:
     reason: str
 
 
+def _basis_degraded_reason(funding_status: ZStatus, basis_status: ZStatus) -> str | None:
+    """Raison explicite quand un z existe mais n'est pas exploitable."""
+    if funding_status == "flat" or basis_status == "flat":
+        return f"flat_series funding={funding_status} basis={basis_status}"
+    if funding_status != "ok" or basis_status != "ok":
+        return f"partial_data funding={funding_status} basis={basis_status}"
+    return None
+
+
 def classify_basis_crowding(
     funding_z: float | None,
     basis_z: float | None,
     *,
     basis_compression: bool = False,
     basis_extreme: bool = False,
+    funding_status: ZStatus | None = None,
+    basis_status: ZStatus | None = None,
     block_funding_z: float = +2.0,
     block_basis_z: float = 2.0,
 ) -> BasisCrowdingState:
-    """Funding + basis combo rules (Phase 27)."""
+    """Funding + basis combo rules (Phase 27).
+
+    Toutes les regles ci-dessous comparent ``fz`` a des seuils. Substituer
+    0.0 a un funding absent (defaut #12) rendait ces branches inatteignables
+    et faisait loguer "neutral" alors que la verite etait "no_data": le
+    funding manquant sort donc explicitement en amont.
+    """
+    fs = _status_of(funding_z, funding_status)
+    bs = _status_of(basis_z, basis_status)
+
     if funding_z is None and basis_z is None:
         return BasisCrowdingState(
             "allow", funding_z, basis_z, basis_compression, basis_extreme, "no_data"
         )
 
-    fz = funding_z or 0.0
-    bz = basis_z or 0.0
+    if funding_z is None:
+        # Le basis seul reste exploitable pour reduire, mais on ne pretend pas
+        # connaitre l'etat de crowding funding.
+        bz_only = basis_z if basis_z is not None else 0.0
+        filt: BasisCrowdingFilter = (
+            "reduce" if (basis_extreme or abs(bz_only) >= 1.5) else "allow"
+        )
+        bz_txt = f"{basis_z:.2f}" if basis_z is not None else "na"
+        return BasisCrowdingState(
+            filt,
+            None,
+            basis_z,
+            basis_compression,
+            basis_extreme,
+            f"no_data_funding basis_only bz={bz_txt} funding={fs} basis={bs}",
+        )
+
+    fz = funding_z
+    bz = basis_z if basis_z is not None else 0.0
 
     # funding high + basis high → block / reduce
     if fz >= block_funding_z and bz >= block_basis_z:
@@ -71,7 +120,7 @@ def classify_basis_crowding(
             basis_z,
             basis_compression,
             basis_extreme,
-            "funding_basis_neutral",
+            _basis_degraded_reason(fs, bs) or "funding_basis_neutral",
         )
 
     # funding high + basis contracting → reduce
@@ -132,19 +181,23 @@ def classify_basis_crowding(
         basis_z,
         basis_compression,
         basis_extreme,
-        "neutral",
+        _basis_degraded_reason(fs, bs) or "neutral",
     )
 
 
 def classify_funding_only(
     funding_z: float | None,
     *,
+    funding_status: ZStatus | None = None,
     block_z: float = 2.5,
     reduce_z: float = 1.5,
 ) -> BasisCrowdingState:
     """Funding-only overlay (no basis, no OI)."""
+    fs = _status_of(funding_z, funding_status)
     if funding_z is None:
-        return BasisCrowdingState("allow", None, None, False, False, "no_funding")
+        return BasisCrowdingState(
+            "allow", None, None, False, False, f"no_data_funding funding={fs}"
+        )
     fz = funding_z
     if abs(fz) >= block_z:
         return BasisCrowdingState(
@@ -154,6 +207,11 @@ def classify_funding_only(
         return BasisCrowdingState(
             "reduce", funding_z, None, False, False, f"funding_elevated fz={fz:.2f}"
         )
+    if fs == "flat":
+        # z=0.0 sur une serie plate: ce n'est pas un funding "neutre observe".
+        return BasisCrowdingState(
+            "allow", funding_z, None, False, False, "flat_series funding=flat"
+        )
     return BasisCrowdingState("allow", funding_z, None, False, False, "funding_neutral")
 
 
@@ -161,6 +219,8 @@ def _align_optional_float_series(
     candles: Sequence[Mapping[str, Any]],
     series: Sequence[Mapping[str, Any]],
     value_key: str,
+    *,
+    max_staleness_s: float | None = None,
 ) -> list[float | None]:
     if not series:
         return [None] * len(candles)
@@ -179,7 +239,48 @@ def _align_optional_float_series(
     for c in candles:
         cts = int(c["timestamp"])
         idx = bisect.bisect_right(ts_list, cts) - 1
-        out.append(vals[idx] if idx >= 0 else None)
+        if idx < 0:
+            out.append(None)
+            continue
+        if max_staleness_s is not None and (cts - ts_list[idx]) > max_staleness_s:
+            out.append(None)
+            continue
+        out.append(vals[idx])
+    return out
+
+
+def _align_z_status_series(
+    candles: Sequence[Mapping[str, Any]],
+    series: Sequence[Mapping[str, Any]],
+    value_key: str,
+    *,
+    max_staleness_s: float | None = None,
+) -> list[ZStatus]:
+    """Forward-fill du statut de z-score, ``no_data`` hors de portee/fraicheur."""
+    if not series:
+        return ["no_data"] * len(candles)
+    ts_list = [int(r["timestamp"]) for r in series]
+    vals: list[ZStatus] = []
+    for r in series:
+        z_raw = r.get("basis_zscore")
+        try:
+            z = float(z_raw) if z_raw is not None else None
+        except (TypeError, ValueError):
+            z = None
+        # Les lignes sans ``basis_z_status`` (caches d'avant Phase 30, dicts
+        # construits a la main) retombent sur ok/no_data selon la valeur.
+        vals.append(_coerce_z_status(r.get(value_key), z))
+    out: list[ZStatus] = []
+    for c in candles:
+        cts = int(c["timestamp"])
+        idx = bisect.bisect_right(ts_list, cts) - 1
+        if idx < 0:
+            out.append("no_data")
+            continue
+        if max_staleness_s is not None and (cts - ts_list[idx]) > max_staleness_s:
+            out.append("no_data")
+            continue
+        out.append(vals[idx])
     return out
 
 
@@ -187,6 +288,8 @@ def _align_bool_series(
     candles: Sequence[Mapping[str, Any]],
     series: Sequence[Mapping[str, Any]],
     value_key: str,
+    *,
+    max_staleness_s: float | None = None,
 ) -> list[bool | None]:
     if not series:
         return [None] * len(candles)
@@ -196,7 +299,13 @@ def _align_bool_series(
     for c in candles:
         cts = int(c["timestamp"])
         idx = bisect.bisect_right(ts_list, cts) - 1
-        out.append(vals[idx] if idx >= 0 else None)
+        if idx < 0:
+            out.append(None)
+            continue
+        if max_staleness_s is not None and (cts - ts_list[idx]) > max_staleness_s:
+            out.append(None)
+            continue
+        out.append(vals[idx])
     return out
 
 
@@ -207,35 +316,66 @@ def precompute_basis_crowding_states(
     *,
     mode: OverlayMode = "funding_basis",
     z_window: int = 60,
+    funding_max_staleness_s: float | None = DEFAULT_FUNDING_MAX_STALENESS_S,
+    basis_max_staleness_s: float | None = None,
 ) -> list[BasisCrowdingState]:
-    fund = _align_series(candles, funding_rows, "funding_rate")
-    fz = _rolling_z(fund, z_window)
+    """Etats bougie par bougie, forward-fill borne en fraicheur (defaut #12).
+
+    ``basis_max_staleness_s=None`` deduit la borne du pas natif de la serie
+    de basis (une ligne par bougie chez le collecteur Phase 27).
+    """
+    basis_bound = (
+        basis_max_staleness_s
+        if basis_max_staleness_s is not None
+        else staleness_bound_for(basis_rows, default_s=DEFAULT_BASIS_MAX_STALENESS_S)
+    )
+    fund = _align_series(
+        candles, funding_rows, "funding_rate", max_staleness_s=funding_max_staleness_s
+    )
+    fz = _rolling_z_status(fund, z_window)
 
     if mode == "funding_only":
-        return [classify_funding_only(fz[i]) for i in range(len(candles))]
+        return [
+            classify_funding_only(fz[i][0], funding_status=fz[i][1])
+            for i in range(len(candles))
+        ]
 
     basis_z_aligned: list[float | None] = []
+    basis_status: list[ZStatus] = []
     compression: list[bool] = []
     extreme: list[bool] = []
     if basis_rows:
-        bz_series = _align_optional_float_series(candles, basis_rows, "basis_zscore")
-        comp_series = _align_bool_series(candles, basis_rows, "basis_compression")
-        ext_series = _align_bool_series(candles, basis_rows, "basis_extreme")
+        bz_series = _align_optional_float_series(
+            candles, basis_rows, "basis_zscore", max_staleness_s=basis_bound
+        )
+        bs_series = _align_z_status_series(
+            candles, basis_rows, "basis_z_status", max_staleness_s=basis_bound
+        )
+        comp_series = _align_bool_series(
+            candles, basis_rows, "basis_compression", max_staleness_s=basis_bound
+        )
+        ext_series = _align_bool_series(
+            candles, basis_rows, "basis_extreme", max_staleness_s=basis_bound
+        )
         for i in range(len(candles)):
             basis_z_aligned.append(bz_series[i])
+            basis_status.append(bs_series[i] if bz_series[i] is not None else "no_data")
             compression.append(bool(comp_series[i]) if comp_series[i] is not None else False)
             extreme.append(bool(ext_series[i]) if ext_series[i] is not None else False)
     else:
         basis_z_aligned = [None] * len(candles)
+        basis_status = ["no_data"] * len(candles)
         compression = [False] * len(candles)
         extreme = [False] * len(candles)
 
     return [
         classify_basis_crowding(
-            fz[i],
+            fz[i][0],
             basis_z_aligned[i],
             basis_compression=compression[i],
             basis_extreme=extreme[i],
+            funding_status=fz[i][1],
+            basis_status=basis_status[i],
         )
         for i in range(len(candles))
     ]

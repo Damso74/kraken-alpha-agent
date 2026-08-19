@@ -9,19 +9,20 @@ Derived fields (aligned to candle open timestamps):
 - ``spot_price``, ``perp_price`` (close of each 4h bar)
 - ``basis_pct`` = perp / spot - 1
 - ``basis_zscore`` rolling z-score of basis_pct
+- ``basis_z_status`` ``ok`` / ``warmup`` / ``no_data`` / ``flat`` (cf. :mod:`src.zscore`)
 - ``basis_compression`` contracting elevated basis (|z| was >1, |basis| shrinking)
 - ``basis_extreme`` |basis_zscore| >= extreme threshold
 """
 
 from __future__ import annotations
 
-import statistics
 import time
 from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from ...zscore import ZStatus, rolling_z_status
 from ._common import (
     DEFAULT_COLLECTOR_CACHE_DIR,
     CollectorError,
@@ -139,32 +140,17 @@ def fetch_mark_price_klines(
     return sorted(all_rows, key=lambda r: int(r["timestamp"]))
 
 
-def _rolling_z(values: Sequence[float | None], window: int) -> list[float | None]:
-    out: list[float | None] = []
-    buf: list[float] = []
-    for v in values:
-        if v is None:
-            out.append(None)
-            continue
-        buf.append(v)
-        if len(buf) > window:
-            buf.pop(0)
-        if len(buf) < max(10, window // 2):
-            out.append(None)
-            continue
-        mu = statistics.mean(buf)
-        sd = statistics.pstdev(buf) or 1e-12
-        out.append((v - mu) / sd)
-    return out
-
-
 def _basis_compression_flags(
     basis_pct: Sequence[float | None],
     basis_z: Sequence[float | None],
 ) -> list[bool]:
     out: list[bool] = []
     prev_abs: float | None = None
-    for bp, bz in zip(basis_pct, basis_z):
+    # strict=True: rolling_z_status rend exactement un element par entree, les
+    # deux sequences ont donc toujours la meme longueur. Toute divergence est
+    # un bug d'alignement qu'on veut voir exploser ici, pas silencieusement
+    # tronquer.
+    for bp, bz in zip(basis_pct, basis_z, strict=True):
         if bp is None or bz is None:
             out.append(False)
             prev_abs = abs(bp) if bp is not None else prev_abs
@@ -191,8 +177,13 @@ def build_basis_rows(
     if not common_ts:
         return []
 
+    # ``basis_pct`` couvre *tous* les ``common_ts`` (None pour une bougie spot
+    # invalide) alors que ``rows_by_ts`` n'en garde que les valides: les series
+    # derivees ci-dessous sont donc indexees sur ``common_ts`` et rapatriees par
+    # timestamp, jamais par position. L'ancien ``enumerate(rows_raw)`` decalait
+    # tous les z-scores d'un cran des qu'une bougie spot <= 0 existait.
     basis_pct: list[float | None] = []
-    rows_raw: list[dict[str, Any]] = []
+    rows_by_ts: dict[int, dict[str, Any]] = {}
     for ts in common_ts:
         spot = spot_by_ts[ts]
         perp = perp_by_ts[ts]
@@ -201,25 +192,45 @@ def build_basis_rows(
             continue
         bp = perp / spot - 1.0
         basis_pct.append(bp)
-        rows_raw.append(
-            {
-                "timestamp": ts,
-                "spot_price": spot,
-                "perp_price": perp,
-                "basis_pct": bp,
-            }
-        )
+        rows_by_ts[ts] = {
+            "timestamp": ts,
+            "spot_price": spot,
+            "perp_price": perp,
+            "basis_pct": bp,
+        }
 
-    bz = _rolling_z(basis_pct, z_window)
-    compression = _basis_compression_flags(basis_pct, bz)
+    z_status = rolling_z_status(basis_pct, z_window)
+    compression = _basis_compression_flags(basis_pct, [z for z, _ in z_status])
     out: list[dict[str, Any]] = []
-    for i, row in enumerate(rows_raw):
-        z = bz[i]
+    for ts, (z, status), comp in zip(common_ts, z_status, compression, strict=True):
+        row = rows_by_ts.get(ts)
+        if row is None:
+            continue
         row["basis_zscore"] = z
-        row["basis_compression"] = compression[i]
+        row["basis_z_status"] = status
+        row["basis_compression"] = comp
         row["basis_extreme"] = z is not None and abs(z) >= extreme_z
         out.append(row)
     return out
+
+
+_Z_STATUS_VALUES: frozenset[str] = frozenset({"ok", "no_data", "warmup", "flat"})
+
+
+def _coerce_z_status(raw: Any, z: float | None) -> ZStatus:
+    """Statut du z-score, deduit de la valeur pour les caches d'avant Phase 30.
+
+    Un cache ecrit avant l'ajout de ``basis_z_status`` ne peut pas distinguer
+    une serie plate: on retombe sur ``ok``/``no_data``, soit exactement le
+    comportement anterieur, sans jamais inventer un ``flat``.
+    """
+    if isinstance(raw, str) and raw in _Z_STATUS_VALUES:
+        status: ZStatus = raw  # type: ignore[assignment]
+        # Un statut exploitable sans valeur serait incoherent (cache bricole).
+        if z is None and status in ("ok", "flat"):
+            return "no_data"
+        return status
+    return "ok" if z is not None else "no_data"
 
 
 def parse_basis_rows(rows: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
@@ -250,6 +261,7 @@ def parse_basis_rows(rows: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
                 "perp_price": perp,
                 "basis_pct": bp,
                 "basis_zscore": z,
+                "basis_z_status": _coerce_z_status(raw.get("basis_z_status"), z),
                 "basis_compression": comp,
                 "basis_extreme": extreme,
             }

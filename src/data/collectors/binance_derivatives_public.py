@@ -20,6 +20,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from ...logger import get_logger
 from ._common import (
     DEFAULT_COLLECTOR_CACHE_DIR,
     CollectorError,
@@ -29,6 +30,8 @@ from ._common import (
     utc_now_iso,
 )
 from .binance_public import normalize_binance_symbol
+
+logger = get_logger(__name__)
 
 BINANCE_FUNDING_URL = "https://fapi.binance.com/fapi/v1/fundingRate"
 BINANCE_OI_HIST_URL = "https://fapi.binance.com/futures/data/openInterestHist"
@@ -41,6 +44,10 @@ OI_PAGE_LIMIT = 500
 # Binance openInterestHist rejects very old startTime (≈30d effective window).
 MAX_OI_LOOKBACK_DAYS = 30
 BINANCE_SLEEP_BETWEEN_PAGES_SECONDS = 0.2
+# Garde-fou anti-boucle-infinie si un fetcher ignore le curseur.
+# 200 pages x 1000 lignes = ~180 ans de funding 8h: jamais atteint en pratique.
+MAX_FUNDING_PAGES = 200
+MAX_OI_PAGES = 200
 
 OI_PERIODS = frozenset({"5m", "15m", "30m", "1h", "2h", "4h", "6h", "12h", "1d"})
 
@@ -232,41 +239,168 @@ def save_oi_cache(
     )
 
 
+def pagination_truncation_warning(
+    row_count: int,
+    *,
+    page_limit: int,
+    last_page_full: bool,
+    label: str = "funding",
+) -> str | None:
+    """Detecte le symptome d'une pagination interrompue trop tot.
+
+    Un total qui tombe pile sur un multiple de la taille de page alors que la
+    derniere page recue etait pleine signifie qu'il restait des donnees a
+    lire cote serveur: le seul cas ou l'API s'arrete legitimement est une
+    page incomplete (ou vide). Ce cas doit crier, pas passer en silence — le
+    defaut #4 (4 bundles a exactement 1000 lignes de funding) est reste
+    invisible pendant toute la phase 26 faute de ce garde-fou.
+    """
+    if row_count <= 0 or page_limit <= 0 or not last_page_full:
+        return None
+    if row_count % page_limit != 0:
+        return None
+    return (
+        f"{label} pagination likely truncated: {row_count} rows is an exact multiple "
+        f"of page_limit={page_limit} and the last page was full "
+        f"(expected a short final page)"
+    )
+
+
+def _fetch_funding_forward(
+    sym: str,
+    start_ms: int,
+    end_ms: int | None,
+    fetcher: BinanceFetcherFn,
+    max_pages: int,
+) -> tuple[list[dict[str, Any]], bool, bool]:
+    """Pagine du plus ancien vers le plus recent en avancant ``startTime``.
+
+    Retourne ``(rows, last_page_full, window_exhausted)``.
+    """
+    all_rows: list[dict[str, Any]] = []
+    cursor_start = start_ms
+    last_page_full = False
+    window_exhausted = False
+    for page in range(max_pages):
+        params: dict[str, Any] = {
+            "symbol": sym,
+            "limit": FUNDING_PAGE_LIMIT,
+            "startTime": cursor_start,
+        }
+        if end_ms is not None:
+            params["endTime"] = end_ms
+        data = fetcher(BINANCE_FUNDING_URL, params)
+        if not isinstance(data, list):
+            raise CollectorError(f"unexpected funding payload: {type(data).__name__}")
+        last_page_full = len(data) >= FUNDING_PAGE_LIMIT
+        if not data:
+            window_exhausted = True
+            break
+        batch = parse_funding_rows(data)
+        if not batch:
+            window_exhausted = True
+            break
+        all_rows.extend(batch)
+        if not last_page_full:
+            window_exhausted = True
+            break
+        next_start = max(int(r["timestamp"]) for r in batch) * 1000 + 1
+        if next_start <= cursor_start:
+            # Curseur bloque (fetcher qui ignore startTime): on sort sans
+            # pretendre avoir couvert la fenetre.
+            break
+        if end_ms is not None and next_start > end_ms:
+            window_exhausted = True
+            break
+        cursor_start = next_start
+        if page + 1 < max_pages:
+            time.sleep(BINANCE_SLEEP_BETWEEN_PAGES_SECONDS)
+    return all_rows, last_page_full, window_exhausted
+
+
+def _fetch_funding_backward(
+    sym: str,
+    end_ms: int | None,
+    fetcher: BinanceFetcherFn,
+    max_pages: int,
+) -> tuple[list[dict[str, Any]], bool, bool]:
+    """Pagine du plus recent vers le plus ancien en reculant ``endTime``.
+
+    Utilise seulement quand aucun ``startTime`` n'est connu: sans startTime,
+    Binance renvoie la page la plus recente, donc reculer endTime est la
+    seule facon de remonter l'historique.
+    """
+    all_rows: list[dict[str, Any]] = []
+    cursor_end = end_ms
+    last_page_full = False
+    window_exhausted = False
+    for page in range(max_pages):
+        params: dict[str, Any] = {"symbol": sym, "limit": FUNDING_PAGE_LIMIT}
+        if cursor_end is not None:
+            params["endTime"] = cursor_end
+        data = fetcher(BINANCE_FUNDING_URL, params)
+        if not isinstance(data, list):
+            raise CollectorError(f"unexpected funding payload: {type(data).__name__}")
+        last_page_full = len(data) >= FUNDING_PAGE_LIMIT
+        if not data:
+            window_exhausted = True
+            break
+        batch = parse_funding_rows(data)
+        if not batch:
+            window_exhausted = True
+            break
+        all_rows = batch + all_rows
+        if not last_page_full:
+            window_exhausted = True
+            break
+        next_end = min(int(r["timestamp"]) for r in batch) * 1000 - 1
+        if cursor_end is not None and next_end >= cursor_end:
+            break
+        cursor_end = next_end
+        if page + 1 < max_pages:
+            time.sleep(BINANCE_SLEEP_BETWEEN_PAGES_SECONDS)
+    return all_rows, last_page_full, window_exhausted
+
+
 def fetch_funding_rate_history(
     ticker: str,
     *,
     start_ms: int | None = None,
     end_ms: int | None = None,
     fetcher: BinanceFetcherFn = default_http_fetcher,
+    max_pages: int = MAX_FUNDING_PAGES,
 ) -> list[dict[str, Any]]:
-    """Paginated funding history (newest page first per Binance API)."""
+    """Historique de funding pagine sur toute la fenetre demandee.
+
+    Defaut #4 corrige ici: l'ancienne boucle reculait ``endTime`` page apres
+    page tout en laissant ``startTime`` fixe. Or l'endpoint ``fundingRate``
+    renvoie les lignes **par ordre croissant a partir de startTime** des que
+    celui-ci est fourni — la premiere page etait donc deja la plus ancienne,
+    et le test ``oldest <= start_ms`` sortait de la boucle des la page 1.
+    Resultat: exactement FUNDING_PAGE_LIMIT lignes, quelle que soit la
+    longueur de la fenetre. On avance desormais ``startTime`` quand il est
+    connu, et on ne recule ``endTime`` que dans le cas sans borne basse.
+    """
     sym = futures_symbol(ticker)
-    all_rows: list[dict[str, Any]] = []
-    cursor_end = end_ms
-    while True:
-        params: dict[str, Any] = {"symbol": sym, "limit": FUNDING_PAGE_LIMIT}
-        if start_ms is not None:
-            params["startTime"] = start_ms
-        if cursor_end is not None:
-            params["endTime"] = cursor_end
-        data = fetcher(BINANCE_FUNDING_URL, params)
-        if not isinstance(data, list):
-            raise CollectorError(f"unexpected funding payload: {type(data).__name__}")
-        if not data:
-            break
-        batch = parse_funding_rows(data)
-        if not batch:
-            break
-        oldest_ts = min(int(r["timestamp"]) for r in batch)
-        all_rows = batch + all_rows
-        if len(data) < FUNDING_PAGE_LIMIT:
-            break
-        if start_ms is not None and oldest_ts * 1000 <= start_ms:
-            break
-        cursor_end = oldest_ts * 1000 - 1
-        time.sleep(BINANCE_SLEEP_BETWEEN_PAGES_SECONDS)
-    # Dedupe after merge
-    return parse_funding_rows(all_rows)
+    if start_ms is not None:
+        raw, last_page_full, exhausted = _fetch_funding_forward(
+            sym, start_ms, end_ms, fetcher, max_pages
+        )
+    else:
+        raw, last_page_full, exhausted = _fetch_funding_backward(
+            sym, end_ms, fetcher, max_pages
+        )
+    rows = parse_funding_rows(raw)
+    if not exhausted:
+        warning = pagination_truncation_warning(
+            len(rows),
+            page_limit=FUNDING_PAGE_LIMIT,
+            last_page_full=last_page_full,
+            label=f"funding {sym}",
+        )
+        if warning:
+            logger.warning("%s", warning)
+    return rows
 
 
 def _clamp_oi_start_ms(start_ms: int | None, end_ms: int | None) -> int | None:
@@ -287,6 +421,7 @@ def fetch_open_interest_history(
     start_ms: int | None = None,
     end_ms: int | None = None,
     fetcher: BinanceFetcherFn = default_http_fetcher,
+    max_pages: int = MAX_OI_PAGES,
 ) -> list[dict[str, Any]]:
     p = period.strip().lower()
     if p not in OI_PERIODS:
@@ -294,7 +429,9 @@ def fetch_open_interest_history(
     sym = futures_symbol(ticker)
     all_rows: list[dict[str, Any]] = []
     cursor_start = _clamp_oi_start_ms(start_ms, end_ms)
-    while True:
+    last_page_full = False
+    window_exhausted = False
+    for page in range(max_pages):
         params: dict[str, Any] = {
             "symbol": sym,
             "period": p,
@@ -314,21 +451,39 @@ def fetch_open_interest_history(
                 raise
         if not isinstance(data, list):
             raise CollectorError(f"unexpected OI payload: {type(data).__name__}")
+        last_page_full = len(data) >= OI_PAGE_LIMIT
         if not data:
+            window_exhausted = True
             break
         batch = parse_oi_rows(data)
         if not batch:
+            window_exhausted = True
             break
         all_rows.extend(batch)
-        if len(data) < OI_PAGE_LIMIT:
+        if not last_page_full:
+            window_exhausted = True
             break
         newest_ts = max(int(r["timestamp"]) for r in batch)
         next_start = newest_ts * 1000 + 1
         if cursor_start is not None and next_start <= cursor_start:
             break
+        if end_ms is not None and next_start > end_ms:
+            window_exhausted = True
+            break
         cursor_start = next_start
-        time.sleep(BINANCE_SLEEP_BETWEEN_PAGES_SECONDS)
-    return parse_oi_rows(all_rows)
+        if page + 1 < max_pages:
+            time.sleep(BINANCE_SLEEP_BETWEEN_PAGES_SECONDS)
+    rows = parse_oi_rows(all_rows)
+    if not window_exhausted:
+        warning = pagination_truncation_warning(
+            len(rows),
+            page_limit=OI_PAGE_LIMIT,
+            last_page_full=last_page_full,
+            label=f"open_interest {sym} {p}",
+        )
+        if warning:
+            logger.warning("%s", warning)
+    return rows
 
 
 def ms_from_unix(ts: int) -> int:

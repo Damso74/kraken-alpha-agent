@@ -63,3 +63,70 @@ def test_precompute_states_length() -> None:
     oi = [{"timestamp": int(c["timestamp"]), "open_interest": 1000.0} for c in candles[::3]]
     states = precompute_crowding_states(candles, fund, oi)
     assert len(states) == len(candles)
+
+
+# --- Defaut #12: forward-fill non borne et z-score nul silencieux -----------
+
+
+def _funding_rows(candles: list[dict], upto: int, constant: bool = False) -> list[dict]:
+    """Funding toutes les 8h (une bougie 4h sur deux), jusqu'a l'index upto."""
+    rows = []
+    for i, c in enumerate(candles[:upto:2]):
+        rate = 0.0001 if constant else 0.0001 * (1 + (i % 5))
+        rows.append({"timestamp": int(c["timestamp"]), "funding_rate": rate})
+    return rows
+
+
+def test_funding_forward_fill_stops_at_staleness_bound() -> None:
+    """Au-dela de la borne, la valeur est None et la raison dit 'no_data'."""
+    candles = _candles(140)
+    fund = _funding_rows(candles, upto=80)
+
+    states = precompute_crowding_states(candles, fund, [])
+
+    last = states[-1]
+    assert last.funding_z is None
+    assert last.reason.startswith("no_derivatives_data")
+    # Juste apres la fin du funding, la derniere valeur reste utilisable.
+    assert states[79].funding_z is not None
+
+
+def test_constant_funding_series_is_flat_not_neutral() -> None:
+    """Serie constante: z=0.0 mais raison distincte de 'neutral' et de 'no_data'."""
+    candles = _candles(80)
+    fund = _funding_rows(candles, upto=80, constant=True)
+
+    states = precompute_crowding_states(candles, fund, [])
+
+    last = states[-1]
+    assert last.funding_z == 0.0
+    assert last.reason.startswith("flat_series")
+    assert not last.reason.startswith("no_derivatives_data")
+
+
+def test_varying_funding_and_oi_keep_data_driven_reason() -> None:
+    """Serie normale: comportement inchange, aucune raison degradee."""
+    candles = _candles(120)
+    fund = _funding_rows(candles, upto=120)
+    oi = [
+        {"timestamp": int(c["timestamp"]), "open_interest": 1000.0 + (i % 11) * 3.0}
+        for i, c in enumerate(candles)
+    ]
+
+    states = precompute_crowding_states(candles, fund, oi)
+
+    last = states[-1]
+    assert last.funding_z is not None
+    assert last.oi_z is not None
+    assert not last.reason.startswith(("no_derivatives_data", "partial_data", "flat_series"))
+    assert last.filter == classify_crowding(last.funding_z, last.oi_z).filter
+
+
+def test_classify_crowding_distinguishes_missing_from_zero() -> None:
+    missing = classify_crowding(None, None)
+    zero = classify_crowding(0.0, 0.0)
+    flat = classify_crowding(0.0, 0.0, funding_status="flat", oi_status="flat")
+    assert missing.reason.startswith("no_derivatives_data")
+    assert zero.reason == "neutral"
+    assert flat.reason.startswith("flat_series")
+    assert len({missing.reason, zero.reason, flat.reason}) == 3

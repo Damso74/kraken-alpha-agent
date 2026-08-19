@@ -8,8 +8,8 @@
 ## TL;DR (1 paragraphe)
 
 Un signal ne quitte jamais le stade « recherche read-only » tant qu'il
-n'a pas passé, **dans l'ordre**, (1) puissance minimale (≥ 5
-événements), (2) placebo empirique + Benjamini–Hochberg FDR à 5 %,
+n'a pas passé, **dans l'ordre**, (1) puissance minimale (**≥ 30
+événements**), (2) placebo empirique + Benjamini–Hochberg FDR à 5 %,
 (3) robustesse sans dépendance à un seul trade, (4) expectancy nette
 **après** frais Kraken conservateurs (0,25 % maker / 0,40 % taker),
 (5) confirmation out-of-sample sur une fenêtre jamais vue, (6) turnover
@@ -19,6 +19,12 @@ live** sans le triple opt-in existant (`TRADING_MODE=live`,
 actuels couvrent les étapes (1)–(2) automatiquement via
 `compute_verdict` ; les étapes (3)–(6) restent des barres manuelles
 documentées ici.
+
+> **Changement Phase 30.** Le plancher de puissance G0 passe de **5** à
+> **30** événements, et le pipeline dérivés (Phase 26) — jusqu'ici sans
+> aucun test d'inférence — est soumis aux mêmes gates. Voir
+> [« Plancher de puissance »](#pourquoi-30-et-pas-5) et
+> [« G0–G3 sur le pipeline dérivés »](#g0g3-sur-le-pipeline-dérivés-phase-26).
 
 ## Philosophie
 
@@ -67,12 +73,44 @@ un seuil plus permissif » sans reformuler l'hypothèse *a priori*.
 
 | Critère | Seuil | Où c'est appliqué |
 |---------|-------|------------------|
-| Nombre d'événements alignés | **≥ 5** | `_event_study_common.compute_verdict` ; warning explicite si `< 5` |
+| Nombre d'événements alignés | **≥ 30** | `derivatives_event_study.MIN_EVENTS_FOR_INFERENCE` (appliqué) ; `_event_study_common.compute_verdict` (`min_events=5`, **à réhausser**) |
 | Couverture cache / historique | Fenêtre `[start, end]` complète | Collectors ; gas history ≥ `lookback + 1` jours pour ETH gas |
 | Événements OOB | Audit `events_skipped_oob` | `EventStudyResult` — si élevé, élargir `--days` ou le cache OHLC |
 
-**Rejet immédiat** si `< 5` événements : verdict automatique
-`weak evidence` (puissance négligeable).
+**Rejet immédiat** si `< 30` événements : verdict automatique
+`weak evidence` (puissance négligeable). Le rejet est imputé à la couche
+**puissance**, jamais à l'inférence : sous le plancher **aucune p-value
+n'est calculée**, parce qu'un test qu'on n'a pas les moyens de conduire
+n'est pas un test qui échoue.
+
+### Pourquoi 30, et pas 5
+
+Le plancher historique de 5 événements était une garde anti-division par
+zéro déguisée en critère statistique. Trois raisons de le relever :
+
+1. **Erreur-type.** Sur des rendements crypto 4h dont l'écart-type
+   par événement est de l'ordre de 2–3 pp, l'erreur-type de la moyenne
+   à n=9 vaut ~1 pp — soit l'ordre de grandeur des « excès » que le
+   pipeline dérivés publiait comme signaux (0,15 à 1,5 pp). L'intervalle
+   de confiance couvre le zéro et son opposé. À n=30 l'erreur-type tombe
+   sous 0,55 pp, ce qui rend le plancher économique G3 (0,80 pp)
+   discriminant plutôt que décoratif.
+2. **Bootstrap.** La p-value empirique est lissée en `+1/(n_placebos+1)` ;
+   sa résolution ne dépend pas de n, mais la statistique observée qu'on
+   lui compare, elle, est instable sous 30 observations. Un placebo qui
+   « bat » l'observé une fois sur vingt à n=9 ne dit rien.
+3. **Cohérence interne.** Les red teams du dépôt exigent n ≥ 30 à 40 sur
+   les études équivalentes ; laisser la politique écrite à 5 créait un
+   chemin de promotion plus permissif que la revue humaine. 30 est la
+   **borne basse** retenue : un signal à 30–40 événements reste
+   `weak evidence` dès qu'une autre couche a le moindre doute.
+
+> **Dette connue.** `scripts/_event_study_common.compute_verdict`,
+> `src/research/concentration.py` et `src/research/tradeability.py`
+> utilisent encore `min_events=5`. Ces appelants sont **non conformes**
+> à la présente politique et doivent être alignés sur 30 ; d'ici là,
+> tout verdict `supported` produit avec `5 ≤ n < 30` doit être relu
+> comme `weak evidence`.
 
 Critères additionnels par signal (docstrings `src/signals/`) :
 
@@ -121,6 +159,102 @@ dans les scripts par défaut, utiles en analyse manuelle) :
 > **Attention.** `supported` ≠ « tradeable ». BH sur 6 tests corrélés
 > reste un filtre de dépistage univarié sur retours bruts sans frais.
 
+### Direction pré-enregistrée (obligatoire)
+
+Un test d'excès de rendement n'a de sens que **signé**. La direction
+attendue (`long` / `short`) doit être fixée **avant** de regarder le
+résultat, et un excès de signe opposé est un **rejet**, pas une preuve
+plus faible.
+
+| Cas | Décision |
+|-----|----------|
+| Direction pré-enregistrée, excès de même signe | Continuer vers l'inférence |
+| Direction pré-enregistrée, excès de signe opposé | **Rejet** (couche `direction`) — le signal a produit l'inverse de ce qui était prédit |
+| Direction **non** pré-enregistrée | **Rejet** (couche `direction`), avec la raison explicite — pas de p-value repêchée en two-sided pour justifier un overlay |
+
+Conséquence directe : un filtre en **valeur absolue** sur l'excès
+(`abs(excess) >= seuil`) est interdit. C'était exactement le défaut du
+pipeline dérivés avant la Phase 30 (voir ci-dessous), où un excès de
+−1,53 pp comptait comme preuve favorable.
+
+Un détecteur symétrique (qui déclenche sur les deux queues d'une
+distribution : `|z| >= 2`, percentile `<=10 %` **ou** `>=90 %`) ne peut
+pas porter de direction unique. Pour le rendre testable il faut le
+**scinder** en deux signaux pré-enregistrés séparément, chacun avec sa
+propre direction ; tant que ce n'est pas fait, il reste rejeté en
+`direction`.
+
+---
+
+## G0–G3 sur le pipeline dérivés (Phase 26)
+
+Module : [`src/bot/derivatives_event_study.py`](../src/bot/derivatives_event_study.py).
+Sorties : `reports/phase26_event_studies/{summary.json,results.csv}`.
+
+### État avant Phase 30 (non conforme)
+
+Ce pipeline vivait **hors** de la présente politique : aucune p-value,
+aucun placebo, aucune correction multi-tests, aucun import de
+`src/research/placebo.py` ni de `src/research/event_study.py`. Son
+unique filtre était `abs(excess_mean_pct) >= 0.15` — un seuil ni
+pré-enregistré, ni relié à un coût, ni signé. Résultat : `non_trivial_signals`
+comptait des cellules à excès négatif sur 9 à 11 observations, et
+`proceed_to_overlay` rendait `true` sur **4 bundles sur 4**.
+
+### État Phase 30 (conforme)
+
+Les mêmes gates que G0–G3, appliqués en **court-circuit** sur chaque
+cellule `(signal, horizon)` :
+
+| Couche | Règle | Constante |
+|--------|-------|-----------|
+| `power` | `n >= 30` événements exploitables ; **aucune p-value calculée** en dessous | `MIN_EVENTS_FOR_INFERENCE` |
+| `direction` | direction pré-enregistrée dans `EventStudySpec.expected_direction`, et excès du bon signe | `expected_direction` / `direction_note` |
+| `inference` | p-value bootstrap par ré-ancrage aléatoire (`run_placebo_bootstrap`, 200 réplicats seedés) puis **Benjamini–Hochberg à α = 0,05 sur la famille du bundle entier** (jusqu'à 18 tests : 6 signaux × 3 horizons) | `DEFAULT_N_PLACEBOS`, `DEFAULT_FDR_ALPHA` |
+| `economic` | `abs(excess) >= 0,80 pp`, le round-trip taker G3 — et non 0,15 pp | `ECONOMIC_EXCESS_FLOOR_PCT` |
+
+La famille BH est le **bundle entier**, pas un signal isolé : les 18
+tests sont menés simultanément sur le même actif et la même série de
+prix ; corriger signal par signal reviendrait à ne pas corriger.
+
+Le verdict n'est plus un booléen opaque. `classify_event_study_verdict_detail`
+et chaque cellule de `forward_stats` exposent :
+
+- `gate_rejected_by` — la **première** couche qui rejette (`power` /
+  `direction` / `inference` / `economic`) ;
+- `gate_reason` — la raison chiffrée (`n=9 < power floor 30`, `excess
+  -1.5251 pp contradicts the pre-registered long direction`, …) ;
+- `gate_layers` — l'état de chaque couche (`pass` / `fail` / `n/a`,
+  `n/a` signifiant « non évaluée, court-circuit amont ») ;
+- `rejection_breakdown` au niveau du bundle — le compte de rejets par
+  couche.
+
+### Direction : aucun signal Phase 26 n'est éligible aujourd'hui
+
+Les six détecteurs actuels sont **tous symétriques** (`funding_extreme`
+sur les deux queues, `funding_zscore` sur `|z|`, `funding_oi_disagreement`
+sur les deux polarités) ou portent une hypothèse de **volatilité** et non
+de direction (`oi_expansion_flat_price`, `oi_zscore_range_compress`).
+Leur `expected_direction` vaut donc `None` et le pipeline le déclare
+explicitement au lieu de laisser passer n'importe quel signe. Les
+débloquer suppose de les scinder et de pré-enregistrer chaque moitié —
+travail de recherche, pas de plomberie.
+
+### Effet sur les verdicts publiés
+
+En rejouant les gates déterministes (`power`, `direction`) sur
+`reports/phase26_event_studies/summary.json` :
+
+| Bundle | Publié | Après gates |
+|--------|--------|-------------|
+| BTC 4h | `non_trivial=4`, `proceed=true`, `overlay_only` | `non_trivial=0`, `proceed=false`, **`weak`** (6 rejets `power`, 6 `direction`) |
+| BTC 1d | `non_trivial=2`, `proceed=true`, `blocked_data` | `non_trivial=0`, `proceed=false`, `blocked_data` (inchangé : `oi_rows=30 < 100`) |
+| ETH 4h | `non_trivial=3`, `proceed=true`, `overlay_only` | `non_trivial=0`, `proceed=false`, **`weak`** (6 rejets `power`, 6 `direction`) |
+| ETH 1d | `non_trivial=2`, `proceed=true`, `blocked_data` | `non_trivial=0`, `proceed=false`, `blocked_data` (inchangé) |
+
+Aucune couche `inference` ni `economic` n'est atteinte : tout est rejeté
+en amont. C'est le résultat attendu — **rejeter = succès**.
+
 ---
 
 ## G2 — Robustesse
@@ -163,7 +297,7 @@ appeler `classify_concentration_risk(contributions, event_months=…)` ou
 
 | Règle | Seuil | Verdict si échec |
 |-------|-------|------------------|
-| Puissance (aligné G0) | **< 5** événements | `insufficient_evidence` — ne pas analyser la concentration |
+| Puissance (aligné G0) | **< 5** événements dans le code ; **< 30** selon la présente politique (dette listée en G0) | `insufficient_evidence` — ne pas analyser la concentration |
 | Un seul événement | part **> 20 %** de `sum(abs(·))` | `high_concentration_risk` |
 | Top 3 événements | part combinée **> 50 %** | `high_concentration_risk` |
 | Un mois calendaire | part **> 40 %** | `high_concentration_risk` |
@@ -260,7 +394,8 @@ Re-vérification ceinture-et-bretelles dans `src/execution.py` mode
 
 | Gate | Échec → |
 |------|---------|
-| G0 `< 5` events | `weak evidence` — stop |
+| G0 `< 30` events | `weak evidence` — stop, rejet imputé à **puissance** |
+| G1 direction non pré-enregistrée ou signe contraire | `weak evidence` — stop, rejet imputé à **direction** |
 | G1 pas de rejet BH, p ≥ 0.05 | `not supported, move on` — **succès** |
 | G1 `supported` mais G2 / G2b fail | Rejet manuel — documenter |
 | G3 expectancy nette ≤ 0 (frais taker) | Rejet — edge illusoire |
@@ -285,7 +420,7 @@ Re-vérification ceinture-et-bretelles dans `src/execution.py` mode
 - [`ALTERNATIVE_ALPHA_PIPELINE.md`](ALTERNATIVE_ALPHA_PIPELINE.md) — architecture et scripts
 - [`DATA_SOURCES.md`](DATA_SOURCES.md) — limites des feeds (gas history, sparse incidents)
 - [`METHODOLOGY.md`](METHODOLOGY.md) — walk-forward OOS du moteur principal
-- Code : [`scripts/_event_study_common.py`](../scripts/_event_study_common.py) (`compute_verdict`), [`src/research/placebo.py`](../src/research/placebo.py), [`src/research/concentration.py`](../src/research/concentration.py), [`src/risk.py`](../src/risk.py) (triple opt-in)
+- Code : [`scripts/_event_study_common.py`](../scripts/_event_study_common.py) (`compute_verdict`), [`src/research/placebo.py`](../src/research/placebo.py), [`src/research/concentration.py`](../src/research/concentration.py), [`src/bot/derivatives_event_study.py`](../src/bot/derivatives_event_study.py) (gates dérivés Phase 30), [`src/risk.py`](../src/risk.py) (triple opt-in)
 
 ---
 
