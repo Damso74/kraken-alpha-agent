@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   BarChart3,
+  FileSearch,
   GitMerge,
   LayoutDashboard,
   ListChecks,
@@ -135,6 +136,13 @@ function SidebarContent({
       </nav>
 
       <div className="border-t border-[var(--border)] px-4 py-4 flex flex-col gap-3">
+        <a
+          href="/audit"
+          className="flex items-center gap-2.5 rounded-md border border-[color:var(--success)]/20 bg-[color:var(--success)]/[0.05] px-2.5 py-2 text-[12px] font-medium text-[var(--accent-emerald)] transition-colors hover:bg-[color:var(--success)]/[0.1]"
+        >
+          <FileSearch className="h-3.5 w-3.5" strokeWidth={1.9} />
+          <span>Faire auditer une stratégie</span>
+        </a>
         <a
           href="https://github.com/Damso74/kraken-alpha-agent"
           target="_blank"
