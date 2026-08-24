@@ -31,6 +31,7 @@ const REPO_URL = "https://github.com/Damso74/kraken-alpha-agent";
 const VERDICT_URL = `${REPO_URL}/blob/phase30/observation-ops-ux/reports/PHASE31_FINAL_VERDICT.md`;
 const CONTACT_URL = "https://www.linkedin.com/in/damien-credoz/";
 const SAMPLE_REPORT_URL = "/alpha-reality-check-sample-report.pdf";
+const AUDIT_HOME = process.env.SITE_MODE === "audit" ? "/" : "/audit";
 
 const proof = [
   { value: "1 058", label: "tests automatisés", detail: "Suite déterministe et CI verte" },
@@ -78,6 +79,20 @@ const offers = [
   },
 ];
 
+const processSteps = [
+  { step: "01", title: "Cadrage privé", text: "20 minutes pour fixer la décision, les données disponibles et les critères d'arrêt." },
+  { step: "02", title: "Périmètre écrit", text: "Vous validez les contrôles, le prix, le délai et les exclusions avant tout transfert." },
+  { step: "03", title: "Audit reproductible", text: "Je rejoue, falsifie et documente. Aucun paramètre n'est retouché pour sauver le résultat." },
+  { step: "04", title: "Verdict exploitable", text: "Rapport, priorités et restitution : continuer, corriger ou arrêter avec des raisons vérifiables." },
+];
+
+const faqs = [
+  { question: "Que faut-il fournir ?", answer: "Au minimum un export de trades ou un rapport de backtest. Le code et les données sources augmentent le niveau d'assurance, mais aucune clé API n'est acceptée." },
+  { question: "Pouvez-vous garantir qu'une stratégie gagnera ?", answer: "Non. L'audit mesure la solidité de la preuve disponible et les risques d'illusion. Il ne prédit pas les marchés et ne garantit aucun rendement." },
+  { question: "Et si le verdict est négatif ?", answer: "Le rapport explique précisément ce qui casse, ce qui reste valable et les conditions minimales d'un nouveau test. Arrêter peut être le meilleur résultat économique." },
+  { question: "Mon code restera-t-il confidentiel ?", answer: "Oui : échange privé, NDA possible, environnement isolé, aucune réutilisation pour entraîner un modèle et suppression sous 30 jours sauf accord écrit contraire." },
+];
+
 export default function AuditPage() {
   return (
     <main lang="fr" className="min-h-screen overflow-hidden bg-[#070807] text-[#f3f4ef]">
@@ -85,7 +100,7 @@ export default function AuditPage() {
       <div aria-hidden className="pointer-events-none fixed left-1/2 top-[-18rem] h-[34rem] w-[52rem] -translate-x-1/2 rounded-full bg-emerald-500/[0.08] blur-[120px]" />
 
       <nav className="relative z-10 mx-auto flex max-w-7xl items-center justify-between px-5 py-5 sm:px-8 lg:px-10">
-        <Link href="/audit" className="flex items-center gap-3" aria-label="Alpha Reality Check — accueil">
+        <Link href={AUDIT_HOME} className="flex items-center gap-3" aria-label="Alpha Reality Check — accueil">
           <span className="grid h-9 w-9 place-items-center rounded-lg border border-emerald-300/25 bg-emerald-300/10 text-emerald-300">
             <FileSearch className="h-4.5 w-4.5" />
           </span>
@@ -95,9 +110,8 @@ export default function AuditPage() {
           </span>
         </Link>
         <div className="flex items-center gap-2">
-          <Link href="/" className="hidden rounded-lg px-3 py-2 text-xs text-zinc-400 transition hover:bg-white/5 hover:text-white sm:inline-flex">
-            Voir le cas Kraken
-          </Link>
+          <a href="#methode" className="hidden rounded-lg px-3 py-2 text-xs text-zinc-400 transition hover:bg-white/5 hover:text-white sm:inline-flex">Méthode</a>
+          <a href={SAMPLE_REPORT_URL} target="_blank" rel="noreferrer" className="hidden rounded-lg px-3 py-2 text-xs text-zinc-400 transition hover:bg-white/5 hover:text-white md:inline-flex">Rapport exemple</a>
           <a href={CONTACT_URL} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-emerald-300 px-3.5 py-2 text-xs font-semibold text-emerald-950 transition hover:bg-emerald-200">
             Écrire en privé <ArrowRight className="h-3.5 w-3.5" />
           </a>
@@ -181,7 +195,7 @@ export default function AuditPage() {
         </div>
       </section>
 
-      <section className="relative mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:px-10 lg:py-28">
+      <section id="methode" className="relative mx-auto max-w-7xl scroll-mt-8 px-5 py-20 sm:px-8 lg:px-10 lg:py-28">
         <div className="grid gap-12 lg:grid-cols-[0.85fr_1.15fr]">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-300">Ce que vous achetez</p>
@@ -196,6 +210,23 @@ export default function AuditPage() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section className="relative mx-auto max-w-7xl px-5 pb-24 sm:px-8 lg:px-10 lg:pb-32">
+        <div className="mb-9 max-w-3xl">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-300">Déroulé</p>
+          <h2 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">Simple à acheter. Difficile à biaiser.</h2>
+          <p className="mt-4 text-sm leading-7 text-zinc-400">La décision, le périmètre et les critères d&apos;arrêt sont fixés avant l&apos;analyse. Le rapport montre aussi les échecs, les limites et les contrôles non réalisables.</p>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+          {processSteps.map((item) => (
+            <article key={item.step} className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5">
+              <span className="text-[10px] font-semibold tracking-[0.18em] text-emerald-300">{item.step}</span>
+              <h3 className="mt-5 text-sm font-semibold text-zinc-100">{item.title}</h3>
+              <p className="mt-3 text-xs leading-5 text-zinc-500">{item.text}</p>
+            </article>
+          ))}
         </div>
       </section>
 
@@ -224,6 +255,23 @@ export default function AuditPage() {
         </div>
       </section>
 
+      <section className="relative mx-auto max-w-7xl px-5 pb-24 sm:px-8 lg:px-10 lg:pb-32">
+        <div className="grid gap-10 lg:grid-cols-[0.7fr_1.3fr]">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-300">Questions fréquentes</p>
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight">Avant de confier votre backtest.</h2>
+          </div>
+          <div className="divide-y divide-white/[0.08] border-y border-white/[0.08]">
+            {faqs.map((item) => (
+              <article key={item.question} className="py-5 first:pt-0 lg:first:pt-5">
+                <h3 className="text-sm font-semibold text-zinc-100">{item.question}</h3>
+                <p className="mt-2 text-xs leading-6 text-zinc-500">{item.answer}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="relative border-t border-white/[0.07] bg-[#0c0e0b]">
         <div className="mx-auto grid max-w-7xl gap-10 px-5 py-16 sm:px-8 lg:grid-cols-[1fr_auto] lg:items-center lg:px-10 lg:py-20">
           <div>
@@ -237,7 +285,7 @@ export default function AuditPage() {
 
       <footer className="relative mx-auto flex max-w-7xl flex-col gap-4 px-5 py-8 text-[11px] text-zinc-600 sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-10">
         <span>© 2026 Alpha Reality Check · Damien Credoz</span>
-        <div className="flex items-center gap-4"><a href={REPO_URL} target="_blank" rel="noreferrer" className="transition hover:text-zinc-300">Preuve publique</a><Link href="/" className="transition hover:text-zinc-300">Soumission Kraken</Link></div>
+        <div className="flex flex-wrap items-center gap-4"><a href={SAMPLE_REPORT_URL} target="_blank" rel="noreferrer" className="transition hover:text-zinc-300">Rapport exemple</a><a href={VERDICT_URL} target="_blank" rel="noreferrer" className="transition hover:text-zinc-300">Preuve technique</a><a href={CONTACT_URL} target="_blank" rel="noreferrer" className="transition hover:text-zinc-300">LinkedIn</a></div>
       </footer>
     </main>
   );

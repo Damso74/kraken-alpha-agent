@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -12,6 +13,7 @@ import {
   Sparkles,
 } from "lucide-react";
 
+import AuditPage, { metadata as auditMetadata } from "@/app/audit/page";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { GithubIcon } from "@/components/GithubIcon";
 import { EquityChart } from "@/components/EquityChart";
@@ -26,7 +28,27 @@ import { data, data30d, fmtPct, fmtUsd, topTradesByAbsPnl, fmtDate } from "@/lib
 
 const REPO_URL_REAL = "https://github.com/Damso74/kraken-alpha-agent";
 
+export function generateMetadata(): Metadata {
+  if (process.env.SITE_MODE === "audit") {
+    return {
+      ...auditMetadata,
+      metadataBase: new URL("https://alpha-reality-check.vercel.app"),
+      alternates: { canonical: "/" },
+    };
+  }
+
+  return {
+    title: "Kraken Alpha Agent — Hackathon Submission",
+    description:
+      "Production-grade trading agent for the lablab AI Agent Olympics — Kraken Trading Performance track.",
+  };
+}
+
 export default function Page() {
+  if (process.env.SITE_MODE === "audit") {
+    return <AuditPage />;
+  }
+
   const { summary, equity_curve, trades, period, universe, by_symbol, tests, rejections } = data;
   const positive = summary.total_pnl_usd >= 0;
   const topTrades = topTradesByAbsPnl(trades, 10);
