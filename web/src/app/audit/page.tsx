@@ -29,11 +29,8 @@ export const metadata: Metadata = {
 
 const REPO_URL = "https://github.com/Damso74/kraken-alpha-agent";
 const VERDICT_URL = `${REPO_URL}/blob/phase30/observation-ops-ux/reports/PHASE31_FINAL_VERDICT.md`;
-const CONTACT_URL = `${REPO_URL}/issues/new?title=${encodeURIComponent(
-  "Audit de stratégie — prise de contact",
-)}&body=${encodeURIComponent(
-  "Bonjour, je souhaite échanger sur un audit de stratégie.\n\nMarché / actifs :\nType de stratégie :\nÉtat du backtest :\nÉchéance souhaitée :\n\nJe ne joins aucun secret, identifiant ni donnée confidentielle dans cette issue publique.",
-)}`;
+const CONTACT_URL = "https://www.linkedin.com/in/damien-credoz/";
+const SAMPLE_REPORT_URL = "/alpha-reality-check-sample-report.pdf";
 
 const proof = [
   { value: "1 058", label: "tests automatisés", detail: "Suite déterministe et CI verte" },
@@ -54,16 +51,16 @@ const deliverables = [
 const offers = [
   {
     name: "Signal Check",
-    price: "290 € HT",
+    price: "190 € HT",
     lead: "3 jours ouvrés",
-    summary: "Pour une idée ou un backtest déjà existant.",
+    summary: "Tarif fondateur limité aux trois premières missions, puis 290 € HT.",
     items: ["1 stratégie", "1 marché", "Contrôle des biais majeurs", "Note de verdict 5–8 pages"],
   },
   {
     name: "Research Audit",
-    price: "990 € HT",
+    price: "790 € HT",
     lead: "7–10 jours",
-    summary: "Pour décider avant d'engager du capital ou du temps d'équipe.",
+    summary: "Tarif de lancement, puis 990 € HT après les trois audits fondateurs.",
     items: [
       "Reproduction complète",
       "Walk-forward + stress tests",
@@ -102,7 +99,7 @@ export default function AuditPage() {
             Voir le cas Kraken
           </Link>
           <a href={CONTACT_URL} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-emerald-300 px-3.5 py-2 text-xs font-semibold text-emerald-950 transition hover:bg-emerald-200">
-            Demander un audit <ArrowRight className="h-3.5 w-3.5" />
+            Écrire en privé <ArrowRight className="h-3.5 w-3.5" />
           </a>
         </div>
       </nav>
@@ -120,14 +117,14 @@ export default function AuditPage() {
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <a href={CONTACT_URL} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-300 px-5 py-3.5 text-sm font-semibold text-emerald-950 transition hover:-translate-y-0.5 hover:bg-emerald-200">
-              Décrire ma stratégie <ArrowRight className="h-4 w-4" />
+              Demander un cadrage privé <ArrowRight className="h-4 w-4" />
             </a>
-            <a href={VERDICT_URL} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-5 py-3.5 text-sm font-medium text-zinc-200 transition hover:border-white/20 hover:bg-white/[0.06]">
-              Lire un audit réel <ExternalLink className="h-4 w-4" />
+            <a href={SAMPLE_REPORT_URL} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-5 py-3.5 text-sm font-medium text-zinc-200 transition hover:border-white/20 hover:bg-white/[0.06]">
+              Télécharger le rapport exemple <ExternalLink className="h-4 w-4" />
             </a>
           </div>
           <p className="mt-4 max-w-xl text-[11px] leading-5 text-zinc-600">
-            Premier contact via GitHub, sans données sensibles. Aucun secret, identifiant d&apos;exchange ou code privé ne doit être publié.
+            Premier échange par message privé LinkedIn. Aucun secret, identifiant d&apos;exchange ou code privé n&apos;est demandé au cadrage.
           </p>
         </div>
 
@@ -154,6 +151,21 @@ export default function AuditPage() {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="relative mx-auto max-w-7xl px-5 pb-20 sm:px-8 lg:px-10 lg:pb-28">
+        <div className="grid gap-4 rounded-2xl border border-white/[0.08] bg-white/[0.025] p-6 sm:grid-cols-[1fr_auto] sm:items-center sm:p-8">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-300">Confidentialité par défaut</p>
+            <h2 className="mt-3 text-2xl font-semibold tracking-tight">Votre logique reste privée.</h2>
+            <p className="mt-3 max-w-3xl text-xs leading-6 text-zinc-400">
+              NDA possible avant transfert. Les clés API et identifiants d&apos;exchange sont refusés. Les fichiers de mission sont isolés, non réutilisés pour entraîner un modèle et supprimés au plus tard 30 jours après la restitution, sauf demande écrite contraire.
+            </p>
+          </div>
+          <a href={VERDICT_URL} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 text-xs font-semibold text-zinc-100 transition hover:bg-white/[0.08]">
+            Vérifier les sources publiques <ExternalLink className="h-3.5 w-3.5" />
+          </a>
         </div>
       </section>
 
