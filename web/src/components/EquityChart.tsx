@@ -74,7 +74,13 @@ export function EquityChart({
           : { width: "100%", height: "100%", minHeight: 180 }
       }
     >
-      <ResponsiveContainer width="100%" height="100%" minHeight={180}>
+      <ResponsiveContainer
+        width="100%"
+        height="100%"
+        minWidth={0}
+        minHeight={180}
+        initialDimension={{ width: 800, height: height ?? 280 }}
+      >
         <AreaChart data={data} margin={{ top: 16, right: 12, left: 4, bottom: 0 }}>
           <defs>
             <linearGradient id="equityFillUp" x1="0" y1="0" x2="0" y2="1">
