@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: ["master", "phase30/**", "phase**"]
+    branches: ["master", "phase30/**", "phase**", "codex/commercial-audit"]
   pull_request:
-    branches: ["master", "phase30/**", "phase**"]
+    branches: ["master", "phase30/**", "phase**", "codex/commercial-audit"]
 
 jobs:
   test:
