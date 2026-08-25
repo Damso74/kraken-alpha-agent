@@ -98,3 +98,14 @@ Après **20 approches contextualisées sans conversation qualifiée**, arrêter 
 ## Prochaine action externe
 
 La première action est la publication de la réponse française ci-dessus. Elle engage publiquement le nom du fondateur et doit donc être validée juste avant envoi. Le reste du sprint peut être préparé localement sans action externe.
+
+## Repli si Reddit bloque le réseau
+
+Le 2026-08-25, Reddit a renvoyé un blocage de sécurité réseau depuis l'environnement d'exécution. Ne pas contourner ce contrôle et ne pas considérer la réponse comme publiée.
+
+Deux options propres restent disponibles :
+
+1. publier manuellement la réponse préparée depuis une session Reddit autorisée ;
+2. publier le retour d'expérience fondateur sur LinkedIn à partir de [`LINKEDIN_LAUNCH_POST.md`](LINKEDIN_LAUNCH_POST.md), puis qualifier uniquement les personnes qui répondent ou écrivent en privé.
+
+Le canal LinkedIn sert à créer de la preuve et des conversations entrantes. Il ne remplace pas les réponses ciblées à une demande explicite et ne doit pas devenir une campagne de messages automatisés.
