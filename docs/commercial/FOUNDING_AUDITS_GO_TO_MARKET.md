@@ -1,14 +1,16 @@
 # Alpha Reality Check - plan des trois audits fondateurs
 
 **Date :** 2026-08-25  
-**Statut :** prêt à prospecter, aucun message envoyé  
+**Statut :** prêt à prospecter, prospects publics revérifiés le 2026-08-25, aucun message envoyé
 **Objectif :** vendre trois audits payants avant de construire un SaaS
+
+**Plan d'exécution :** voir [`FOUNDER_SALES_SPRINT_14_DAYS.md`](FOUNDER_SALES_SPRINT_14_DAYS.md).
 
 ## Offre à vendre maintenant
 
 | Offre | Tarif fondateur | Après 3 missions | Délai | Preuve attendue |
 |---|---:|---:|---|---|
-| Signal Check | 190 EUR HT | 290 EUR HT | 3 jours ouvrés | note de verdict 5-8 pages |
+| Signal Check | 190 EUR HT | 290 EUR HT | 3 jours ouvrés | analyse des exports fournis, note de verdict 5-8 pages, sans reproduction du code |
 | Research Audit | 790 EUR HT | 990 EUR HT | 7-10 jours | reproduction, walk-forward, stress tests, restitution |
 | Team Review | 1 900 EUR HT | à confirmer | 2 semaines | jusqu'à 3 stratégies, revue code/exécution |
 
@@ -100,4 +102,3 @@ Après chaque mission, noter : temps passé, objections, fichiers réellement fo
 - Rapport exemple : `/alpha-reality-check-sample-report.pdf`
 - Preuve technique : `reports/PHASE31_FINAL_VERDICT.md`
 - Générateur du rapport : `scripts/build_alpha_reality_check_sample.py`
-

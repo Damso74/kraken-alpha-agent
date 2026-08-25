@@ -55,7 +55,12 @@ const offers = [
     price: "190 € HT",
     lead: "3 jours ouvrés",
     summary: "Tarif fondateur limité aux trois premières missions, puis 290 € HT.",
-    items: ["1 stratégie", "1 marché", "Contrôle des biais majeurs", "Note de verdict 5–8 pages"],
+    items: [
+      "1 stratégie, 1 marché",
+      "Analyse des exports fournis",
+      "Contrôle des biais majeurs",
+      "Note de verdict 5–8 pages, sans reproduction du code",
+    ],
   },
   {
     name: "Research Audit",
