@@ -47,6 +47,7 @@ quota additionnel.
 - répertoire de démarrage : le worktree ;
 - règle de chevauchement : ne pas démarrer une nouvelle instance ;
 - exécution sous un compte utilisateur non administrateur ;
+- le passage sur batterie ne tue pas une occurrence déjà lancée ;
 - redémarrage après échec autorisé, sans élévation de privilèges.
 
 Le dépôt fournit un installateur idempotent qui refuse d'écraser une tâche
@@ -66,6 +67,11 @@ données et le disque sans réinterroger Task Scheduler depuis son propre contex
 d'exécution ; une invocation manuelle du même script ajoute le contrôle exact
 des actions enregistrées. Les tâches utilisent le venv propre au worktree et le
 compte utilisateur courant avec un niveau d'exécution limité.
+
+Le plan d'alimentation Windows n'est pas modifié. Sur cette machine, la veille
+reste désactivée sur secteur mais intervient après dix minutes sur batterie ;
+une telle veille suspend la collecte et la période correspondante ne peut pas
+compter dans la couverture UTC de 99 %.
 
 Chaque session H-EXE publie aussi un `progress.json` atomique toutes les cinq
 secondes lorsqu'elle reçoit des événements normalisés. Ce fichier mutable est

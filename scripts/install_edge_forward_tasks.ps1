@@ -49,6 +49,8 @@ $exeTrigger = New-ScheduledTaskTrigger `
     -RepetitionDuration (New-TimeSpan -Days 3650)
 $exeSettings = New-ScheduledTaskSettingsSet `
     -MultipleInstances IgnoreNew `
+    -AllowStartIfOnBatteries `
+    -DontStopIfGoingOnBatteries `
     -StartWhenAvailable `
     -WakeToRun `
     -Hidden `
@@ -63,6 +65,8 @@ $wofAction = New-ScheduledTaskAction `
 $wofTrigger = New-ScheduledTaskTrigger -Daily -At '02:15'
 $wofSettings = New-ScheduledTaskSettingsSet `
     -MultipleInstances IgnoreNew `
+    -AllowStartIfOnBatteries `
+    -DontStopIfGoingOnBatteries `
     -StartWhenAvailable `
     -WakeToRun `
     -Hidden `
@@ -83,6 +87,8 @@ $healthTrigger = New-ScheduledTaskTrigger `
     -RepetitionDuration (New-TimeSpan -Days 3650)
 $healthSettings = New-ScheduledTaskSettingsSet `
     -MultipleInstances IgnoreNew `
+    -AllowStartIfOnBatteries `
+    -DontStopIfGoingOnBatteries `
     -StartWhenAvailable `
     -WakeToRun `
     -Hidden `
