@@ -128,7 +128,7 @@ scientifique pouvait laisser un ancien reçu apparemment valide. Avant le premie
 jour UTC complet, l'attestation commune H-EXE/H-WOF a donc été liée à tous les
 fichiers suivis et au workflow complet. L'état précédent a été préservé sous
 `archive/h_exe_pre_full_ci_scope_20260826T211811Z` et
-`archive/h_wof_pre_full_ci_scope_20260826T211811Z`. H-EXE repart définitivement
+`archive/h_wof_pre_full_ci_scope_20260826T211811Z`. H-EXE est alors reparti
 avec la session `20260826T211815.791884Z` et le reçu
 `28aba9fa3f8cbe170d9864c89c99ceec53ebfcc2db643540ad9ccfe2bb751542`.
 H-WOF a recapturé les deux snapshots du 26 août avec les nouveaux hashes. Deux
@@ -143,6 +143,23 @@ complètes, nettes et stressées positives, limites et kill switch vérifiés, p
 reste `REVIEW_REQUIRED`. L'état runtime courant est `shadow_collecting`, avec
 `authorizes_paper=false`, `authorizes_live=false` et
 `authorizes_orders=false`.
+
+Le contrôle du premier flux au scope final a découvert que l'implémentation
+H-EXE ne produisait aucun probe : sur plus de 700 000 événements, Kraken avait
+livré le book résultant 0 à 106 ms avant le message trade, alors que le moteur ne
+conservait que ce dernier book au timestamp égal ou postérieur. La règle gelée
+exigeait déjà le book strictement antérieur ; le moteur a donc été corrigé pour
+sélectionner le plus récent book causal parmi ceux déjà reçus. Le rejeu du même
+raw a alors produit 360 probes terminés sur les deux produits. L'état antérieur
+a été archivé sous
+`archive/h_exe_pre_causal_book_selection_20260826T213813Z` et la période courante
+repart avec `20260826T213814.978914Z`.
+
+Un canari public isolé de 70 secondes (`20260826T214008.546904Z`) a ensuite
+confirmé le chemin réel complet : session valide, 32 581 lignes raw, deux probes
+persistés, manifests sans erreur, rejeu raw exactement identique, zéro credential
+et zéro ordre. L'attestation finale couvre 387 fichiers et 1 180 tests, avec le
+scope `d3dd1604c0f5dad549bfc9dc46963486db82d6eb2aa50a799e23c025af0b97a7`.
 
 Un contrôle supplémentaire a détecté que la relance manuelle de cette session
 n'avait pas déplacé le déclencheur initial à `:38`. L'occurrence suivante aurait

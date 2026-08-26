@@ -21,6 +21,13 @@ et trade sont obligatoires. Une absence totale d'événement marché normalisé
 pendant 15 secondes est traitée comme une rupture récupérable, même si la socket
 TLS reste ouverte et continue d'émettre des trames de contrôle.
 
+Les feeds book et trade Kraken ne sont pas atomiques : le book résultant d'un
+trade arrive couramment avant le message trade, avec un timestamp exchange égal
+ou légèrement postérieur. Le moteur conserve donc une seconde de books déjà
+reçus et sélectionne, pour chaque trade, le book le plus récent dont le timestamp
+exchange est **strictement antérieur**. Il ne consulte jamais un book reçu après
+le trade et ne relâche pas la règle causale du pré-enregistrement.
+
 Les chemins runtime, ignorés par Git, sont :
 
 - `data/collector_cache/kraken_execution_toxicity_hexe001/technical/sessions/` ;
