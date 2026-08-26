@@ -45,6 +45,12 @@ La production corrigée a redémarré dans la session
 `20260826T190049.911965Z` ; son heartbeat comptait déjà 15 363 événements après
 vingt secondes.
 
+Un audit de capacité a ensuite mesuré 24,28 Gio/jour réservés sur le JSON non
+compressé contre 1,75 Gio/jour réellement écrit. Le quota aurait été atteint en
+4,12 jours. Avant le premier jour UTC complet, le budget a été corrigé pour
+réserver les blocs gzip exacts et le plafond physique porté à 200 Gio, soit
+environ 114 jours au débit observé pour un horizon maximal de 60 jours.
+
 La désinstallation est locale et réversible via
 `scripts/uninstall_edge_forward_tasks.ps1`.
 

@@ -36,10 +36,11 @@ Chaque ligne conserve : timestamp exchange en millisecondes, horloge murale
 locale en nanosecondes, horloge monotone locale, séquence, produit, type
 d'événement et délai de transport observé. Les données brutes sont des JSONL
 gzip append-only, rotés au changement de jour UTC ou à 256 Mio. Le plafond
-initial est 100 Gio **partagé globalement** par les raw, observations, résumés,
-journaux et digests de toutes les sessions sous l'output root. Il est recalculé
-sur l'existant au début de chaque occurrence et partagé par les deux writers ;
-un dépassement projeté provoque un arrêt fail-closed, jamais une suppression.
+actif est 200 Gio **physiques et partagés globalement** par les raw,
+observations, résumés, journaux et digests de toutes les sessions sous l'output
+root. Il est recalculé sur l'existant au début de chaque occurrence et partagé
+par les deux writers ; un dépassement projeté provoque un arrêt fail-closed,
+jamais une suppression.
 
 ### Amendement opérationnel pré-validation du 26 août 2026
 
@@ -54,6 +55,12 @@ modifié. Un heartbeat opérationnel atomique `progress.json`, rafraîchi au plu
 toutes les cinq secondes par les seuls événements normalisés, sert à contrôler
 la fraîcheur pendant que le segment gzip courant reste bufferisé. Il est mutable,
 exclu des données scientifiques et hashé dans le résumé final de la session.
+Le smoke final a également montré que le prototype débitait 24,28 Gio/jour de
+quota logique pour seulement 1,75 Gio/jour compressé, ce qui aurait arrêté la
+phase en 4,12 jours. Avant tout jour UTC complet, le writer a donc été remplacé
+par des membres gzip déterministes et bornés, réservés selon leur taille exacte,
+et le plafond physique porté à 200 Gio. Au débit mesuré, il couvre environ 114
+jours et dépasse l'horizon maximal de validation de 60 jours.
 
 ## Phases forward
 

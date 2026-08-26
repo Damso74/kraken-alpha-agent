@@ -32,11 +32,13 @@ Le verrou `.ops-once.lock` empêche deux occurrences simultanées. Un verrou res
 après un arrêt brutal doit être examiné manuellement ; le programme ne le force
 jamais ni ne tue un autre processus.
 
-Le plafond de 100 Gio est unique pour tout l'output root, toutes sessions et
-tous types d'artefacts confondus. Les writers raw et observations partagent le
-même budget en mémoire pendant une occurrence ; l'occurrence suivante recompte
-l'ensemble des fichiers déjà présents. Aucun writer ne dispose de son propre
-quota additionnel.
+Le plafond de 200 Gio physiques est unique pour tout l'output root, toutes
+sessions et tous types d'artefacts confondus. Les writers raw et observations
+partagent le même budget pendant une occurrence ; l'occurrence suivante
+recompte l'ensemble des fichiers déjà présents. Les lignes sont compressées en
+blocs gzip bornés avant réservation, de sorte que le quota comptabilise les
+octets réellement écrits. Aucun writer ne dispose de son propre quota
+additionnel.
 
 ## Task Scheduler — installation locale
 
@@ -60,7 +62,7 @@ existante sans option explicite :
 Il installe également la collecte quotidienne H-WOF-002 à 02:15 heure locale.
 Une troisième tâche `KrakenEdge-Forward-Health` vérifie toutes les quinze
 minutes les actions enregistrées, la fraîcheur du raw H-EXE et des snapshots
-WOF, ainsi qu'une réserve disque minimale de 125 Gio. Elle produit des digests
+WOF, ainsi qu'une réserve disque minimale de 250 Gio. Elle produit des digests
 JSON immuables sous `data/collector_cache/edge_forward_health/` et retourne un
 code non nul fail-closed en cas d'anomalie. L'exécution planifiée vérifie les
 données et le disque sans réinterroger Task Scheduler depuis son propre contexte

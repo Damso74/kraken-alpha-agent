@@ -120,7 +120,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--products", nargs="+", default=list(DEFAULT_PRODUCTS))
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--max-file-mib", type=float, default=256.0)
-    parser.add_argument("--storage-cap-gib", type=float, default=100.0)
+    parser.add_argument("--storage-cap-gib", type=float, default=200.0)
     parser.add_argument("--health-only", action="store_true")
     args = parser.parse_args()
     if args.duration_seconds <= 0:

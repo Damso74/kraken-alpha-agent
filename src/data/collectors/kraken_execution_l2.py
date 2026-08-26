@@ -186,9 +186,9 @@ class BookState:
 class RotatingGzipJsonlWriter:
     """Append-only gzip JSONL writer with UTC-day/size rotation and hard cap.
 
-    Files are never deleted to make room.  The cap is conservative: it charges
-    each uncompressed JSON line against the remaining budget even though gzip
-    normally uses less disk space.
+    Files are never deleted to make room. JSON lines are compressed in bounded
+    deterministic gzip members so the shared cap is charged against the exact
+    bytes that will be appended, never against an unrelated uncompressed proxy.
     """
 
     def __init__(
@@ -196,16 +196,18 @@ class RotatingGzipJsonlWriter:
         root: Path,
         *,
         max_file_bytes: int = 256 * 1024 * 1024,
-        storage_cap_bytes: int = 100 * 1024 * 1024 * 1024,
+        storage_cap_bytes: int = 200 * 1024 * 1024 * 1024,
         storage_budget: GlobalStorageBudget | None = None,
+        compression_batch_bytes: int = 1024 * 1024,
     ) -> None:
-        if max_file_bytes <= 0 or storage_cap_bytes <= 0:
+        if max_file_bytes <= 0 or storage_cap_bytes <= 0 or compression_batch_bytes <= 0:
             raise ValueError("writer limits must be positive")
-        if max_file_bytes > storage_cap_bytes:
-            raise ValueError("max_file_bytes cannot exceed storage_cap_bytes")
         self.root = Path(root)
         self.max_file_bytes = int(max_file_bytes)
         self.storage_cap_bytes = int(storage_cap_bytes)
+        self.compression_batch_bytes = min(
+            int(compression_batch_bytes), self.max_file_bytes
+        )
         self.root.mkdir(parents=True, exist_ok=True)
         self.storage_budget = storage_budget or GlobalStorageBudget(
             self.root, self.storage_cap_bytes
@@ -217,6 +219,7 @@ class RotatingGzipJsonlWriter:
         self._handle: Any = None
         self._path: Path | None = None
         self._files: list[Path] = []
+        self._buffer = bytearray()
         self.rows_written = 0
 
     @property
@@ -238,31 +241,61 @@ class RotatingGzipJsonlWriter:
     def _rotate(self, day: str) -> None:
         self.close_current()
         self._path = self._next_path(day)
-        self._handle = gzip.open(self._path, mode="at", encoding="utf-8", newline="\n")
+        self._handle = self._path.open("xb")
         self._files.append(self._path)
         self._current_day = day
         self._current_uncompressed_bytes = 0
+
+    def _flush_buffer(self) -> None:
+        if not self._buffer:
+            return
+        if self._handle is None:
+            raise ExecutionCollectorError("compression buffer has no open file")
+        compressed = gzip.compress(bytes(self._buffer), compresslevel=6, mtime=0)
+        self.storage_budget.reserve(len(compressed))
+        self._handle.write(compressed)
+        self._handle.flush()
+        self._buffer.clear()
 
     def append(self, record: Mapping[str, Any]) -> None:
         exchange_ms = _positive_int(record.get("exchange_timestamp_ms"), label="exchange time")
         day = datetime.fromtimestamp(exchange_ms / 1000.0, tz=UTC).date().isoformat()
         line = json.dumps(record, separators=(",", ":"), sort_keys=True) + "\n"
-        encoded_bytes = len(line.encode("utf-8"))
-        self.storage_budget.reserve(encoded_bytes)
+        encoded = line.encode("utf-8")
+        encoded_bytes = len(encoded)
+        if encoded_bytes > self.max_file_bytes:
+            raise StorageCapExceeded("one JSON line exceeds max_file_bytes")
         if (
             self._handle is None
             or day != self._current_day
-            or self._current_uncompressed_bytes + encoded_bytes > self.max_file_bytes
+            or (
+                self._current_uncompressed_bytes > 0
+                and self._current_uncompressed_bytes + encoded_bytes
+                > self.max_file_bytes
+            )
         ):
             self._rotate(day)
-        self._handle.write(line)
-        self._handle.flush()
+        buffer_size_before = len(self._buffer)
+        uncompressed_before = self._current_uncompressed_bytes
+        rows_before = self.rows_written
+        self._buffer.extend(encoded)
         self._current_uncompressed_bytes += encoded_bytes
         self.rows_written += 1
+        if len(self._buffer) >= self.compression_batch_bytes:
+            try:
+                self._flush_buffer()
+            except StorageCapExceeded:
+                del self._buffer[buffer_size_before:]
+                self._current_uncompressed_bytes = uncompressed_before
+                self.rows_written = rows_before
+                raise
 
     def close_current(self) -> None:
         if self._handle is not None:
-            self._handle.close()
+            try:
+                self._flush_buffer()
+            finally:
+                self._handle.close()
         self._handle = None
         self._path = None
 
@@ -289,6 +322,7 @@ class RotatingGzipJsonlWriter:
             "global_preexisting_bytes": self.storage_budget.preexisting_bytes,
             "global_projected_bytes": self.storage_budget.projected_bytes,
             "max_file_bytes": self.max_file_bytes,
+            "compression_batch_bytes": self.compression_batch_bytes,
             "files": files,
         }
 

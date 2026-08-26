@@ -21,7 +21,7 @@ Write-HealthTrace -Stage 'start'
 $exeTaskName = 'KrakenEdge-H-EXE-Technical'
 $wofTaskName = 'KrakenEdge-H-WOF-Forward'
 $expectedPython = (Resolve-Path -LiteralPath (Join-Path $repoRoot '.venv\Scripts\python.exe')).Path
-$expectedExeArguments = 'scripts\run_execution_toxicity_ops_once.py --duration-seconds 3580 --storage-cap-gib 100'
+$expectedExeArguments = 'scripts\run_execution_toxicity_ops_once.py --duration-seconds 3580 --storage-cap-gib 200'
 $expectedWofArguments = 'scripts\collect_world_order_flow_forward.py collect-scheduled'
 $reasons = [System.Collections.Generic.List[string]]::new()
 
@@ -145,8 +145,8 @@ Write-HealthTrace -Stage 'snapshot-check-complete'
 $driveName = ([System.IO.Path]::GetPathRoot($repoRoot)).TrimEnd('\').TrimEnd(':')
 $drive = Get-PSDrive -Name $driveName
 $freeGiB = $drive.Free / 1GB
-if ($freeGiB -lt 125) {
-    $reasons.Add('DISK_FREE_BELOW_125_GIB')
+if ($freeGiB -lt 250) {
+    $reasons.Add('DISK_FREE_BELOW_250_GIB')
 }
 Write-HealthTrace -Stage 'disk-check-complete'
 

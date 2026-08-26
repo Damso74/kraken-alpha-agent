@@ -40,7 +40,7 @@ $principal = New-ScheduledTaskPrincipal `
 
 $exeAction = New-ScheduledTaskAction `
     -Execute $python `
-    -Argument 'scripts\run_execution_toxicity_ops_once.py --duration-seconds 3580 --storage-cap-gib 100' `
+    -Argument 'scripts\run_execution_toxicity_ops_once.py --duration-seconds 3580 --storage-cap-gib 200' `
     -WorkingDirectory $repoRoot
 $exeTrigger = New-ScheduledTaskTrigger `
     -Once `

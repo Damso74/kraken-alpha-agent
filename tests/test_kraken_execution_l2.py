@@ -241,6 +241,9 @@ def test_rotating_writer_creates_readable_gzip_parts_and_manifest(tmp_path: Path
             rows.extend(json.loads(line) for line in handle)
         assert len(file_info["sha256"]) == 64
     assert len(rows) == 4
+    assert manifest["global_projected_bytes"] == sum(
+        item["bytes"] for item in manifest["files"]
+    )
 
 
 def test_storage_cap_stops_before_write_without_deleting(tmp_path: Path) -> None:
@@ -250,6 +253,7 @@ def test_storage_cap_stops_before_write_without_deleting(tmp_path: Path) -> None
         tmp_path,
         max_file_bytes=200,
         storage_cap_bytes=200,
+        compression_batch_bytes=1,
     )
     with pytest.raises(StorageCapExceeded, match="exceed global storage cap"):
         writer.append(
@@ -262,24 +266,43 @@ def test_storage_cap_stops_before_write_without_deleting(tmp_path: Path) -> None
 
 
 def test_global_budget_is_shared_between_raw_and_observation_writers(tmp_path: Path) -> None:
-    budget = GlobalStorageBudget(tmp_path, storage_cap_bytes=320)
+    raw_record = {"exchange_timestamp_ms": 1_700_000_000_000, "payload": "r" * 100}
+    observation_record = {
+        "exchange_timestamp_ms": 1_700_000_000_001,
+        "payload": "o" * 200,
+    }
+    raw_bytes = gzip.compress(
+        (json.dumps(raw_record, separators=(",", ":"), sort_keys=True) + "\n").encode(),
+        compresslevel=6,
+        mtime=0,
+    )
+    observation_bytes = gzip.compress(
+        (
+            json.dumps(observation_record, separators=(",", ":"), sort_keys=True)
+            + "\n"
+        ).encode(),
+        compresslevel=6,
+        mtime=0,
+    )
+    cap = len(raw_bytes) + len(observation_bytes) - 1
+    budget = GlobalStorageBudget(tmp_path, storage_cap_bytes=cap)
     raw = RotatingGzipJsonlWriter(
         tmp_path / "session" / "raw",
         max_file_bytes=320,
-        storage_cap_bytes=320,
+        storage_cap_bytes=cap,
         storage_budget=budget,
+        compression_batch_bytes=1,
     )
     observations = RotatingGzipJsonlWriter(
         tmp_path / "session" / "observations",
         max_file_bytes=320,
-        storage_cap_bytes=320,
+        storage_cap_bytes=cap,
         storage_budget=budget,
+        compression_batch_bytes=1,
     )
-    raw.append({"exchange_timestamp_ms": 1_700_000_000_000, "payload": "r" * 100})
+    raw.append(raw_record)
     with pytest.raises(StorageCapExceeded, match="global storage cap"):
-        observations.append(
-            {"exchange_timestamp_ms": 1_700_000_000_001, "payload": "o" * 200}
-        )
+        observations.append(observation_record)
     raw.close()
     observations.close()
 
@@ -294,6 +317,7 @@ def test_new_session_budget_counts_files_from_previous_sessions(tmp_path: Path) 
         max_file_bytes=320,
         storage_cap_bytes=320,
         storage_budget=budget,
+        compression_batch_bytes=1,
     )
     with pytest.raises(StorageCapExceeded, match="global storage cap"):
         writer.append({"exchange_timestamp_ms": 1_700_000_000_000, "payload": "new"})
