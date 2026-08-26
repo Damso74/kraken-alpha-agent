@@ -12,9 +12,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import os
-import re
-import subprocess
 import sys
 from datetime import UTC, date, datetime
 from pathlib import Path
@@ -31,6 +28,10 @@ from scripts.collect_world_order_flow_forward import (  # noqa: E402
     healthcheck_forward,
 )
 from src.data.collectors._common import CollectorError  # noqa: E402
+from src.research.ci_attestation import (  # noqa: E402
+    run_repository_ci,
+    validate_ci_evidence,
+)
 from src.research.world_order_flow import evaluate_forward_outcomes  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -88,7 +89,9 @@ def _load_verified_outcomes(root: Path) -> list[dict[str, Any]]:
     return outcomes
 
 
-def _ci_receipt_valid(path: Path, *, source_hashes: dict[str, str]) -> tuple[bool, list[str]]:
+def _ci_receipt_valid(
+    path: Path, *, source_hashes: dict[str, str], repo_root: Path = REPO_ROOT
+) -> tuple[bool, list[str]]:
     if not path.is_file():
         return False, ["CI_RECEIPT_MISSING"]
     try:
@@ -100,17 +103,7 @@ def _ci_receipt_valid(path: Path, *, source_hashes: dict[str, str]) -> tuple[boo
         reasons.append("CI_RECEIPT_SCHEMA_MISMATCH")
     if payload.get("source_hashes") != source_hashes:
         reasons.append("CI_RECEIPT_SOURCE_HASH_MISMATCH")
-    if payload.get("ruff_scope") != "src tests scripts" or payload.get("ruff_passed") is not True:
-        reasons.append("CI_RUFF_SCOPE_NOT_VERIFIED")
-    if payload.get("pytest_passed") is not True or int(payload.get("pytest_collected", 0)) <= 0:
-        reasons.append("CI_PYTEST_NOT_VERIFIED")
-    if payload.get("safety_env") != {
-        "ALLOW_LIVE_ORDERS": "false",
-        "KRAKEN_CLI_TRANSPORT": "mock",
-        "LIVE_TRADING": "false",
-        "TRADING_MODE": "dry_run",
-    }:
-        reasons.append("CI_SAFETY_ENV_MISMATCH")
+    reasons.extend(validate_ci_evidence(payload, repo_root))
     return not reasons, reasons
 
 
@@ -250,50 +243,13 @@ def evaluate_and_write(
 
 def _run_ci_attestation(*, root: Path) -> Path:
     source_hashes = _current_source_hashes()
-    environment = os.environ.copy()
-    safety_env = {
-        "ALLOW_LIVE_ORDERS": "false",
-        "KRAKEN_CLI_TRANSPORT": "mock",
-        "LIVE_TRADING": "false",
-        "TRADING_MODE": "dry_run",
-    }
-    environment.update(safety_env)
-    commands = [
-        [sys.executable, "-m", "ruff", "check", "src", "tests", "scripts"],
-        [sys.executable, "-m", "pytest", "--collect-only", "-q"],
-        [sys.executable, "-m", "pytest", "-q"],
-    ]
-    outputs: list[str] = []
-    for command in commands:
-        completed = subprocess.run(
-            command,
-            cwd=REPO_ROOT,
-            env=environment,
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        outputs.append(completed.stdout + completed.stderr)
-        if completed.returncode != 0:
-            raise RuntimeError(
-                f"CI attestation command failed ({completed.returncode}): "
-                f"{' '.join(command)}\n{outputs[-1][-2000:]}"
-            )
-    collected = sum(
-        int(match.group(1)) for match in re.finditer(r":\s+(\d+)\s*$", outputs[1], re.MULTILINE)
-    )
-    if collected <= 0:
-        raise RuntimeError("could not establish pytest collected count")
+    evidence = run_repository_ci(REPO_ROOT)
     receipt = {
         "schema_version": CI_RECEIPT_SCHEMA,
         "generated_at": datetime.now(tz=UTC).isoformat(),
         "source_hashes": source_hashes,
         "source_set_sha256": _source_set_sha256(source_hashes),
-        "ruff_scope": "src tests scripts",
-        "ruff_passed": True,
-        "pytest_collected": collected,
-        "pytest_passed": True,
-        "safety_env": safety_env,
+        **evidence,
     }
     path = _ci_receipt_path(root, source_hashes)
     _atomic_json(path, receipt)

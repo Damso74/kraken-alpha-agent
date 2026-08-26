@@ -16,6 +16,7 @@ from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from .ci_attestation import validate_ci_evidence
 from .execution_toxicity import (
     CompletedProbe,
     ExecutionToxicityShadow,
@@ -50,7 +51,7 @@ def ci_receipt_path(output_root: Path, source_hashes: dict[str, str]) -> Path:
 
 
 def _ci_receipt_valid(
-    output_root: Path, source_hashes: dict[str, str]
+    output_root: Path, source_hashes: dict[str, str], repo_root: Path
 ) -> tuple[bool, list[str], Path]:
     path = ci_receipt_path(output_root, source_hashes)
     if not path.is_file():
@@ -64,17 +65,7 @@ def _ci_receipt_valid(
         reasons.append("CI_RECEIPT_SCHEMA_MISMATCH")
     if payload.get("source_hashes") != source_hashes:
         reasons.append("CI_RECEIPT_SOURCE_HASH_MISMATCH")
-    if payload.get("ruff_scope") != "src tests scripts" or payload.get("ruff_passed") is not True:
-        reasons.append("CI_RUFF_SCOPE_NOT_VERIFIED")
-    if payload.get("pytest_passed") is not True or int(payload.get("pytest_collected", 0)) <= 0:
-        reasons.append("CI_PYTEST_NOT_VERIFIED")
-    if payload.get("safety_env") != {
-        "ALLOW_LIVE_ORDERS": "false",
-        "KRAKEN_CLI_TRANSPORT": "mock",
-        "LIVE_TRADING": "false",
-        "TRADING_MODE": "dry_run",
-    }:
-        reasons.append("CI_SAFETY_ENV_MISMATCH")
+    reasons.extend(validate_ci_evidence(payload, repo_root))
     return not reasons, reasons, path
 
 
@@ -280,7 +271,7 @@ def evaluate_validation_journal(
     gate_path = gate_paths[-1]
     gate = _load_json(gate_path)
     provenance = current_provenance(repo_root)
-    ci_verified, ci_reasons, ci_path = _ci_receipt_valid(root, provenance)
+    ci_verified, ci_reasons, ci_path = _ci_receipt_valid(root, provenance, repo_root)
     required_gate = {
         "passed": True,
         "schema_version": "h-exe-001-v1",

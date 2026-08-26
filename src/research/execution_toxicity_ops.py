@@ -24,6 +24,7 @@ CODE_RELATIVE_PATHS = {
     "ops_runner_sha256": Path("scripts/run_execution_toxicity_ops_once.py"),
     "validation_sha256": Path("src/research/execution_toxicity_validation.py"),
     "validation_runner_sha256": Path("scripts/evaluate_execution_toxicity_validation.py"),
+    "ci_attestation_sha256": Path("src/research/ci_attestation.py"),
 }
 
 

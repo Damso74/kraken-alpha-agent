@@ -4,9 +4,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
-import re
-import subprocess
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -14,6 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts.run_execution_toxicity_shadow import DEFAULT_OUTPUT_DIR  # noqa: E402
+from src.research.ci_attestation import run_repository_ci  # noqa: E402
 from src.research.execution_toxicity_ops import current_provenance  # noqa: E402
 from src.research.execution_toxicity_validation import (  # noqa: E402
     CI_RECEIPT_SCHEMA,
@@ -47,40 +45,7 @@ def evaluate_and_write(*, output_root: Path) -> tuple[dict, Path]:
 
 def run_ci_attestation(*, output_root: Path) -> Path:
     source_hashes = current_provenance(REPO_ROOT)
-    safety_env = {
-        "ALLOW_LIVE_ORDERS": "false",
-        "KRAKEN_CLI_TRANSPORT": "mock",
-        "LIVE_TRADING": "false",
-        "TRADING_MODE": "dry_run",
-    }
-    environment = os.environ.copy()
-    environment.update(safety_env)
-    commands = [
-        [sys.executable, "-m", "ruff", "check", "src", "tests", "scripts"],
-        [sys.executable, "-m", "pytest", "--collect-only", "-q"],
-        [sys.executable, "-m", "pytest", "-q"],
-    ]
-    outputs: list[str] = []
-    for command in commands:
-        completed = subprocess.run(
-            command,
-            cwd=REPO_ROOT,
-            env=environment,
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        outputs.append(completed.stdout + completed.stderr)
-        if completed.returncode != 0:
-            raise RuntimeError(
-                f"CI attestation command failed ({completed.returncode}): "
-                f"{' '.join(command)}\n{outputs[-1][-2000:]}"
-            )
-    collected = sum(
-        int(match.group(1)) for match in re.finditer(r":\s+(\d+)\s*$", outputs[1], re.MULTILINE)
-    )
-    if collected <= 0:
-        raise RuntimeError("could not establish pytest collected count")
+    evidence = run_repository_ci(REPO_ROOT)
     path = ci_receipt_path(output_root, source_hashes)
     _atomic_json(
         path,
@@ -88,11 +53,7 @@ def run_ci_attestation(*, output_root: Path) -> Path:
             "schema_version": CI_RECEIPT_SCHEMA,
             "generated_at": datetime.now(tz=UTC).isoformat(),
             "source_hashes": source_hashes,
-            "ruff_scope": "src tests scripts",
-            "ruff_passed": True,
-            "pytest_collected": collected,
-            "pytest_passed": True,
-            "safety_env": safety_env,
+            **evidence,
         },
     )
     return path

@@ -5,6 +5,7 @@ import json
 from datetime import UTC, datetime
 from pathlib import Path
 
+from src.research.ci_attestation import SAFETY_ENV, ci_scope_sha256
 from src.research.execution_toxicity_ops import current_provenance, sha256_file
 from src.research.execution_toxicity_validation import (
     CI_RECEIPT_SCHEMA,
@@ -210,6 +211,7 @@ def test_validation_journal_accepts_only_source_bound_ci_receipt(tmp_path: Path)
     repo_root = Path(__file__).resolve().parents[1]
     _seed_validation(tmp_path, repo_root)
     provenance = current_provenance(repo_root)
+    scope_sha256, scope_files = ci_scope_sha256(repo_root)
     receipt = ci_receipt_path(tmp_path, provenance)
     receipt.parent.mkdir(parents=True)
     receipt.write_text(
@@ -217,16 +219,19 @@ def test_validation_journal_accepts_only_source_bound_ci_receipt(tmp_path: Path)
             {
                 "schema_version": CI_RECEIPT_SCHEMA,
                 "source_hashes": provenance,
+                "ci_scope_sha256": scope_sha256,
+                "ci_scope_tracked_files": scope_files,
                 "ruff_scope": "src tests scripts",
                 "ruff_passed": True,
+                "bash_syntax_scope": "scripts/*.sh",
+                "bash_syntax_passed": True,
+                "shellcheck_scope": "shellcheck -S error scripts/*.sh",
+                "shellcheck_passed": True,
                 "pytest_collected": 1,
                 "pytest_passed": True,
-                "safety_env": {
-                    "ALLOW_LIVE_ORDERS": "false",
-                    "KRAKEN_CLI_TRANSPORT": "mock",
-                    "LIVE_TRADING": "false",
-                    "TRADING_MODE": "dry_run",
-                },
+                "git_diff_clean": True,
+                "git_status_clean": True,
+                "safety_env": SAFETY_ENV,
             }
         ),
         encoding="utf-8",
@@ -240,6 +245,16 @@ def test_validation_journal_accepts_only_source_bound_ci_receipt(tmp_path: Path)
     assert report["evaluation"]["gates"]["ci_scope_verified"] is True
 
     payload = json.loads(receipt.read_text(encoding="utf-8"))
+    payload["ci_scope_sha256"] = "0" * 64
+    receipt.write_text(json.dumps(payload), encoding="utf-8")
+    scope_tampered = evaluate_validation_journal(
+        repo_root=repo_root,
+        output_root=tmp_path,
+        now=datetime(2026, 2, 3, tzinfo=UTC),
+    )
+    assert scope_tampered["ci"]["verified"] is False
+
+    payload["ci_scope_sha256"] = scope_sha256
     payload["source_hashes"] = {**provenance, "engine_sha256": "0" * 64}
     receipt.write_text(json.dumps(payload), encoding="utf-8")
     tampered = evaluate_validation_journal(

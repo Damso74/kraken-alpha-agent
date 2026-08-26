@@ -14,6 +14,7 @@ from scripts.evaluate_world_order_flow_forward import (
     _ci_receipt_valid,
     evaluate_and_write,
 )
+from src.research.ci_attestation import SAFETY_ENV, ci_scope_sha256
 
 
 def _bootstrap_journal(root: Path) -> None:
@@ -78,22 +79,27 @@ def test_evaluator_requires_a_separate_exact_cache_replay(tmp_path: Path) -> Non
 
 def test_ci_receipt_is_bound_to_exact_sources_and_safety_scope(tmp_path: Path) -> None:
     source_hashes = _current_source_hashes()
+    repo_root = Path(__file__).resolve().parents[1]
+    scope_sha256, scope_files = ci_scope_sha256(repo_root)
     receipt = tmp_path / "ci.json"
     receipt.write_text(
         json.dumps(
             {
                 "schema_version": CI_RECEIPT_SCHEMA,
                 "source_hashes": source_hashes,
+                "ci_scope_sha256": scope_sha256,
+                "ci_scope_tracked_files": scope_files,
                 "ruff_scope": "src tests scripts",
                 "ruff_passed": True,
+                "bash_syntax_scope": "scripts/*.sh",
+                "bash_syntax_passed": True,
+                "shellcheck_scope": "shellcheck -S error scripts/*.sh",
+                "shellcheck_passed": True,
                 "pytest_collected": 1160,
                 "pytest_passed": True,
-                "safety_env": {
-                    "ALLOW_LIVE_ORDERS": "false",
-                    "KRAKEN_CLI_TRANSPORT": "mock",
-                    "LIVE_TRADING": "false",
-                    "TRADING_MODE": "dry_run",
-                },
+                "git_diff_clean": True,
+                "git_status_clean": True,
+                "safety_env": SAFETY_ENV,
             }
         ),
         encoding="utf-8",

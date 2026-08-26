@@ -83,6 +83,7 @@ FROZEN_SOURCE_PATHS = {
     "analysis_sha256": REPO_ROOT / "src/research/world_order_flow.py",
     "collector_sha256": Path(__file__).resolve(),
     "evaluator_sha256": REPO_ROOT / "scripts/evaluate_world_order_flow_forward.py",
+    "ci_attestation_sha256": REPO_ROOT / "src/research/ci_attestation.py",
 }
 
 
