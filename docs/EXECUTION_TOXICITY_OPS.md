@@ -55,8 +55,13 @@ existante sans option explicite :
 ```
 
 Il installe également la collecte quotidienne H-WOF-002 à 02:15 heure locale.
-Les deux tâches utilisent le venv propre au worktree et le compte utilisateur
-courant avec un niveau d'exécution limité. La désinstallation réversible est :
+Une troisième tâche `KrakenEdge-Forward-Health` vérifie toutes les quinze
+minutes les actions enregistrées, la fraîcheur du raw H-EXE et des snapshots
+WOF, ainsi qu'une réserve disque minimale de 125 Gio. Elle produit des digests
+JSON immuables sous `data/collector_cache/edge_forward_health/` et retourne un
+code non nul fail-closed en cas d'anomalie. Les tâches utilisent le venv propre
+au worktree et le compte utilisateur courant avec un niveau d'exécution limité.
+La désinstallation réversible est :
 
 ```powershell
 .\scripts\uninstall_edge_forward_tasks.ps1

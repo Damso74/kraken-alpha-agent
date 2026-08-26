@@ -4,7 +4,8 @@ param()
 $ErrorActionPreference = 'Stop'
 $taskNames = @(
     'KrakenEdge-H-EXE-Technical',
-    'KrakenEdge-H-WOF-Forward'
+    'KrakenEdge-H-WOF-Forward',
+    'KrakenEdge-Forward-Health'
 )
 
 foreach ($taskName in $taskNames) {

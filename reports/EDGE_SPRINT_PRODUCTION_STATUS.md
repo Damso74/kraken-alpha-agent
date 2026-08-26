@@ -23,7 +23,9 @@ le 26 août 2026 par `scripts/install_edge_forward_tasks.ps1` :
 - `KrakenEdge-H-EXE-Technical`, une session publique de 3 580 secondes chaque
   heure, sans fonction d'ordre ;
 - `KrakenEdge-H-WOF-Forward`, une collecte causale quotidienne à 02:15 heure
-  locale.
+  locale ;
+- `KrakenEdge-Forward-Health`, un contrôle fail-closed toutes les quinze minutes
+  de la configuration, de la fraîcheur des données et de la réserve disque.
 
 Le premier lancement planifié H-WOF a terminé avec le code `0` en état
 `bootstrap-pending`, après vérification des snapshots. La première session

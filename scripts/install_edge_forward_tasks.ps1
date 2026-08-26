@@ -15,6 +15,7 @@ $userId = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
 
 $exeTaskName = 'KrakenEdge-H-EXE-Technical'
 $wofTaskName = 'KrakenEdge-H-WOF-Forward'
+$healthTaskName = 'KrakenEdge-Forward-Health'
 
 function Assert-TaskCanBeRegistered {
     param([Parameter(Mandatory)][string]$TaskName)
@@ -30,6 +31,7 @@ function Assert-TaskCanBeRegistered {
 
 Assert-TaskCanBeRegistered -TaskName $exeTaskName
 Assert-TaskCanBeRegistered -TaskName $wofTaskName
+Assert-TaskCanBeRegistered -TaskName $healthTaskName
 
 $principal = New-ScheduledTaskPrincipal `
     -UserId $userId `
@@ -68,6 +70,26 @@ $wofSettings = New-ScheduledTaskSettingsSet `
     -RestartInterval (New-TimeSpan -Minutes 5) `
     -ExecutionTimeLimit (New-TimeSpan -Minutes 20)
 
+$powershell = (Get-Command powershell.exe -ErrorAction Stop).Source
+$healthScript = Join-Path $repoRoot 'scripts\check_edge_forward_production.ps1'
+$healthAction = New-ScheduledTaskAction `
+    -Execute $powershell `
+    -Argument "-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$healthScript`"" `
+    -WorkingDirectory $repoRoot
+$healthTrigger = New-ScheduledTaskTrigger `
+    -Once `
+    -At (Get-Date).AddMinutes(2) `
+    -RepetitionInterval (New-TimeSpan -Minutes 15) `
+    -RepetitionDuration (New-TimeSpan -Days 3650)
+$healthSettings = New-ScheduledTaskSettingsSet `
+    -MultipleInstances IgnoreNew `
+    -StartWhenAvailable `
+    -WakeToRun `
+    -Hidden `
+    -RestartCount 2 `
+    -RestartInterval (New-TimeSpan -Minutes 1) `
+    -ExecutionTimeLimit (New-TimeSpan -Minutes 5)
+
 Register-ScheduledTask `
     -TaskName $exeTaskName `
     -Action $exeAction `
@@ -84,5 +106,13 @@ Register-ScheduledTask `
     -Principal $principal `
     -Description 'H-WOF-002 causal public-data journal; no credentials or orders.' | Out-Null
 
-Get-ScheduledTask -TaskName $exeTaskName, $wofTaskName |
+Register-ScheduledTask `
+    -TaskName $healthTaskName `
+    -Action $healthAction `
+    -Trigger $healthTrigger `
+    -Settings $healthSettings `
+    -Principal $principal `
+    -Description 'Local fail-closed health digest for H-EXE/H-WOF shadow production.' | Out-Null
+
+Get-ScheduledTask -TaskName $exeTaskName, $wofTaskName, $healthTaskName |
     Select-Object TaskName, State, Author
