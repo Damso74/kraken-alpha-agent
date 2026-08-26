@@ -23,6 +23,7 @@ from scripts.collect_world_order_flow_forward import (  # noqa: E402
     healthcheck_forward,
 )
 from src.data.collectors._common import CollectorError  # noqa: E402
+from src.research.edge_promotion import evaluate_edge_promotion  # noqa: E402
 
 
 def _latest(root: Path, pattern: str) -> Path | None:
@@ -225,6 +226,22 @@ def attach_h_exe_evaluation(payload: dict[str, Any], *, repo_root: Path) -> None
     }
 
 
+def attach_edge_promotion(payload: dict[str, Any], *, repo_root: Path) -> None:
+    evidence_path = (
+        Path(repo_root).resolve() / "data/collector_cache/edge_paper_observation/latest.json"
+    )
+    evidence: dict[str, Any] | None = None
+    if evidence_path.is_file():
+        loaded = json.loads(evidence_path.read_text(encoding="utf-8"))
+        if not isinstance(loaded, dict):
+            raise ValueError("paper observation evidence root is not an object")
+        evidence = loaded
+    payload["edge_promotion"] = evaluate_edge_promotion(
+        payload,
+        paper_evidence=evidence,
+    )
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo-root", type=Path, default=REPO_ROOT)
@@ -244,6 +261,11 @@ def main() -> int:
         attach_wof_evaluation(payload, repo_root=args.repo_root)
     except (OSError, RuntimeError, ValueError, CollectorError) as exc:
         payload["reason_codes"].append(f"WOF_EVALUATION:{exc}")
+        payload["healthy"] = False
+    try:
+        attach_edge_promotion(payload, repo_root=args.repo_root)
+    except (json.JSONDecodeError, OSError, TypeError, ValueError) as exc:
+        payload["reason_codes"].append(f"EDGE_PROMOTION:{exc}")
         payload["healthy"] = False
     digest = write_health(payload, args.output_root)
     print(json.dumps(payload, indent=2, sort_keys=True))
