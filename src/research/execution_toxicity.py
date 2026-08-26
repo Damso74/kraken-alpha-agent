@@ -160,7 +160,7 @@ class ExecutionToxicityShadow:
         self._recent_trades: deque[tuple[int, float, float]] = deque()
         self._pending: list[PendingProbe] = []
         self.completed: list[CompletedProbe] = []
-        self._last_probe_ms = -10**18
+        self._last_probe_ms = -(10**18)
         self._counter = 0
         self.book_events = 0
         self.trade_events = 0
@@ -178,7 +178,7 @@ class ExecutionToxicityShadow:
         self.latest_book = None
         self._recent_trades.clear()
         self._pending.clear()
-        self._last_probe_ms = -10**18
+        self._last_probe_ms = -(10**18)
 
     def process_event(self, event: Mapping[str, Any]) -> list[CompletedProbe]:
         if str(event.get("product_id")) != self.product_id:
@@ -192,7 +192,10 @@ class ExecutionToxicityShadow:
         raise ValueError(f"unsupported H-EXE-001 event_type: {event_type!r}")
 
     def _on_book(self, tick: BookTick) -> list[CompletedProbe]:
-        if self.latest_book is not None and tick.exchange_timestamp_ms < self.latest_book.exchange_timestamp_ms:
+        if (
+            self.latest_book is not None
+            and tick.exchange_timestamp_ms < self.latest_book.exchange_timestamp_ms
+        ):
             raise ValueError("book timestamp moved backwards")
         self.latest_book = tick
         self.book_events += 1
@@ -203,9 +206,9 @@ class ExecutionToxicityShadow:
             sign = _side_sign(probe.side)
             for horizon in MARKOUT_HORIZONS_MS:
                 if elapsed >= horizon and horizon not in probe.markouts_bps:
-                    probe.markouts_bps[horizon] = sign * (
-                        tick.mid / probe.decision_mid - 1.0
-                    ) * 10_000.0
+                    probe.markouts_bps[horizon] = (
+                        sign * (tick.mid / probe.decision_mid - 1.0) * 10_000.0
+                    )
             if elapsed >= EXECUTION_HORIZON_MS:
                 completed = self._complete_probe(probe, tick)
                 self.completed.append(completed)
@@ -247,7 +250,9 @@ class ExecutionToxicityShadow:
         if sweep_ratio < SWEEP_MIN_RATIO or timestamp_ms - self._last_probe_ms < EVENT_COOLDOWN_MS:
             return
         total_qty = sum(item[2] for item in self._recent_trades)
-        raw_pressure = sum(item[1] for item in self._recent_trades) / total_qty if total_qty else 0.0
+        raw_pressure = (
+            sum(item[1] for item in self._recent_trades) / total_qty if total_qty else 0.0
+        )
         sign = _side_sign(typed_side)
         aligned_pressure = sign * raw_pressure
         aligned_imbalance = sign * book.imbalance
@@ -377,9 +382,7 @@ def daily_block_bootstrap_lower_bound(
         return None
     by_day: dict[str, list[float]] = {}
     for item in observations:
-        day = datetime.fromtimestamp(
-            item.decision_timestamp_ms / 1000.0, tz=UTC
-        ).date().isoformat()
+        day = datetime.fromtimestamp(item.decision_timestamp_ms / 1000.0, tz=UTC).date().isoformat()
         by_day.setdefault(day, []).append(item.savings_bps)
     blocks = list(by_day.values())
     rng = random.Random(seed)
@@ -413,12 +416,57 @@ def summarize_shadow_observations(
         observations
     )
     per_product_mean = {
-        product: statistics.fmean(item.savings_bps for item in observations if item.product_id == product)
+        product: statistics.fmean(
+            item.savings_bps for item in observations if item.product_id == product
+        )
         for product in sorted({item.product_id for item in observations})
     }
     bootstrap_lower = daily_block_bootstrap_lower_bound(observations)
     mean_savings = statistics.fmean(savings)
     mean_stress = statistics.fmean(stress)
+    ordered = sorted(observations, key=lambda item: item.decision_timestamp_ms)
+    split = len(ordered) // 2
+    temporal_halves = (ordered[:split], ordered[split:])
+    half_mean_savings = [
+        statistics.fmean(item.savings_bps for item in half) if half else None
+        for half in temporal_halves
+    ]
+    half_mean_stress = [
+        statistics.fmean(item.stress_savings_bps for item in half) if half else None
+        for half in temporal_halves
+    ]
+    by_day: dict[str, list[CompletedProbe]] = {}
+    for item in ordered:
+        day = datetime.fromtimestamp(item.decision_timestamp_ms / 1000.0, tz=UTC).date().isoformat()
+        by_day.setdefault(day, []).append(item)
+    leave_one_day_primary = [
+        statistics.fmean(
+            item.savings_bps
+            for other_day, day_items in by_day.items()
+            if other_day != removed_day
+            for item in day_items
+        )
+        for removed_day in by_day
+        if len(by_day) > 1
+    ]
+    leave_one_day_stress = [
+        statistics.fmean(
+            item.stress_savings_bps
+            for other_day, day_items in by_day.items()
+            if other_day != removed_day
+            for item in day_items
+        )
+        for removed_day in by_day
+        if len(by_day) > 1
+    ]
+    leave_one_event_primary = (
+        [(sum(savings) - value) / (len(savings) - 1) for value in savings]
+        if len(savings) > 1
+        else []
+    )
+    leave_one_event_stress = (
+        [(sum(stress) - value) / (len(stress) - 1) for value in stress] if len(stress) > 1 else []
+    )
     reasons: list[str] = []
     if len(observations) < MIN_COMPLETED_PROBES:
         reasons.append("MIN_COMPLETED_PROBES")
@@ -436,10 +484,20 @@ def summarize_shadow_observations(
         reasons.append("REPLICATION_REQUIRES_TWO_PRODUCTS")
     elif any(value <= 0 for value in per_product_mean.values()):
         reasons.append("PRODUCT_REPLICATION_NOT_POSITIVE")
+    if any(value is None or value < MIN_SAVINGS_BPS for value in half_mean_savings):
+        reasons.append("TEMPORAL_HALF_PRIMARY_BELOW_5_BPS")
+    if any(value is None or value < MIN_SAVINGS_BPS for value in half_mean_stress):
+        reasons.append("TEMPORAL_HALF_STRESS_BELOW_5_BPS")
+    if not leave_one_day_primary or min(leave_one_day_primary) < MIN_SAVINGS_BPS:
+        reasons.append("LEAVE_ONE_DAY_PRIMARY_BELOW_5_BPS")
+    if not leave_one_day_stress or min(leave_one_day_stress) < MIN_SAVINGS_BPS:
+        reasons.append("LEAVE_ONE_DAY_STRESS_BELOW_5_BPS")
+    if not leave_one_event_primary or min(leave_one_event_primary) < MIN_SAVINGS_BPS:
+        reasons.append("LEAVE_ONE_EVENT_PRIMARY_BELOW_5_BPS")
+    if not leave_one_event_stress or min(leave_one_event_stress) < MIN_SAVINGS_BPS:
+        reasons.append("LEAVE_ONE_EVENT_STRESS_BELOW_5_BPS")
     passed = not reasons
-    p99_lag = _percentile(
-        [item.decision_transport_lag_ms for item in observations], 0.99
-    )
+    p99_lag = _percentile([item.decision_transport_lag_ms for item in observations], 0.99)
     return {
         "schema_version": "h-exe-001-v1",
         "status": "candidate_for_forward_observation" if passed else "insufficient_power",
@@ -458,6 +516,22 @@ def summarize_shadow_observations(
         "mean_stress_savings_bps": mean_stress,
         "bootstrap_daily_lower_95_bps": bootstrap_lower,
         "observed_transport_lag_p99_ms": p99_lag,
+        "robustness": {
+            "time_half_mean_savings_bps": half_mean_savings,
+            "time_half_mean_stress_savings_bps": half_mean_stress,
+            "minimum_leave_one_day_mean_savings_bps": min(leave_one_day_primary)
+            if leave_one_day_primary
+            else None,
+            "minimum_leave_one_day_mean_stress_savings_bps": min(leave_one_day_stress)
+            if leave_one_day_stress
+            else None,
+            "minimum_leave_one_event_mean_savings_bps": min(leave_one_event_primary)
+            if leave_one_event_primary
+            else None,
+            "minimum_leave_one_event_mean_stress_savings_bps": min(leave_one_event_stress)
+            if leave_one_event_stress
+            else None,
+        },
         "mean_markout_bps": {
             "5s": statistics.fmean(item.markout_5s_bps for item in observations),
             "30s": statistics.fmean(item.markout_30s_bps for item in observations),
@@ -468,6 +542,52 @@ def summarize_shadow_observations(
             "shadow_only": True,
             "orders_sent": 0,
             "private_credentials_used": False,
+            "human_review_required": True,
+        },
+    }
+
+
+def evaluate_validation_evidence(
+    observations: Sequence[CompletedProbe],
+    *,
+    complete_utc_days: int,
+    sessions_verified: bool,
+    raw_replay_verified: bool = False,
+    ci_verified: bool = False,
+) -> dict[str, Any]:
+    """Combine economic H-EXE metrics with the non-bypassable evidence gates."""
+
+    if complete_utc_days < 0:
+        raise ValueError("complete_utc_days must be non-negative")
+    summary = summarize_shadow_observations(observations)
+    gates = {
+        "complete_validation_utc_days_at_least_30": complete_utc_days >= MIN_FORWARD_DAYS,
+        "validation_sessions_and_hashes_verified": bool(sessions_verified),
+        "economic_gates_passed": bool(summary["gates"]["passed"]),
+        "raw_replay_exact": bool(raw_replay_verified),
+        "ci_scope_verified": bool(ci_verified),
+    }
+    horizon_ready = (
+        complete_utc_days >= MIN_FORWARD_DAYS and len(observations) >= MIN_COMPLETED_PROBES
+    )
+    if not horizon_ready:
+        status = "collecting"
+    elif not gates["economic_gates_passed"]:
+        status = "no_go"
+    elif not all(gates.values()):
+        status = "evidence_pending"
+    else:
+        status = "candidate_for_forward_observation"
+    return {
+        "schema_version": "h-exe-001-validation-v1",
+        "status": status,
+        "decision": "REVIEW_REQUIRED" if status == "candidate_for_forward_observation" else "NO-GO",
+        "complete_validation_utc_days": complete_utc_days,
+        "summary": summary,
+        "gates": gates,
+        "safety": {
+            "authorizes_orders": False,
+            "authorizes_paper_or_live": False,
             "human_review_required": True,
         },
     }

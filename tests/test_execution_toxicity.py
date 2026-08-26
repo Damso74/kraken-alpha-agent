@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from unittest.mock import patch
 
 import pytest
 
@@ -8,6 +9,7 @@ from src.research.execution_toxicity import (
     CompletedProbe,
     ExecutionToxicityShadow,
     daily_block_bootstrap_lower_bound,
+    evaluate_validation_evidence,
     summarize_shadow_observations,
 )
 
@@ -171,3 +173,74 @@ def test_completion_gate_detects_forced_orders() -> None:
     observations[1] = replace(observations[1], completed_within_horizon=False)
     report = summarize_shadow_observations(observations)
     assert "COMPLETION_RATE_BELOW_95_PERCENT" in report["gates"]["reason_codes"]
+
+
+def test_robustness_gate_requires_both_halves_and_leave_one_out_buffers() -> None:
+    stable = [
+        _completed(BASE_MS + day * 86_400_000 + index, savings=12.0)
+        for day in range(4)
+        for index in range(2)
+    ]
+    stable_report = summarize_shadow_observations(stable)
+    stable_reasons = stable_report["gates"]["reason_codes"]
+    assert "TEMPORAL_HALF_PRIMARY_BELOW_5_BPS" not in stable_reasons
+    assert "TEMPORAL_HALF_STRESS_BELOW_5_BPS" not in stable_reasons
+    assert "LEAVE_ONE_DAY_PRIMARY_BELOW_5_BPS" not in stable_reasons
+    assert "LEAVE_ONE_EVENT_STRESS_BELOW_5_BPS" not in stable_reasons
+    assert stable_report["robustness"]["time_half_mean_stress_savings_bps"] == [
+        7.0,
+        7.0,
+    ]
+
+    unstable = [
+        _completed(BASE_MS + index * 86_400_000, savings=value)
+        for index, value in enumerate((5.0, 5.0, 20.0, 20.0))
+    ]
+    unstable_report = summarize_shadow_observations(unstable)
+    assert "TEMPORAL_HALF_STRESS_BELOW_5_BPS" in unstable_report["gates"]["reason_codes"]
+
+
+def test_robustness_gate_rejects_single_event_dependence() -> None:
+    observations = [
+        _completed(BASE_MS + index * 86_400_000, savings=value)
+        for index, value in enumerate((100.0, 5.0, 5.0, 5.0))
+    ]
+    report = summarize_shadow_observations(observations)
+    assert "LEAVE_ONE_EVENT_STRESS_BELOW_5_BPS" in report["gates"]["reason_codes"]
+
+
+def test_validation_evidence_never_bypasses_replay_ci_or_human_review(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("src.research.execution_toxicity.MIN_FORWARD_DAYS", 2)
+    monkeypatch.setattr("src.research.execution_toxicity.MIN_COMPLETED_PROBES", 4)
+    observations = [
+        replace(
+            _completed(BASE_MS + index * 86_400_000, savings=12.0),
+            product_id="PF_ETHUSD" if index % 2 else "PF_XBTUSD",
+        )
+        for index in range(4)
+    ]
+    with patch(
+        "src.research.execution_toxicity.daily_block_bootstrap_lower_bound",
+        return_value=7.0,
+    ):
+        pending = evaluate_validation_evidence(
+            observations,
+            complete_utc_days=4,
+            sessions_verified=True,
+        )
+        passed = evaluate_validation_evidence(
+            observations,
+            complete_utc_days=4,
+            sessions_verified=True,
+            raw_replay_verified=True,
+            ci_verified=True,
+        )
+    assert pending["status"] == "evidence_pending"
+    assert pending["decision"] == "NO-GO"
+    assert pending["gates"]["raw_replay_exact"] is False
+    assert pending["gates"]["ci_scope_verified"] is False
+    assert passed["status"] == "candidate_for_forward_observation"
+    assert passed["decision"] == "REVIEW_REQUIRED"
+    assert passed["safety"]["authorizes_paper_or_live"] is False

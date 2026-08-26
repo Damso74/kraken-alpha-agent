@@ -28,6 +28,11 @@ Les chemins runtime, ignorés par Git, sont :
 - digests immuables `technical/ops/digests/` ;
 - gates éventuels `technical/ops/technical_gates/`.
 
+Après émission d'un gate technique valide, l'occurrence horaire bascule seule
+vers `validation/sessions/` en fournissant le gate immuable au collecteur. Une
+simple présence de fichier ne suffit pas : le collecteur revalide les quatorze
+jours, l'absence de gap et tous les hashes avant d'accepter la phase.
+
 Le verrou `.ops-once.lock` empêche deux occurrences simultanées. Un verrou resté
 après un arrêt brutal doit être examiné manuellement ; le programme ne le force
 jamais ni ne tue un autre processus.
@@ -76,6 +81,14 @@ données et le disque. Une invocation manuelle de
 enregistrées. Les tâches utilisent le venv propre au worktree et le compte
 utilisateur courant avec un niveau d'exécution limité.
 
+Le même moniteur écrit aussi l'état de décision H-EXE. Pour chaque session de
+validation, il vérifie les manifests et leurs SHA-256, rejoue tous les événements
+raw avec le moteur gelé, exige l'égalité exacte des observations et lie un reçu
+Ruff/pytest au même jeu de sources. L'identifiant de connexion présent dans
+chaque événement raw permet de reproduire exactement les abandons de probes lors
+d'une reconnexion. Avant le gate technique, l'état reste
+`technical_gate_pending`; avant 30 jours et 10 000 probes, il reste `collecting`.
+
 Le plan d'alimentation Windows n'est pas modifié. Sur cette machine, la veille
 reste désactivée sur secteur mais intervient après dix minutes sur batterie ;
 une telle veille suspend la collecte et la période correspondante ne peut pas
@@ -100,7 +113,7 @@ et son nouveau snapshot n'est jamais compté comme observé.
 ## Healthcheck sans collecte
 
 ```powershell
-C:\Code\perso\kraken-alpha-agent\.venv\Scripts\python.exe `
+.\.venv\Scripts\python.exe `
   scripts\run_execution_toxicity_ops_once.py --health-only
 ```
 
@@ -114,5 +127,6 @@ immuables, fusionne les fenêtres par jour UTC et produit un digest. Il n'émet 
 - les hashes du pré-enregistrement, du collecteur, du superviseur, du moteur, des
   opérations et des deux runners correspondent exactement au code courant.
 
-Un gate autorise seulement le démarrage manuel de la collecte de validation. Il
-n'autorise aucun ordre, passage paper/live ni déploiement.
+Un gate autorise seulement la bascule automatique de la tâche publique shadow
+vers la collecte de validation. Il n'autorise aucun ordre, passage paper/live ni
+déploiement. Même une validation complète ne produit que `REVIEW_REQUIRED`.

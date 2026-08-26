@@ -176,10 +176,7 @@ class BookState:
                 {"price": price, "qty": qty}
                 for price, qty in sorted(self.bids.items(), reverse=True)
             ],
-            "asks": [
-                {"price": price, "qty": qty}
-                for price, qty in sorted(self.asks.items())
-            ],
+            "asks": [{"price": price, "qty": qty} for price, qty in sorted(self.asks.items())],
         }
 
 
@@ -205,9 +202,7 @@ class RotatingGzipJsonlWriter:
         self.root = Path(root)
         self.max_file_bytes = int(max_file_bytes)
         self.storage_cap_bytes = int(storage_cap_bytes)
-        self.compression_batch_bytes = min(
-            int(compression_batch_bytes), self.max_file_bytes
-        )
+        self.compression_batch_bytes = min(int(compression_batch_bytes), self.max_file_bytes)
         self.root.mkdir(parents=True, exist_ok=True)
         self.storage_budget = storage_budget or GlobalStorageBudget(
             self.root, self.storage_cap_bytes
@@ -270,8 +265,7 @@ class RotatingGzipJsonlWriter:
             or day != self._current_day
             or (
                 self._current_uncompressed_bytes > 0
-                and self._current_uncompressed_bytes + encoded_bytes
-                > self.max_file_bytes
+                and self._current_uncompressed_bytes + encoded_bytes > self.max_file_bytes
             )
         ):
             self._rotate(day)
@@ -338,6 +332,7 @@ class KrakenExecutionL2Collector:
         self,
         product_ids: Sequence[str],
         *,
+        connection_id: int = 1,
         writer: RotatingGzipJsonlWriter | None = None,
         on_market_event: MarketEventHandler | None = None,
         on_connection_reset: ConnectionResetHandler | None = None,
@@ -345,7 +340,10 @@ class KrakenExecutionL2Collector:
         products = tuple(dict.fromkeys(str(item) for item in product_ids))
         if not products or any(not item.startswith("PF_") for item in products):
             raise ValueError("product_ids must contain Kraken perpetual symbols")
+        if isinstance(connection_id, bool) or int(connection_id) <= 0:
+            raise ValueError("connection_id must be a positive integer")
         self.product_ids = products
+        self.connection_id = int(connection_id)
         self.writer = writer
         self.on_market_event = on_market_event
         self.on_connection_reset = on_connection_reset
@@ -397,8 +395,8 @@ class KrakenExecutionL2Collector:
         self._sequences[key] = value
         return value
 
-    @staticmethod
     def _envelope(
+        self,
         *,
         event_type: str,
         product: str,
@@ -411,6 +409,7 @@ class KrakenExecutionL2Collector:
             "schema_version": SCHEMA_VERSION,
             "event_type": event_type,
             "product_id": product,
+            "connection_id": self.connection_id,
             "sequence": sequence,
             "exchange_timestamp_ms": exchange_timestamp_ms,
             "received_wall_ns": received_wall_ns,
@@ -452,7 +451,10 @@ class KrakenExecutionL2Collector:
 
         event_name = payload.get("event")
         if event_name == "error" or event_name in {"subscribed_failed", "unsubscribed_failed"}:
-            self._fail(f"Kraken websocket error: {payload.get('message', event_name)}", ExecutionCollectorError)
+            self._fail(
+                f"Kraken websocket error: {payload.get('message', event_name)}",
+                ExecutionCollectorError,
+            )
         if event_name is not None:
             return []
 
@@ -513,12 +515,17 @@ class KrakenExecutionL2Collector:
             valid_trades = [item for item in trades if isinstance(item, Mapping)]
             if not valid_trades:
                 return []
-            ordered = sorted(valid_trades, key=lambda item: _positive_int(item.get("seq"), label="trade sequence"))
+            ordered = sorted(
+                valid_trades,
+                key=lambda item: _positive_int(item.get("seq"), label="trade sequence"),
+            )
             self._sequences[("trade", product)] = _positive_int(
                 ordered[-1].get("seq"), label="trade sequence"
             )
             for trade in ordered:
-                emitted.append(self._trade_event(trade, product, wall_ns, monotonic_ns, snapshot=True))
+                emitted.append(
+                    self._trade_event(trade, product, wall_ns, monotonic_ns, snapshot=True)
+                )
         elif feed == "trade":
             seq = self._sequence("trade", product, payload.get("seq"), snapshot=False)
             emitted.append(

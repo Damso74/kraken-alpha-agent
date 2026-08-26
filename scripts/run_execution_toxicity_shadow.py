@@ -46,6 +46,8 @@ SOURCE_PATHS = {
     "ops_sha256": Path("src/research/execution_toxicity_ops.py"),
     "runner_sha256": Path("scripts/run_execution_toxicity_shadow.py"),
     "ops_runner_sha256": Path("scripts/run_execution_toxicity_ops_once.py"),
+    "validation_sha256": Path("src/research/execution_toxicity_validation.py"),
+    "validation_runner_sha256": Path("scripts/evaluate_execution_toxicity_validation.py"),
 }
 
 
@@ -282,6 +284,7 @@ def run(args: argparse.Namespace) -> int:
     def collector_factory() -> KrakenExecutionL2Collector:
         collector = KrakenExecutionL2Collector(
             args.products,
+            connection_id=len(collectors) + 1,
             writer=raw_writer,
             on_market_event=on_market_event,
             on_connection_reset=reset_analyzers,
@@ -395,9 +398,7 @@ def run(args: argparse.Namespace) -> int:
         "aggregate_summary": aggregate,
     }
     _atomic_json(output_dir / "summary.json", report, storage_budget=storage_budget)
-    _atomic_text(
-        output_dir / "summary.md", _markdown(report), storage_budget=storage_budget
-    )
+    _atomic_text(output_dir / "summary.md", _markdown(report), storage_budget=storage_budget)
     _append_jsonl(
         phase_root / "sessions.jsonl",
         {
@@ -408,9 +409,7 @@ def run(args: argparse.Namespace) -> int:
             "summary_sha256": _sha256(output_dir / "summary.json"),
             "generated_at": report["generated_at"],
             "valid": report["session"]["valid"],
-            "first_exchange_timestamp_ms": report["collector"][
-                "first_exchange_timestamp_ms"
-            ],
+            "first_exchange_timestamp_ms": report["collector"]["first_exchange_timestamp_ms"],
             "last_exchange_timestamp_ms": report["collector"]["last_exchange_timestamp_ms"],
             "preregistration_sha256": preregistration_sha256,
             **code_hashes,

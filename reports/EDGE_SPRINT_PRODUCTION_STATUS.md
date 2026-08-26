@@ -63,9 +63,9 @@ Le diagnostic a aussi révélé que la priorité Task Scheduler par défaut (`7`
 `BelowNormal`) pouvait bloquer Python jusque dans ses imports sous charge disque.
 Les trois tâches utilisent maintenant la priorité normale `4`.
 
-La session active finale est `20260826T193742.767936Z`. Elle a démarré en moins
-de vingt secondes, dépassé 42 320 événements, et le contrôle planifié Python a
-terminé avec le code `0` et `healthy=true`.
+La session `20260826T193742.767936Z` a démontré le redémarrage en moins de vingt
+secondes et dépassé 42 320 événements ; elle appartient désormais à la preuve
+pré-gel conservée dans les archives, pas à l'horizon technique courant.
 
 L'audit de bout en bout H-WOF a ensuite révélé que le premier journal ne
 capturait pas encore les prix Kraken d'entrée et de sortie exigés par le
@@ -95,6 +95,30 @@ passage intégral de ces 1 165 tests sous transport mock et triple verrou live �
 `false`. Le moniteur réel lit `ci_verified=true` et
 `reproduction_verified=true`, sans que ces preuves puissent contourner
 l'horizon : le verdict reste `collecting`, `NO-GO` avec zéro semaine.
+
+Avant le premier jour UTC complet H-EXE, le gate 8 a été rendu falsifiable : les
+deux moitiés temporelles, chaque retrait d'un jour et chaque retrait d'un probe
+doivent conserver au moins 5 bps en primaire et sous stress. L'évaluateur final
+vérifie ensuite les manifests de validation, les couvertures journalières, les
+hashes, les invariants de sécurité, le rejeu raw exact et un reçu CI lié aux
+mêmes sources. Un `connection_id` monotone est scellé dans chaque événement raw
+afin de reproduire les abandons de probes lors des reconnexions.
+
+Les données collectées avant cette définition puis avant l'évaluateur complet
+ont été préservées, sans suppression, sous
+`archive/h_exe_pre_gate8_definition_20260826T203006Z` et
+`archive/h_exe_pre_frozen_evaluator_20260826T205009Z`. La période technique
+définitive repart de zéro avec la session `20260826T205010.286268Z`. Son premier
+fichier raw porte bien `connection_id=1`. L'attestation associée au jeu de
+sources `9d7e12c77399eeb6ace6930e37d31e00cb440f383c46e7ba8985e8b6c084266c`
+a passé Ruff sur `src tests scripts` et les 1 174 tests sous transport mock,
+`TRADING_MODE=dry_run` et les deux verrous live à `false`.
+
+Le contrôle de production effectué après ce redémarrage retourne `healthy=true`
+et zéro erreur, avec environ 783 Gio libres. H-EXE reste
+`technical_gate_pending`, `NO-GO`; H-WOF reste `collecting`, `NO-GO`, avec ses
+preuves de reproduction et CI valides. Aucun de ces états n'autorise le paper ou
+le live.
 
 La désinstallation est locale et réversible via
 `scripts/uninstall_edge_forward_tasks.ps1`.

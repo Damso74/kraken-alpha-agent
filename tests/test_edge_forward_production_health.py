@@ -6,6 +6,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from scripts.check_edge_forward_production import (
+    attach_h_exe_evaluation,
     attach_wof_evaluation,
     build_health,
     write_health,
@@ -14,6 +15,15 @@ from scripts.collect_world_order_flow_forward import (
     _capture_kraken_snapshot,
     _capture_snapshot,
 )
+
+
+def test_h_exe_evaluation_is_fail_closed_before_technical_gate(tmp_path: Path) -> None:
+    payload: dict = {}
+    attach_h_exe_evaluation(payload, repo_root=tmp_path)
+    result = payload["h_exe_evaluation"]
+    assert result["status"] == "technical_gate_pending"
+    assert result["decision"] == "NO-GO"
+    assert result["authorizes_paper_or_live"] is False
 
 
 def _seed_runtime(root: Path, now: datetime) -> Path:

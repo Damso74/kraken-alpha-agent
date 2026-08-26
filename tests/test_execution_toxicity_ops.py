@@ -4,6 +4,7 @@ import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+from scripts.run_execution_toxicity_ops_once import collection_phase
 from scripts.run_execution_toxicity_shadow import ProgressHeartbeat
 from src.data.collectors.kraken_execution_l2 import GlobalStorageBudget
 from src.research.execution_toxicity_ops import (
@@ -159,3 +160,16 @@ def test_progress_heartbeat_is_atomic_and_tracks_only_observed_events(
     manifest = heartbeat.manifest()
     assert manifest is not None
     assert len(manifest["sha256"]) == 64
+
+
+def test_ops_phase_switches_only_after_immutable_technical_gate(tmp_path: Path) -> None:
+    assert collection_phase(tmp_path) == ("technical", None)
+    gate_root = tmp_path / "technical/ops/technical_gates"
+    gate_root.mkdir(parents=True)
+    older = gate_root / "technical-gate-20260101T000000.000000Z.json"
+    newer = gate_root / "technical-gate-20260102T000000.000000Z.json"
+    older.write_text("{}", encoding="utf-8")
+    newer.write_text("{}", encoding="utf-8")
+    phase, selected = collection_phase(tmp_path)
+    assert phase == "validation"
+    assert selected == newer

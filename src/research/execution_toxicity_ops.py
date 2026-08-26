@@ -22,6 +22,8 @@ CODE_RELATIVE_PATHS = {
     "ops_sha256": Path("src/research/execution_toxicity_ops.py"),
     "runner_sha256": Path("scripts/run_execution_toxicity_shadow.py"),
     "ops_runner_sha256": Path("scripts/run_execution_toxicity_ops_once.py"),
+    "validation_sha256": Path("src/research/execution_toxicity_validation.py"),
+    "validation_runner_sha256": Path("scripts/evaluate_execution_toxicity_validation.py"),
 }
 
 
@@ -152,9 +154,11 @@ def aggregate_technical_health(
             continue
         assert summary is not None
         exact_hashes = all(row.get(key) == value for key, value in provenance.items())
-        exact_hashes = exact_hashes and summary.get("preregistration", {}).get(
-            "sha256"
-        ) == provenance["preregistration_sha256"]
+        exact_hashes = (
+            exact_hashes
+            and summary.get("preregistration", {}).get("sha256")
+            == provenance["preregistration_sha256"]
+        )
         exact_hashes = exact_hashes and summary.get("code_hashes") == {
             key: value for key, value in provenance.items() if key != "preregistration_sha256"
         }

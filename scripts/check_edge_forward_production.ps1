@@ -75,7 +75,12 @@ if ($SkipTaskInspection) {
 Write-HealthTrace -Stage 'task-inspection-complete'
 
 $now = [datetime]::UtcNow
-$rawRoot = Join-Path $repoRoot 'data\collector_cache\kraken_execution_toxicity_hexe001\technical\sessions'
+$hExeRoot = Join-Path $repoRoot 'data\collector_cache\kraken_execution_toxicity_hexe001'
+$technicalGateRoot = Join-Path $hExeRoot 'technical\ops\technical_gates'
+$hasTechnicalGate = Get-ChildItem -LiteralPath $technicalGateRoot -Filter 'technical-gate-*.json' -File -ErrorAction SilentlyContinue |
+    Select-Object -First 1
+$hExePhase = if ($hasTechnicalGate) { 'validation' } else { 'technical' }
+$rawRoot = Join-Path $hExeRoot "$hExePhase\sessions"
 $latestRaw = Get-ChildItem -LiteralPath $rawRoot -Filter '*.jsonl.gz' -Recurse -File -ErrorAction SilentlyContinue |
     Sort-Object LastWriteTimeUtc -Descending |
     Select-Object -First 1
@@ -158,7 +163,10 @@ $payload = [ordered]@{
     credentials_used = $false
     orders_sent = 0
     tasks = [ordered]@{
-        h_exe = $exeTask
+        h_exe = [ordered]@{
+            scheduler = $exeTask
+            collection_phase = $hExePhase
+        }
         h_wof = $wofTask
     }
     h_exe_raw = if ($latestRaw) {

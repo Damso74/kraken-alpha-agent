@@ -143,6 +143,18 @@ Le statut ne peut devenir `candidate_for_forward_observation` que si :
 9. reproduction locale à partir des fichiers bruts et hashes identique ;
 10. tests et CI locale verts.
 
+### Définition opérationnelle gelée du gate 8
+
+Ajoutée le 26 août 2026 avant le premier jour UTC complet et avant toute
+validation économique : les probes sont triés par timestamp de décision puis
+séparés en deux moitiés de même effectif (la seconde reçoit l'éventuel probe
+impair). Chaque moitié doit conserver une économie primaire **et stressée**
+moyenne supérieure ou égale à 5 bps. Le même seuil doit rester satisfait après
+retrait successif de chaque jour UTC complet puis de chaque probe individuel.
+Une moitié vide, un seul jour ou un seul probe ne peut pas passer. Cette
+précision ne modifie ni le signal, ni les coûts, ni l'horizon ; elle rend le
+terme « stable » falsifiable avant que les données de validation existent.
+
 Même si tous les gates passent, la sortie est `REVIEW_REQUIRED`, jamais une
 activation automatique. Un échec ferme H-EXE-001 sans changement post-hoc ; une
 nouvelle règle exige un nouvel identifiant et une nouvelle collecte forward.

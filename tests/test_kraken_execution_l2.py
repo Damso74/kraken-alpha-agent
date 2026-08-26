@@ -106,6 +106,18 @@ def test_book_snapshot_and_contiguous_delta_are_normalized() -> None:
     assert events[0]["sequence"] == 11
 
 
+def test_collector_stamps_positive_connection_id_on_raw_events() -> None:
+    collector = KrakenExecutionL2Collector(["PF_XBTUSD"], connection_id=3)
+    events = collector.process_message(
+        _snapshot(),
+        received_wall_ns=1_700_000_000_010_000_000,
+        received_monotonic_ns=10,
+    )
+    assert events[0]["connection_id"] == 3
+    with pytest.raises(ValueError, match="connection_id"):
+        KrakenExecutionL2Collector(["PF_XBTUSD"], connection_id=0)
+
+
 def test_sequence_gap_invalidates_session_fail_closed() -> None:
     collector = KrakenExecutionL2Collector(["PF_XBTUSD"])
     collector.process_message(_snapshot(seq=40))
@@ -241,9 +253,7 @@ def test_rotating_writer_creates_readable_gzip_parts_and_manifest(tmp_path: Path
             rows.extend(json.loads(line) for line in handle)
         assert len(file_info["sha256"]) == 64
     assert len(rows) == 4
-    assert manifest["global_projected_bytes"] == sum(
-        item["bytes"] for item in manifest["files"]
-    )
+    assert manifest["global_projected_bytes"] == sum(item["bytes"] for item in manifest["files"])
 
 
 def test_storage_cap_stops_before_write_without_deleting(tmp_path: Path) -> None:
@@ -277,10 +287,7 @@ def test_global_budget_is_shared_between_raw_and_observation_writers(tmp_path: P
         mtime=0,
     )
     observation_bytes = gzip.compress(
-        (
-            json.dumps(observation_record, separators=(",", ":"), sort_keys=True)
-            + "\n"
-        ).encode(),
+        (json.dumps(observation_record, separators=(",", ":"), sort_keys=True) + "\n").encode(),
         compresslevel=6,
         mtime=0,
     )

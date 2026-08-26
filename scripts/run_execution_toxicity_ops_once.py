@@ -61,6 +61,17 @@ def _acquire_lock(path: Path) -> int:
     return descriptor
 
 
+def _latest_technical_gate(output_root: Path) -> Path | None:
+    gate_root = Path(output_root) / "technical" / "ops" / "technical_gates"
+    gates = sorted(gate_root.glob("technical-gate-*.json"))
+    return gates[-1] if gates else None
+
+
+def collection_phase(output_root: Path) -> tuple[str, Path | None]:
+    gate = _latest_technical_gate(output_root)
+    return ("validation", gate) if gate is not None else ("technical", None)
+
+
 def run(args: argparse.Namespace) -> int:
     repo_root = Path(__file__).resolve().parents[1]
     output_root = Path(args.output_dir)
@@ -68,12 +79,13 @@ def run(args: argparse.Namespace) -> int:
     lock_descriptor = _acquire_lock(lock_path)
     collection_exit = 0
     try:
+        phase, existing_gate = collection_phase(output_root)
         if not args.health_only:
             collection_exit = run_shadow(
                 SimpleNamespace(
                     duration_seconds=args.duration_seconds,
-                    phase="technical",
-                    technical_gate=None,
+                    phase=phase,
+                    technical_gate=existing_gate,
                     session_id=None,
                     products=args.products,
                     output_dir=output_root,
@@ -92,12 +104,10 @@ def run(args: argparse.Namespace) -> int:
         storage_budget = GlobalStorageBudget(
             output_root, int(args.storage_cap_gib * 1024 * 1024 * 1024)
         )
-        gate_path: Path | None = None
-        if health["passed"]:
+        gate_path = existing_gate
+        if health["passed"] and gate_path is None:
             gate_path = ops_root / "technical_gates" / f"technical-gate-{stamp}.json"
-            _atomic_json(
-                gate_path, technical_gate_payload(health), storage_budget=storage_budget
-            )
+            _atomic_json(gate_path, technical_gate_payload(health), storage_budget=storage_budget)
         digest_json = ops_root / "digests" / f"digest-{stamp}.json"
         digest_md = ops_root / "digests" / f"digest-{stamp}.md"
         _atomic_json(digest_json, health, storage_budget=storage_budget)
@@ -108,6 +118,7 @@ def run(args: argparse.Namespace) -> int:
         )
         print(f"digest={digest_json.resolve()}")
         print(f"technical_gate={gate_path.resolve() if gate_path else 'not-issued'}")
+        print(f"collection_phase={phase}")
         return collection_exit
     finally:
         os.close(lock_descriptor)

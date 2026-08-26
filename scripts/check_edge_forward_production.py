@@ -52,9 +52,10 @@ def build_health(
     root = Path(repo_root).resolve()
     generated = (now or datetime.now(tz=UTC)).astimezone(UTC)
     reasons: list[str] = []
-    sessions_root = (
-        root / "data/collector_cache/kraken_execution_toxicity_hexe001/technical/sessions"
-    )
+    h_exe_root = root / "data/collector_cache/kraken_execution_toxicity_hexe001"
+    technical_gates = h_exe_root / "technical/ops/technical_gates"
+    h_exe_phase = "validation" if _latest(technical_gates, "technical-gate-*.json") else "technical"
+    sessions_root = h_exe_root / h_exe_phase / "sessions"
 
     latest_raw = _latest(sessions_root, "*.jsonl.gz")
     raw_state: dict[str, Any] | None = None
@@ -128,7 +129,10 @@ def build_health(
         "credentials_used": False,
         "orders_sent": 0,
         "tasks": {
-            "h_exe": {"inspection": "scheduled_data_health"},
+            "h_exe": {
+                "inspection": "scheduled_data_health",
+                "collection_phase": h_exe_phase,
+            },
             "h_wof": {"inspection": "scheduled_data_health"},
         },
         "h_exe_raw": raw_state,
@@ -194,6 +198,28 @@ def attach_wof_evaluation(payload: dict[str, Any], *, repo_root: Path) -> None:
     }
 
 
+def attach_h_exe_evaluation(payload: dict[str, Any], *, repo_root: Path) -> None:
+    """Attach the cache-only, raw-replayed H-EXE decision state."""
+
+    from scripts.evaluate_execution_toxicity_validation import evaluate_and_write
+
+    root = Path(repo_root).resolve() / "data/collector_cache/kraken_execution_toxicity_hexe001"
+    evaluation, digest = evaluate_and_write(output_root=root)
+    result = evaluation.get("evaluation", {})
+    payload["h_exe_evaluation"] = {
+        "status": evaluation["status"],
+        "decision": evaluation["decision"],
+        "complete_validation_utc_days": evaluation.get("complete_validation_utc_days", 0),
+        "completed_probes": evaluation.get("completed_probes", 0),
+        "sessions_verified": evaluation.get("sessions_verified", False),
+        "raw_replay_verified": evaluation.get("raw_replay_verified", False),
+        "ci_verified": evaluation.get("ci", {}).get("verified", False),
+        "economic_gates_passed": result.get("gates", {}).get("economic_gates_passed", False),
+        "digest": str(digest.resolve()),
+        "authorizes_paper_or_live": False,
+    }
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo-root", type=Path, default=REPO_ROOT)
@@ -204,6 +230,11 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     payload = build_health(repo_root=args.repo_root)
+    try:
+        attach_h_exe_evaluation(payload, repo_root=args.repo_root)
+    except (OSError, RuntimeError, TypeError, ValueError) as exc:
+        payload["reason_codes"].append(f"H_EXE_EVALUATION:{exc}")
+        payload["healthy"] = False
     try:
         attach_wof_evaluation(payload, repo_root=args.repo_root)
     except (OSError, RuntimeError, ValueError, CollectorError) as exc:
