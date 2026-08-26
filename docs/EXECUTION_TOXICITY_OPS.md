@@ -49,6 +49,8 @@ additionnel.
 - répertoire de démarrage : le worktree ;
 - règle de chevauchement : ne pas démarrer une nouvelle instance ;
 - exécution sous un compte utilisateur non administrateur ;
+- priorité de processus normale afin d'éviter de bloquer les imports et les
+  connexions sous charge disque ;
 - le passage sur batterie ne tue pas une occurrence déjà lancée ;
 - redémarrage après échec autorisé, sans élévation de privilèges.
 

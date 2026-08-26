@@ -55,6 +55,18 @@ sans mismatch de hash, credential ni ordre. La production gelée active est la
 session `20260826T191702.344218Z`, dont le heartbeat est alimenté toutes les cinq
 secondes. La tâche utilise désormais explicitement `--storage-cap-gib 200`.
 
+Cette première occurrence longue a ensuite subi un trou de marché supérieur à
+cinq minutes puis un blocage d'ouverture TLS. Elle a été arrêtée, journalisée
+dans `technical/ops/incidents.jsonl` et déplacée sans suppression vers
+`data/collector_cache/archive/h_exe_stalled_connect_20260826T191702.344218Z_*`.
+Le diagnostic a aussi révélé que la priorité Task Scheduler par défaut (`7`,
+`BelowNormal`) pouvait bloquer Python jusque dans ses imports sous charge disque.
+Les trois tâches utilisent maintenant la priorité normale `4`.
+
+La session active finale est `20260826T193742.767936Z`. Elle a démarré en moins
+de vingt secondes, dépassé 42 320 événements, et le contrôle planifié Python a
+terminé avec le code `0` et `healthy=true`.
+
 La désinstallation est locale et réversible via
 `scripts/uninstall_edge_forward_tasks.ps1`.
 
