@@ -7,7 +7,7 @@ Date de référence : 2026-08-26 UTC
 | Hypothèse | État | Preuve ou prochain gate |
 | --- | --- | --- |
 | H-QH-001 quarter-hour | Rejetée | 742 trades, PnL net à 20 pb de -1 558,75 USD, win rate 43,94 %, placebo p=0,328934. |
-| H-WOF-002 world order flow | Collecte forward-only | Les snapshots historiques officiels d'univers ne sont pas disponibles. Les snapshots causaux Binance et Kraken du 26 août ne peuvent gouverner qu'à partir du lundi 31 août 2026. Verdict interdit avant 30 semaines forward indépendantes et passage de toutes les gates préenregistrées. |
+| H-WOF-002 world order flow | Collecte forward-only | Les snapshots historiques officiels d'univers ne sont pas disponibles. Les snapshots causaux Binance et Kraken du 26 août ne peuvent gouverner qu'à partir du lundi 31 août 2026. Aucun verdict avant 30 semaines forward indépendantes ; un candidat exige en plus les gates cumulatives, dont 100 semaines éligibles et 30 semaines exposées. |
 | H-EXE-001 toxicité d'exécution | Production technique shadow | Flux publics Kraken Futures uniquement, zéro credential et zéro ordre. Gate technique interdit avant 14 jours UTC complets à plus de 99 % de couverture et sans gap non résolu. Validation économique ensuite : 30 à 60 jours et au moins 10 000 probes terminés. |
 
 ## Production locale
@@ -66,6 +66,18 @@ Les trois tâches utilisent maintenant la priorité normale `4`.
 La session active finale est `20260826T193742.767936Z`. Elle a démarré en moins
 de vingt secondes, dépassé 42 320 événements, et le contrôle planifié Python a
 terminé avec le code `0` et `healthy=true`.
+
+L'audit de bout en bout H-WOF a ensuite révélé que le premier journal ne
+capturait pas encore les prix Kraken d'entrée et de sortie exigés par le
+pré-enregistrement. Avant le début de la première semaine causale, le run
+planifié a été complété par une finalisation hebdomadaire append-only : après
+clôture, elle agrège les sept jours, exige les deux opens Kraken 1h exacts pour
+chaque membre et écrit un outcome avec manifeste SHA-256. Le moniteur de quinze
+minutes vérifie désormais le journal WOF complet, y compris les outcomes mûrs,
+et non plus uniquement la fraîcheur des snapshots. Au contrôle du 26 août à
+19:51 UTC, l'état réel est `bootstrap-pending`, sans erreur, avec zéro outcome
+attendu. La première issue possible pour la semaine source du 31 août sera
+finalisée au plus tôt lors du run du 15 septembre 2026.
 
 La désinstallation est locale et réversible via
 `scripts/uninstall_edge_forward_tasks.ps1`.

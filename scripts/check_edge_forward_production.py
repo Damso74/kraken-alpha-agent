@@ -14,6 +14,15 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT_ROOT = REPO_ROOT / "data/collector_cache/edge_forward_health"
 MIN_DISK_FREE_BYTES = 250 * 1024 * 1024 * 1024
 
+sys.path.insert(0, str(REPO_ROOT))
+
+from scripts.collect_world_order_flow_forward import (  # noqa: E402
+    DEFAULT_ROOT as DEFAULT_WOF_ROOT,
+)
+from scripts.collect_world_order_flow_forward import (  # noqa: E402
+    healthcheck_forward,
+)
+
 
 def _latest(root: Path, pattern: str) -> Path | None:
     if not root.is_dir():
@@ -43,8 +52,7 @@ def build_health(
     generated = (now or datetime.now(tz=UTC)).astimezone(UTC)
     reasons: list[str] = []
     sessions_root = (
-        root
-        / "data/collector_cache/kraken_execution_toxicity_hexe001/technical/sessions"
+        root / "data/collector_cache/kraken_execution_toxicity_hexe001/technical/sessions"
     )
 
     latest_raw = _latest(sessions_root, "*.jsonl.gz")
@@ -69,16 +77,15 @@ def build_health(
                 reasons.append("H_EXE_PROGRESS_SCHEMA_INVALID")
             if int(progress.get("event_count", 0)) <= 0:
                 reasons.append("H_EXE_PROGRESS_EVENT_COUNT_EMPTY")
-            if progress.get("credentials_used") is not False or int(
-                progress.get("orders_sent", -1)
-            ) != 0:
+            if (
+                progress.get("credentials_used") is not False
+                or int(progress.get("orders_sent", -1)) != 0
+            ):
                 reasons.append("H_EXE_PROGRESS_SAFETY_INVARIANT_FAILED")
             progress_state.update(
                 {
                     "event_count": int(progress.get("event_count", 0)),
-                    "last_exchange_timestamp_ms": progress.get(
-                        "last_exchange_timestamp_ms"
-                    ),
+                    "last_exchange_timestamp_ms": progress.get("last_exchange_timestamp_ms"),
                     "session_id": progress.get("session_id"),
                 }
             )
@@ -98,10 +105,16 @@ def build_health(
             reasons.append(f"WOF_SNAPSHOT_STALE_GT_48_HOURS:{relative}")
         snapshots.append(state)
 
+    wof_journal = healthcheck_forward(
+        root=root / DEFAULT_WOF_ROOT,
+        today=generated.date(),
+        maximum_lag_days=1,
+    )
+    if not wof_journal["healthy"]:
+        reasons.extend(f"WOF_JOURNAL:{reason}" for reason in wof_journal.get("errors", []))
+
     free_bytes = (
-        int(disk_free_bytes)
-        if disk_free_bytes is not None
-        else shutil.disk_usage(root).free
+        int(disk_free_bytes) if disk_free_bytes is not None else shutil.disk_usage(root).free
     )
     if free_bytes < MIN_DISK_FREE_BYTES:
         reasons.append("DISK_FREE_BELOW_250_GIB")
@@ -120,6 +133,7 @@ def build_health(
         "h_exe_raw": raw_state,
         "h_exe_progress": progress_state,
         "h_wof_snapshots": snapshots,
+        "h_wof_journal": wof_journal,
         "disk_free_gib": free_bytes / (1024**3),
     }
 

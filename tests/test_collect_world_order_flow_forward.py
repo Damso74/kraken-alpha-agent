@@ -1,16 +1,18 @@
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
 
 from scripts.collect_world_order_flow_forward import (
     KRAKEN_ASSET_PAIRS_URL,
+    KRAKEN_OHLC_URL,
     _capture_kraken_snapshot,
     _capture_snapshot,
     collect_forward_day,
+    collect_mature_week_outcome,
     healthcheck_forward,
     main,
     parse_kraken_asset_pairs,
@@ -89,6 +91,52 @@ def _capture_prior_universes(root: Path, when: datetime, fetcher) -> None:
         minimum_assets=2,
         maximum_assets=3,
     )
+
+
+def _collect_forward_range(root: Path, *, first_day: datetime, days: int, fetcher) -> None:
+    for offset in range(days):
+        target = first_day + timedelta(days=offset)
+        collect_forward_day(
+            root=root,
+            now=target + timedelta(days=1, hours=1),
+            fetcher=fetcher,
+            minimum_assets=2,
+            maximum_assets=3,
+        )
+
+
+def _outcome_fetcher(calls: list[tuple[str, dict | None]]):
+    base = _fetcher(calls)
+
+    def fetch(url: str, params: dict | None):
+        if url != KRAKEN_OHLC_URL:
+            return base(url, params)
+        calls.append((url, params))
+        assert params is not None
+        entry = int(params["since"]) + 3_600
+        exit_timestamp = entry + 7 * 86_400
+        pair = str(params["pair"])
+        return {
+            "error": [],
+            "result": {
+                pair: [
+                    [entry, "100", "101", "99", "100", "100", "10", 1],
+                    [
+                        exit_timestamp,
+                        "102",
+                        "103",
+                        "101",
+                        "102",
+                        "102",
+                        "10",
+                        1,
+                    ],
+                ],
+                "last": exit_timestamp,
+            },
+        }
+
+    return fetch
 
 
 def test_forward_collection_is_causal_append_only_and_idempotent(tmp_path: Path) -> None:
@@ -367,3 +415,104 @@ def test_snapshot_kraken_subcommand_writes_public_provenance(
     assert len(files) == 1
     snapshot = json.loads(files[0].read_text(encoding="utf-8"))
     assert snapshot["source_params"] == {"assetVersion": 1}
+
+
+def test_mature_week_outcome_captures_exact_kraken_opens_append_only(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "journal"
+    calls: list[tuple[str, dict | None]] = []
+    fetcher = _outcome_fetcher(calls)
+    delays: list[float] = []
+    sunday = datetime(2024, 1, 7, 12, tzinfo=UTC)
+    _capture_prior_universes(root, sunday, fetcher)
+    _collect_forward_range(
+        root,
+        first_day=datetime(2024, 1, 8, tzinfo=UTC),
+        days=15,
+        fetcher=fetcher,
+    )
+
+    finalized = collect_mature_week_outcome(
+        root=root,
+        now=datetime(2024, 1, 23, 3, tzinfo=UTC),
+        fetcher=fetcher,
+        request_interval_seconds=1.05,
+        sleeper=delays.append,
+    )
+    assert finalized["mode"] == "week-finalized"
+    assert finalized["source_week_start"] == "2024-01-08"
+    assert finalized["status"] == "complete"
+    assert finalized["row_count"] == 2
+    assert delays == [1.05]
+    artifact = json.loads((root / "week_outcomes" / "2024-01-08.json").read_text(encoding="utf-8"))
+    assert artifact["safety"] == {
+        "credentials_used": False,
+        "orders_sent": 0,
+        "public_only": True,
+    }
+    assert {row["entry_price"] for row in artifact["rows"]} == {100.0}
+    assert {row["exit_price"] for row in artifact["rows"]} == {102.0}
+    assert len(artifact["daily_source_hashes"]) == 7
+    (root / "week_outcome_manifest.jsonl").unlink()
+    recovered = collect_mature_week_outcome(
+        root=root,
+        now=datetime(2024, 1, 23, 4, tzinfo=UTC),
+        fetcher=lambda *_: (_ for _ in ()).throw(AssertionError("network forbidden")),
+        request_interval_seconds=0,
+    )
+    assert recovered["mode"] == "week-idempotent-cache-hit"
+    repeated = collect_mature_week_outcome(
+        root=root,
+        now=datetime(2024, 1, 23, 5, tzinfo=UTC),
+        fetcher=lambda *_: (_ for _ in ()).throw(AssertionError("network forbidden")),
+        request_interval_seconds=0,
+    )
+    assert repeated == {"mode": "no-mature-week"}
+    health = healthcheck_forward(root=root, today=datetime(2024, 1, 23).date())
+    assert health["healthy"] is True
+    assert health["week_outcome_records"] == 1
+
+
+def test_mature_week_outcome_missing_exact_price_writes_nothing(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "journal"
+    base_fetcher = _fetcher([])
+    _capture_prior_universes(root, datetime(2024, 1, 7, 12, tzinfo=UTC), base_fetcher)
+    _collect_forward_range(
+        root,
+        first_day=datetime(2024, 1, 8, tzinfo=UTC),
+        days=15,
+        fetcher=base_fetcher,
+    )
+
+    def missing_open(url: str, params: dict | None):
+        if url != KRAKEN_OHLC_URL:
+            return base_fetcher(url, params)
+        return {"error": [], "result": {"PAIR": [], "last": 0}}
+
+    with pytest.raises(CollectorError, match="exact open missing"):
+        collect_mature_week_outcome(
+            root=root,
+            now=datetime(2024, 1, 23, 3, tzinfo=UTC),
+            fetcher=missing_open,
+            request_interval_seconds=0,
+        )
+    assert not (root / "week_outcomes" / "2024-01-08.json").exists()
+    assert not (root / "week_outcome_manifest.jsonl").exists()
+
+
+def test_bootstrap_health_expires_after_first_causal_day_is_due(tmp_path: Path) -> None:
+    root = tmp_path / "journal"
+    _capture_prior_universes(
+        root,
+        datetime(2026, 8, 26, 12, tzinfo=UTC),
+        _fetcher([]),
+    )
+    pending = healthcheck_forward(root=root, today=datetime(2026, 9, 1).date())
+    overdue = healthcheck_forward(root=root, today=datetime(2026, 9, 2).date())
+    assert pending["healthy"] is True
+    assert pending["mode"] == "bootstrap-pending"
+    assert overdue["healthy"] is False
+    assert "no_forward_days" in overdue["errors"]

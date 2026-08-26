@@ -60,6 +60,23 @@ Chaque exécution :
 4. intersecte les univers et télécharge seulement les klines publiques 1d closes ;
 5. écrit `days/YYYY-MM-DD.json` atomiquement ;
 6. ajoute un enregistrement hashé à `manifest.jsonl`.
+7. recherche la plus ancienne semaine source dont l'open Kraken de sortie à
+   J+14 01:00 UTC est désormais clos ;
+8. agrège exactement ses sept jours et capture, pour chaque membre causal, les
+   opens Kraken 1h d'entrée et de sortie pré-enregistrés ;
+9. écrit l'issue sous `week_outcomes/YYYY-MM-DD.json` et son SHA-256 sous
+   `week_outcome_manifest.jsonl`.
+
+La finalisation attend le run du mardi suivant la sortie. Un open exact absent,
+dupliqué ou non positif bloque le run sans artefact partiel. Une semaine source
+à laquelle il manque un fichier quotidien est enregistrée comme
+`excluded_incomplete_source_week`, sans imputation. Une interruption après
+l'écriture atomique de l'outcome mais avant le manifeste est réparée depuis le
+cache vérifié, sans nouvel appel réseau. Les appels OHLC sont espacés de 1,05 s,
+conformément au rythme public conservateur d'au plus une requête par seconde ;
+même 80 membres terminent ainsi très largement dans la limite de vingt minutes
+de la tâche. Référence opérationnelle :
+<https://support.kraken.com/articles/206548367-what-are-the-api-rate-limits->.
 
 La tâche planifiée utilise `collect-scheduled`. Cette variante conserve les
 mêmes refus fail-closed, mais considère l'attente causale de la première semaine
@@ -85,9 +102,12 @@ sans réécrire les données. Aucun téléchargement `aggTrades` n'est effectué
 ```
 
 `healthcheck` vérifie les snapshots, les chemins canoniques, tous les SHA-256,
-la provenance, les doublons, la chronologie et le retard. `digest` retourne un
-résumé stable adapté à une alerte ou une tâche planifiée. Code retour : `0` si
-sain, `2` si incomplet, en retard ou corrompu.
+la provenance, les doublons, la chronologie, le retard et chaque outcome
+hebdomadaire arrivé à maturité. Avant le premier jour causal, l'état
+`bootstrap-pending` reste sain jusqu'au mardi suivant le début de la première
+semaine gouvernable ; il expire ensuite fail-closed. `digest` retourne un résumé
+stable adapté à une alerte ou une tâche planifiée. Code retour : `0` si sain,
+`2` si incomplet, en retard ou corrompu.
 
 Le CLI interdit `--as-of-date` avec une capture réseau : cette option est
 réservée aux vérifications cache-only afin d'empêcher un faux backfill causal.

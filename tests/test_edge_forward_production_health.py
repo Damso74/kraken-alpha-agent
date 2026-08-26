@@ -6,13 +6,14 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from scripts.check_edge_forward_production import build_health, write_health
+from scripts.collect_world_order_flow_forward import (
+    _capture_kraken_snapshot,
+    _capture_snapshot,
+)
 
 
 def _seed_runtime(root: Path, now: datetime) -> Path:
-    session = (
-        root
-        / "data/collector_cache/kraken_execution_toxicity_hexe001/technical/sessions/s1"
-    )
+    session = root / "data/collector_cache/kraken_execution_toxicity_hexe001/technical/sessions/s1"
     (session / "raw/2026-08-26").mkdir(parents=True)
     (session / "raw/2026-08-26/part-00000.jsonl.gz").write_bytes(b"gzip")
     progress = session / "progress.json"
@@ -35,10 +36,48 @@ def _seed_runtime(root: Path, now: datetime) -> Path:
         path.chmod(0o600)
         os.utime(path, (timestamp, timestamp))
     wof = root / "data/collector_cache/world_order_flow_forward"
-    for relative in ("snapshot_days", "kraken_universe_days"):
-        target = wof / relative / "2026-08-26.json"
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text("{}", encoding="utf-8")
+
+    def public_fetcher(url: str, _params: dict | None):
+        if "exchangeInfo" in url:
+            return {
+                "symbols": [
+                    {
+                        "symbol": "BTCUSDT",
+                        "baseAsset": "BTC",
+                        "quoteAsset": "USDT",
+                        "status": "TRADING",
+                        "isSpotTradingAllowed": True,
+                    }
+                ]
+            }
+        return {
+            "error": [],
+            "result": {
+                "XBT/USD": {
+                    "altname": "XBTUSD",
+                    "wsname": "XBT/USD",
+                    "aclass_base": "currency",
+                    "base": "XBT",
+                    "aclass_quote": "currency",
+                    "quote": "USD",
+                    "lot": "unit",
+                    "status": "online",
+                }
+            },
+        }
+
+    _capture_snapshot(wof, now=now, fetcher=public_fetcher)
+    _capture_kraken_snapshot(
+        wof,
+        now=now,
+        fetcher=public_fetcher,
+        minimum_assets=1,
+        maximum_assets=1,
+    )
+    for target in (
+        *wof.joinpath("snapshot_days").glob("*.json"),
+        *wof.joinpath("kraken_universe_days").glob("*.json"),
+    ):
         os.utime(target, (timestamp, timestamp))
     return progress
 
@@ -54,6 +93,8 @@ def test_health_is_green_for_fresh_safe_runtime(tmp_path: Path) -> None:
     assert health["healthy"] is True
     assert health["reason_codes"] == []
     assert health["h_exe_progress"]["event_count"] == 42
+    assert health["h_wof_journal"]["healthy"] is True
+    assert health["h_wof_journal"]["mode"] == "bootstrap-pending"
     digest = write_health(health, tmp_path / "health")
     assert digest.is_file()
     assert json.loads((tmp_path / "health/latest.json").read_text())["healthy"] is True

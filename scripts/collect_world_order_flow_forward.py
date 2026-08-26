@@ -5,9 +5,13 @@ The scheduled workflow is intentionally two days causal at bootstrap:
 1. capture today's public ``exchangeInfo`` snapshot;
 2. collect yesterday's fully closed 1d klines using the latest snapshot that
    already existed before the start of that day's UTC week;
-3. append one immutable daily artifact and its SHA-256 manifest record.
+3. append one immutable daily artifact and its SHA-256 manifest record;
+4. once a source week's seven-day outcome is closed, capture the exact Kraken
+   1h opens required by the frozen execution rule in a separate immutable
+   weekly artifact.
 
-No return, future price, position, paper fill, live order or credential is read.
+No future price is read before it exists. No position, paper fill, live order
+or credential is read or created.
 """
 
 from __future__ import annotations
@@ -16,7 +20,8 @@ import argparse
 import hashlib
 import json
 import sys
-from collections.abc import Mapping
+import time as time_module
+from collections.abc import Callable, Mapping
 from datetime import UTC, date, datetime, time, timedelta
 from pathlib import Path
 from typing import Any
@@ -39,15 +44,23 @@ from src.data.collectors.binance_world_order_flow import (  # noqa: E402
     parse_universe_snapshot,
     universe_at,
 )
+from src.research.world_order_flow import (  # noqa: E402
+    ENTRY_DELAY_SECONDS,
+    WEEK_SECONDS,
+)
 
 FORWARD_SCHEMA = "hwof002-forward-day-v1"
 MANIFEST_SCHEMA = "hwof002-forward-manifest-v1"
 UNIVERSE_SCHEMA = "hwof002-forward-kraken-universe-v1"
 KRAKEN_ASSET_PAIRS_URL = "https://api.kraken.com/0/public/AssetPairs"
+KRAKEN_OHLC_URL = "https://api.kraken.com/0/public/OHLC"
 KRAKEN_UNIVERSE_MANIFEST_SCHEMA = "hwof002-kraken-universe-manifest-v1"
+WEEK_OUTCOME_SCHEMA = "hwof002-forward-week-outcome-v1"
+WEEK_OUTCOME_MANIFEST_SCHEMA = "hwof002-forward-week-outcome-manifest-v1"
 DEFAULT_ROOT = Path("data/collector_cache/world_order_flow_forward")
 DEFAULT_MIN_ASSETS = 30
 DEFAULT_MAX_ASSETS = 80
+KRAKEN_PUBLIC_REQUEST_INTERVAL_SECONDS = 1.05
 KRAKEN_QUOTE_PRIORITY = {"USD": 0, "USDT": 1, "USDC": 2}
 NON_CRYPTO_BASE_ASSETS = {
     "USD",
@@ -69,9 +82,7 @@ KRAKEN_BASE_ALIASES = {"XBT": "BTC", "XDG": "DOGE"}
 def _atomic_write_json(path: Path, payload: Mapping[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(path.suffix + ".tmp")
-    temporary.write_text(
-        json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8"
-    )
+    temporary.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
     temporary.replace(path)
 
 
@@ -107,6 +118,14 @@ def _kraken_universe_manifest_path(root: Path) -> Path:
     return root / "kraken_universe_manifest.jsonl"
 
 
+def _week_outcome_path(root: Path, week_start: date) -> Path:
+    return root / "week_outcomes" / f"{week_start.isoformat()}.json"
+
+
+def _week_outcome_manifest_path(root: Path) -> Path:
+    return root / "week_outcome_manifest.jsonl"
+
+
 def _load_json(path: Path) -> Any:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
@@ -130,9 +149,7 @@ def _capture_snapshot(
     if path.is_file():
         snapshot = parse_universe_snapshot(_load_json(path))
     else:
-        snapshot = fetch_exchange_info_snapshot(
-            fetcher=fetcher, observed_at=normalized
-        )
+        snapshot = fetch_exchange_info_snapshot(fetcher=fetcher, observed_at=normalized)
         _atomic_write_json(path, snapshot.to_dict())
         created = True
     digest = sha256_file(path)
@@ -204,9 +221,7 @@ def parse_kraken_asset_pairs(
             "mode": "spot_long_only",
         }
         previous = by_base.get(base)
-        if previous is None or (
-            KRAKEN_QUOTE_PRIORITY[quote], candidate["pair"]
-        ) < (
+        if previous is None or (KRAKEN_QUOTE_PRIORITY[quote], candidate["pair"]) < (
             KRAKEN_QUOTE_PRIORITY[str(previous["quote_asset"])],
             str(previous["pair"]),
         ):
@@ -313,9 +328,7 @@ def _load_typed_manifest(path: Path, *, schema: str) -> list[dict[str, Any]]:
     return records
 
 
-def _append_typed_manifest(
-    path: Path, record: dict[str, Any], *, schema: str
-) -> bool:
+def _append_typed_manifest(path: Path, record: dict[str, Any], *, schema: str) -> bool:
     existing = _load_typed_manifest(path, schema=schema)
     same_day = [row for row in existing if row["day"] == record["day"]]
     if same_day:
@@ -330,9 +343,7 @@ def _append_typed_manifest(
     return True
 
 
-def _latest_causal_kraken_snapshot(
-    root: Path, *, target_day: date
-) -> tuple[dict[str, Any], str]:
+def _latest_causal_kraken_snapshot(root: Path, *, target_day: date) -> tuple[dict[str, Any], str]:
     known_by = _unix_day_start(_week_start(target_day))
     records = _load_typed_manifest(
         _kraken_universe_manifest_path(root),
@@ -340,9 +351,7 @@ def _latest_causal_kraken_snapshot(
     )
     eligible = [row for row in records if int(row["observed_at"]) <= known_by]
     if not eligible:
-        raise CollectorError(
-            "bootstrap incomplete: no Kraken universe predates target week"
-        )
+        raise CollectorError("bootstrap incomplete: no Kraken universe predates target week")
     record = max(eligible, key=lambda row: int(row["observed_at"]))
     expected = Path("kraken_universe_days") / f"{record['day']}.json"
     if Path(str(record["path"])) != expected:
@@ -410,12 +419,8 @@ def _latest_causal_snapshot(root: Path, *, target_day: date) -> tuple[UniverseSn
         default=None,
     )
     if snapshot is None:
-        raise CollectorError(
-            "bootstrap incomplete: no universe snapshot predates target week"
-        )
-    day_path = _snapshot_day_path(
-        root, datetime.fromtimestamp(snapshot.observed_at, tz=UTC).date()
-    )
+        raise CollectorError("bootstrap incomplete: no universe snapshot predates target week")
+    day_path = _snapshot_day_path(root, datetime.fromtimestamp(snapshot.observed_at, tz=UTC).date())
     digest = sha256_file(day_path)
     if digest is None or parse_universe_snapshot(_load_json(day_path)) != snapshot:
         raise CollectorError("causal snapshot file/log mismatch")
@@ -454,6 +459,310 @@ def _verify_day_file(path: Path, *, expected_day: date) -> tuple[dict[str, Any],
     return raw, digest
 
 
+def _kraken_open_from_payload(payload: Any, *, pair: str, expected_timestamp: int) -> float:
+    """Return one exact, closed 1h Kraken open or fail closed.
+
+    Kraken canonicalises pair names in the response, so the requested key is
+    only a hint.  Selecting by the frozen timestamp avoids accepting the most
+    recent candle or silently shifting the execution time.
+    """
+
+    if not isinstance(payload, Mapping):
+        raise CollectorError(f"Kraken OHLC payload is not an object for {pair}")
+    errors = payload.get("error")
+    result = payload.get("result")
+    if errors not in ([], None) or not isinstance(result, Mapping):
+        raise CollectorError(f"Kraken OHLC returned errors for {pair}: {errors!r}")
+    matches: list[float] = []
+    for key, raw_rows in result.items():
+        if key == "last" or not isinstance(raw_rows, list):
+            continue
+        for raw in raw_rows:
+            if not isinstance(raw, list) or len(raw) < 2:
+                continue
+            try:
+                timestamp = int(raw[0])
+                open_price = float(raw[1])
+            except (TypeError, ValueError):
+                continue
+            if timestamp == expected_timestamp and open_price > 0:
+                matches.append(open_price)
+    if len(matches) != 1:
+        raise CollectorError(
+            f"Kraken OHLC exact open missing or duplicated for {pair} at {expected_timestamp}"
+        )
+    return matches[0]
+
+
+def _verify_week_outcome_file(
+    path: Path, *, expected_week_start: date
+) -> tuple[dict[str, Any], str]:
+    raw = _load_json(path)
+    if not isinstance(raw, dict) or raw.get("schema_version") != WEEK_OUTCOME_SCHEMA:
+        raise CollectorError(f"invalid forward week outcome schema: {path}")
+    if raw.get("source_week_start") != expected_week_start.isoformat():
+        raise CollectorError(f"forward week outcome identity mismatch: {path}")
+    status = raw.get("status")
+    rows = raw.get("rows")
+    if status not in {"complete", "excluded_incomplete_source_week"}:
+        raise CollectorError(f"invalid forward week outcome status: {path}")
+    if not isinstance(rows, list) or raw.get("row_count") != len(rows):
+        raise CollectorError(f"invalid forward week outcome rows: {path}")
+    week_timestamp = _unix_day_start(expected_week_start)
+    entry_timestamp = week_timestamp + WEEK_SECONDS + ENTRY_DELAY_SECONDS
+    exit_timestamp = entry_timestamp + WEEK_SECONDS
+    assets: set[str] = set()
+    for row in rows:
+        if (
+            not isinstance(row, dict)
+            or row.get("week_start") != week_timestamp
+            or row.get("entry_timestamp") != entry_timestamp
+            or row.get("exit_timestamp") != exit_timestamp
+            or not isinstance(row.get("base_asset"), str)
+        ):
+            raise CollectorError(f"invalid row in forward week outcome: {path}")
+        asset = str(row["base_asset"])
+        if asset in assets:
+            raise CollectorError(f"duplicate asset in forward week outcome: {asset}")
+        assets.add(asset)
+        for field in (
+            "quote_volume",
+            "taker_buy_quote_volume",
+            "entry_price",
+            "exit_price",
+        ):
+            try:
+                value = float(row[field])
+            except (KeyError, TypeError, ValueError) as exc:
+                raise CollectorError(f"invalid {field} in forward week outcome: {path}") from exc
+            if value <= 0 and field != "taker_buy_quote_volume":
+                raise CollectorError(f"non-positive {field} in forward week outcome: {path}")
+            if field == "taker_buy_quote_volume" and value < 0:
+                raise CollectorError(f"negative {field} in forward week outcome: {path}")
+        if float(row["taker_buy_quote_volume"]) > float(row["quote_volume"]):
+            raise CollectorError(f"buy volume exceeds total in forward week: {path}")
+    if status == "complete" and not rows:
+        raise CollectorError(f"complete forward week outcome has no rows: {path}")
+    if status != "complete" and rows:
+        raise CollectorError(f"excluded forward week outcome contains rows: {path}")
+    digest = sha256_file(path)
+    if digest is None:
+        raise CollectorError(f"could not hash forward week outcome: {path}")
+    return raw, digest
+
+
+def _source_week_candidates(records: list[dict[str, Any]], *, today: date) -> list[date]:
+    """Return chronologically mature source weeks represented in the journal.
+
+    The scheduled job runs shortly after UTC midnight.  Requiring the Tuesday
+    after the exit Monday gives Kraken's 01:00 UTC exit candle ample time to
+    close before it can enter an immutable outcome artifact.
+    """
+
+    if not records:
+        return []
+    first_day = date.fromisoformat(str(records[0]["day"]))
+    first_week = _week_start(first_day)
+    latest_mature_week = _week_start(today - timedelta(days=15))
+    if latest_mature_week < first_week:
+        return []
+    count = (latest_mature_week - first_week).days // 7
+    return [first_week + timedelta(days=7 * index) for index in range(count + 1)]
+
+
+def collect_mature_week_outcome(
+    *,
+    root: Path,
+    now: datetime,
+    fetcher: HttpFetcherFn = default_http_fetcher,
+    request_interval_seconds: float = KRAKEN_PUBLIC_REQUEST_INTERVAL_SECONDS,
+    sleeper: Callable[[float], None] = time_module.sleep,
+) -> dict[str, Any]:
+    """Finalize the earliest mature H-WOF source week, at most once.
+
+    Missing daily source data is recorded as an immutable exclusion.  A
+    transport error or a missing exact Kraken candle writes nothing and is
+    retried by the next scheduled run.
+    """
+
+    if now.tzinfo is None:
+        raise ValueError("now must be timezone-aware")
+    if request_interval_seconds < 0:
+        raise ValueError("request_interval_seconds must be non-negative")
+    normalized = now.astimezone(UTC)
+    records = _load_manifest(_manifest_path(root))
+    outcome_records = _load_typed_manifest(
+        _week_outcome_manifest_path(root), schema=WEEK_OUTCOME_MANIFEST_SCHEMA
+    )
+    completed = {date.fromisoformat(str(row["day"])) for row in outcome_records}
+    pending = [
+        week
+        for week in _source_week_candidates(records, today=normalized.date())
+        if week not in completed
+    ]
+    if not pending:
+        return {"mode": "no-mature-week"}
+    source_week = pending[0]
+    existing_path = _week_outcome_path(root, source_week)
+    if existing_path.is_file():
+        verified, digest = _verify_week_outcome_file(existing_path, expected_week_start=source_week)
+        record = {
+            "schema_version": WEEK_OUTCOME_MANIFEST_SCHEMA,
+            "day": source_week.isoformat(),
+            "path": str(Path("week_outcomes") / existing_path.name),
+            "sha256": digest,
+            "status": verified["status"],
+            "row_count": verified["row_count"],
+        }
+        _append_typed_manifest(
+            _week_outcome_manifest_path(root),
+            record,
+            schema=WEEK_OUTCOME_MANIFEST_SCHEMA,
+        )
+        return {
+            "mode": "week-idempotent-cache-hit",
+            "source_week_start": source_week.isoformat(),
+            "status": verified["status"],
+            "row_count": verified["row_count"],
+            "sha256": digest,
+        }
+    record_by_day = {date.fromisoformat(str(row["day"])): row for row in records}
+    expected_days = [source_week + timedelta(days=index) for index in range(7)]
+    missing_days = [day.isoformat() for day in expected_days if day not in record_by_day]
+
+    rows: list[dict[str, Any]] = []
+    status = "complete"
+    reason_codes: list[str] = []
+    daily_hashes: list[dict[str, str]] = []
+    if missing_days:
+        status = "excluded_incomplete_source_week"
+        reason_codes.append("MISSING_DAILY_SOURCE")
+    else:
+        days: list[dict[str, Any]] = []
+        for day in expected_days:
+            record = record_by_day[day]
+            payload, digest = _verify_day_file(root / Path(str(record["path"])), expected_day=day)
+            if digest != record.get("sha256"):
+                raise CollectorError("daily source hash mismatch during weekly finalization")
+            days.append(payload)
+            daily_hashes.append({"day": day.isoformat(), "sha256": digest})
+
+        expected_week = source_week.isoformat()
+        binance_hashes = {str(day.get("binance_snapshot_sha256")) for day in days}
+        kraken_hashes = {str(day.get("kraken_universe_sha256")) for day in days}
+        asset_sets = [{str(row["base_asset"]) for row in day.get("rows", [])} for day in days]
+        if (
+            any(day.get("causal_week_start") != expected_week for day in days)
+            or len(binance_hashes) != 1
+            or len(kraken_hashes) != 1
+            or any(asset_set != asset_sets[0] for asset_set in asset_sets[1:])
+        ):
+            status = "excluded_incomplete_source_week"
+            reason_codes.append("INCONSISTENT_CAUSAL_WEEK_SOURCE")
+        else:
+            kraken_digest = next(iter(kraken_hashes))
+            kraken_records = _load_typed_manifest(
+                _kraken_universe_manifest_path(root),
+                schema=KRAKEN_UNIVERSE_MANIFEST_SCHEMA,
+            )
+            matching_snapshots = [
+                row for row in kraken_records if row.get("sha256") == kraken_digest
+            ]
+            if len(matching_snapshots) != 1:
+                raise CollectorError("causal Kraken universe hash is not unique")
+            snapshot_path = root / Path(str(matching_snapshots[0]["path"]))
+            snapshot = _load_json(snapshot_path)
+            pair_by_asset = {
+                str(item["base_asset"]): str(item["pair"])
+                for item in snapshot.get("pairs", [])
+                if isinstance(item, Mapping)
+            }
+            assets = sorted(asset_sets[0])
+            if set(pair_by_asset) != set(snapshot.get("base_assets", [])) or any(
+                asset not in pair_by_asset for asset in assets
+            ):
+                raise CollectorError("causal Kraken pair mapping is incomplete")
+
+            week_timestamp = _unix_day_start(source_week)
+            entry_timestamp = week_timestamp + WEEK_SECONDS + ENTRY_DELAY_SECONDS
+            exit_timestamp = entry_timestamp + WEEK_SECONDS
+            for index, asset in enumerate(assets):
+                daily_asset_rows = [
+                    next(row for row in day["rows"] if str(row["base_asset"]) == asset)
+                    for day in days
+                ]
+                quote_volume = sum(float(row["quote_volume"]) for row in daily_asset_rows)
+                taker_buy = sum(float(row["taker_buy_quote_volume"]) for row in daily_asset_rows)
+                if quote_volume <= 0 or taker_buy < 0 or taker_buy > quote_volume:
+                    raise CollectorError(f"invalid aggregated weekly flow for {asset}")
+                pair = pair_by_asset[asset]
+                if index:
+                    sleeper(request_interval_seconds)
+                ohlc = fetcher(
+                    KRAKEN_OHLC_URL,
+                    {"pair": pair, "interval": 60, "since": entry_timestamp - 3_600},
+                )
+                rows.append(
+                    {
+                        "base_asset": asset,
+                        "pair": pair,
+                        "week_start": week_timestamp,
+                        "quote_volume": quote_volume,
+                        "taker_buy_quote_volume": taker_buy,
+                        "entry_timestamp": entry_timestamp,
+                        "entry_price": _kraken_open_from_payload(
+                            ohlc, pair=pair, expected_timestamp=entry_timestamp
+                        ),
+                        "exit_timestamp": exit_timestamp,
+                        "exit_price": _kraken_open_from_payload(
+                            ohlc, pair=pair, expected_timestamp=exit_timestamp
+                        ),
+                    }
+                )
+
+    payload = {
+        "schema_version": WEEK_OUTCOME_SCHEMA,
+        "source_week_start": source_week.isoformat(),
+        "collected_at": normalized.isoformat().replace("+00:00", "Z"),
+        "status": status,
+        "reason_codes": reason_codes,
+        "source": KRAKEN_OHLC_URL,
+        "source_params": {"interval": 60},
+        "missing_days": missing_days,
+        "daily_source_hashes": daily_hashes,
+        "row_count": len(rows),
+        "rows": rows,
+        "safety": {
+            "public_only": True,
+            "credentials_used": False,
+            "orders_sent": 0,
+        },
+    }
+    path = _week_outcome_path(root, source_week)
+    _atomic_write_json(path, payload)
+    verified, digest = _verify_week_outcome_file(path, expected_week_start=source_week)
+    record = {
+        "schema_version": WEEK_OUTCOME_MANIFEST_SCHEMA,
+        "day": source_week.isoformat(),
+        "path": str(Path("week_outcomes") / path.name),
+        "sha256": digest,
+        "status": verified["status"],
+        "row_count": verified["row_count"],
+    }
+    _append_typed_manifest(
+        _week_outcome_manifest_path(root),
+        record,
+        schema=WEEK_OUTCOME_MANIFEST_SCHEMA,
+    )
+    return {
+        "mode": "week-finalized",
+        "source_week_start": source_week.isoformat(),
+        "status": status,
+        "row_count": len(rows),
+        "sha256": digest,
+    }
+
+
 def collect_forward_day(
     *,
     root: Path,
@@ -473,9 +782,7 @@ def collect_forward_day(
 
     if cache_only:
         raw, digest = _verify_day_file(day_path, expected_day=target_day)
-        health = healthcheck_forward(
-            root=root, today=normalized.date(), maximum_lag_days=1
-        )
+        health = healthcheck_forward(root=root, today=normalized.date(), maximum_lag_days=1)
         if not health["healthy"]:
             raise CollectorError("cache-only verification failed healthcheck")
         return {
@@ -488,9 +795,7 @@ def collect_forward_day(
 
     # Snapshot capture always happens first. It can govern future weeks only,
     # never the target day if observed after that week's start.
-    _, _, binance_snapshot_created = _capture_snapshot(
-        root, now=normalized, fetcher=fetcher
-    )
+    _, _, binance_snapshot_created = _capture_snapshot(root, now=normalized, fetcher=fetcher)
     _, _, kraken_snapshot_created = _capture_kraken_snapshot(
         root,
         now=normalized,
@@ -524,9 +829,7 @@ def collect_forward_day(
             "kraken_snapshot_created": kraken_snapshot_created,
         }
 
-    causal_snapshot, snapshot_digest = _latest_causal_snapshot(
-        root, target_day=target_day
-    )
+    causal_snapshot, snapshot_digest = _latest_causal_snapshot(root, target_day=target_day)
     week_start_timestamp = _unix_day_start(_week_start(target_day))
     kraken_snapshot, kraken_universe_digest = _latest_causal_kraken_snapshot(
         root, target_day=target_day
@@ -535,9 +838,7 @@ def collect_forward_day(
     eligible = sorted(
         [
             member
-            for member in universe_at(
-                [causal_snapshot], decision_timestamp=week_start_timestamp
-            )
+            for member in universe_at([causal_snapshot], decision_timestamp=week_start_timestamp)
             if member.base_asset in kraken_assets
         ],
         key=lambda member: member.base_asset,
@@ -600,13 +901,12 @@ def collect_forward_day(
     }
 
 
-def healthcheck_forward(
-    *, root: Path, today: date, maximum_lag_days: int = 1
-) -> dict[str, Any]:
+def healthcheck_forward(*, root: Path, today: date, maximum_lag_days: int = 1) -> dict[str, Any]:
     """Verify the whole local journal and return a scheduler-friendly digest."""
 
     errors: list[str] = []
     records: list[dict[str, Any]] = []
+    snapshots: list[UniverseSnapshot] = []
     try:
         records = _load_manifest(_manifest_path(root))
         snapshots = load_universe_snapshots(_snapshot_log(root))
@@ -614,9 +914,10 @@ def healthcheck_forward(
             snapshot_path = _snapshot_day_path(
                 root, datetime.fromtimestamp(snapshot.observed_at, tz=UTC).date()
             )
-            if not snapshot_path.is_file() or parse_universe_snapshot(
-                _load_json(snapshot_path)
-            ) != snapshot:
+            if (
+                not snapshot_path.is_file()
+                or parse_universe_snapshot(_load_json(snapshot_path)) != snapshot
+            ):
                 errors.append(f"snapshot_file_mismatch:{snapshot.observed_at}")
     except CollectorError as exc:
         errors.append(str(exc))
@@ -659,10 +960,8 @@ def healthcheck_forward(
             if (
                 digest != record.get("sha256")
                 or raw["row_count"] != record.get("row_count")
-                or raw["binance_snapshot_sha256"]
-                != record.get("binance_snapshot_sha256")
-                or raw["kraken_universe_sha256"]
-                != record.get("kraken_universe_sha256")
+                or raw["binance_snapshot_sha256"] != record.get("binance_snapshot_sha256")
+                or raw["kraken_universe_sha256"] != record.get("kraken_universe_sha256")
             ):
                 raise CollectorError("manifest digest or row count mismatch")
             verified_records.append(
@@ -674,19 +973,65 @@ def healthcheck_forward(
 
     latest_day = date.fromisoformat(records[-1]["day"]) if records else None
     lag_days = (today - latest_day).days - 1 if latest_day is not None else None
+    bootstrap_pending = False
+    if latest_day is None and snapshots:
+        first_snapshot_day = datetime.fromtimestamp(
+            min(row.observed_at for row in snapshots), tz=UTC
+        ).date()
+        first_causal_week = _week_start(first_snapshot_day) + timedelta(days=7)
+        bootstrap_pending = today <= first_causal_week + timedelta(days=1)
     if latest_day is None:
-        errors.append("no_forward_days")
+        if not bootstrap_pending:
+            errors.append("no_forward_days")
     elif latest_day >= today:
         errors.append(f"forward_day_not_closed:{latest_day.isoformat()}")
     elif lag_days > maximum_lag_days:
         errors.append(f"forward_lag_days:{lag_days}")
-    digest = hashlib.sha256("\n".join(verified_records).encode()).hexdigest()
+    verified_outcomes: list[str] = []
+    outcome_records: list[dict[str, Any]] = []
+    try:
+        outcome_records = _load_typed_manifest(
+            _week_outcome_manifest_path(root), schema=WEEK_OUTCOME_MANIFEST_SCHEMA
+        )
+        for record in outcome_records:
+            week = date.fromisoformat(str(record["day"]))
+            relative = Path(str(record.get("path")))
+            expected_relative = Path("week_outcomes") / f"{week.isoformat()}.json"
+            if relative != expected_relative:
+                raise CollectorError("week outcome manifest path is not canonical")
+            payload, outcome_digest = _verify_week_outcome_file(
+                root / relative, expected_week_start=week
+            )
+            if (
+                outcome_digest != record.get("sha256")
+                or payload["status"] != record.get("status")
+                or payload["row_count"] != record.get("row_count")
+            ):
+                raise CollectorError("week outcome manifest mismatch")
+            verified_outcomes.append(
+                f"{week.isoformat()}:{outcome_digest}:{payload['status']}:{payload['row_count']}"
+            )
+        completed_weeks = {date.fromisoformat(str(record["day"])) for record in outcome_records}
+        overdue = [
+            week.isoformat()
+            for week in _source_week_candidates(records, today=today)
+            if week not in completed_weeks
+        ]
+        if overdue:
+            errors.append(f"mature_week_outcomes_missing:{','.join(overdue)}")
+    except (CollectorError, KeyError, TypeError, ValueError) as exc:
+        errors.append(f"week_outcome_invalid:{exc}")
+
+    digest_material = [*verified_records, "--week-outcomes--", *verified_outcomes]
+    digest = hashlib.sha256("\n".join(digest_material).encode()).hexdigest()
     return {
         "schema_version": "hwof002-forward-health-v1",
+        "mode": "bootstrap-pending" if bootstrap_pending else "journal",
         "healthy": not errors,
         "latest_day": latest_day.isoformat() if latest_day else None,
         "lag_days": lag_days,
         "manifest_records": len(records),
+        "week_outcome_records": len(outcome_records),
         "journal_sha256": digest,
         "errors": errors,
     }
@@ -722,13 +1067,11 @@ def main() -> int:
     try:
         if (
             args.as_of_date is not None
-            and args.command
-            in {"snapshot", "snapshot-kraken", "collect", "collect-scheduled"}
+            and args.command in {"snapshot", "snapshot-kraken", "collect", "collect-scheduled"}
             and not args.cache_only
         ):
             raise ValueError(
-                "historical network capture is forbidden; --as-of-date is "
-                "verification-only"
+                "historical network capture is forbidden; --as-of-date is verification-only"
             )
         if args.command == "snapshot":
             if args.cache_only:
@@ -768,6 +1111,12 @@ def main() -> int:
                     minimum_assets=args.minimum_assets,
                     maximum_assets=args.maximum_assets,
                 )
+                if not args.cache_only:
+                    result["week_outcome"] = collect_mature_week_outcome(
+                        root=args.root,
+                        now=now,
+                        fetcher=default_http_fetcher,
+                    )
             except CollectorError as exc:
                 bootstrap_reasons = {
                     "bootstrap incomplete: no universe snapshot predates target week",
@@ -791,6 +1140,7 @@ def main() -> int:
                 result = {
                     "healthy": result["healthy"],
                     "latest_day": result["latest_day"],
+                    "week_outcome_records": result["week_outcome_records"],
                     "journal_sha256": result["journal_sha256"],
                 }
         print(json.dumps(result, indent=2, sort_keys=True))
