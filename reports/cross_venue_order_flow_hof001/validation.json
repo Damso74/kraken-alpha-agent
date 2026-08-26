@@ -1,0 +1,374 @@
+{
+  "cost_model": {
+    "note": "conservative discrete weekly turnover model",
+    "primary_round_trip_bps_per_exposed_week": 50,
+    "stress_round_trip_bps_per_exposed_week": 100
+  },
+  "data_end_exclusive": "2026-01-01",
+  "data_provenance": {
+    "binance_btcusdt_1d": {
+      "load_mode": "cache",
+      "path": "C:\\Code\\perso\\kraken-alpha-agent-microstructure\\data\\collector_cache\\cross_venue_order_flow\\binance_btcusdt_1d_2022-03-23_2025-12-31.json",
+      "row_count": 1380,
+      "sha256": "7b8289f9517f3ec7608578ba9ef3511177261c6c252d0facb591ccf2ab279b78"
+    },
+    "kraken_cvd_1d": {
+      "load_mode": "cache",
+      "path": "C:\\Code\\perso\\kraken-alpha-agent-microstructure\\data\\collector_cache\\cross_venue_order_flow\\kraken_cvd_1d_2022-03-23_2025-12-31.json",
+      "row_count": 1380,
+      "sha256": "1ffae076e9aa1fd7adc1244b6641f4401ad533d3755c04c2474d811eafd083db"
+    },
+    "kraken_prices_1h": {
+      "load_mode": "cache",
+      "path": "C:\\Code\\perso\\kraken-alpha-agent-microstructure\\data\\collector_cache\\cross_venue_order_flow\\kraken_prices_1h_2022-03-23_2025-12-31.json",
+      "row_count": 33110,
+      "sha256": "7c0dcb5bc68b91dfea3ee5c5049fd58e5ab8421dbd6aaa6a8ba1fea1b3932c6f"
+    }
+  },
+  "data_quality": {
+    "development": {
+      "binance": {
+        "coverage": 1.0,
+        "expected": 644,
+        "first_missing": null,
+        "first_off_grid": null,
+        "missing_count": 0,
+        "observed": 644,
+        "off_grid_count": 0
+      },
+      "kraken_cvd": {
+        "coverage": 1.0,
+        "expected": 644,
+        "first_missing": null,
+        "first_off_grid": null,
+        "missing_count": 0,
+        "observed": 644,
+        "off_grid_count": 0
+      },
+      "kraken_prices": {
+        "coverage": 1.0,
+        "expected": 15456,
+        "first_missing": null,
+        "first_off_grid": null,
+        "missing_count": 0,
+        "observed": 15456,
+        "off_grid_count": 0
+      },
+      "passed": true
+    },
+    "validation": {
+      "binance": {
+        "coverage": 1.0,
+        "expected": 731,
+        "first_missing": null,
+        "first_off_grid": null,
+        "missing_count": 0,
+        "observed": 731,
+        "off_grid_count": 0
+      },
+      "kraken_cvd": {
+        "coverage": 1.0,
+        "expected": 731,
+        "first_missing": null,
+        "first_off_grid": null,
+        "missing_count": 0,
+        "observed": 731,
+        "off_grid_count": 0
+      },
+      "kraken_prices": {
+        "coverage": 1.0,
+        "expected": 17544,
+        "first_missing": null,
+        "first_off_grid": null,
+        "missing_count": 0,
+        "observed": 17544,
+        "off_grid_count": 0
+      },
+      "passed": true
+    }
+  },
+  "feature_diagnostics": {
+    "binance_days": 1380,
+    "common_days": 1380,
+    "complete_weeks": 193,
+    "eligible_weeks": 143,
+    "kraken_days": 1380
+  },
+  "generated_at": "2026-08-26T16:10:15Z",
+  "git_commit": "8c8dc1d41543900ad126e9e1924ffec9f1764536",
+  "nature": "cross_venue_order_flow_proxy_not_exact_replication",
+  "outcome_diagnostics": {
+    "development": {
+      "binance_signals": 3,
+      "combined_signals": 3,
+      "eligible_outcomes": 37,
+      "embargoed": 1,
+      "kraken_signals": 8,
+      "missing_price": 0,
+      "momentum_signals": 19
+    },
+    "validation": {
+      "binance_signals": 26,
+      "combined_signals": 9,
+      "eligible_outcomes": 104,
+      "embargoed": 1,
+      "kraken_signals": 11,
+      "missing_price": 0,
+      "momentum_signals": 54
+    }
+  },
+  "preregistration": "docs\\CROSS_VENUE_ORDER_FLOW_PREREGISTRATION.md",
+  "preregistration_sha256": "1b3c7fe72cb9807fda825c9e5e0094a5c9d4c09a5905a4807894f32037306776",
+  "previous_validation_sha256": null,
+  "schema_version": "hof001-report-v1",
+  "segments": {
+    "development": {
+      "bootstrap_lower_95_one_sided": -0.07336833819046662,
+      "exposure_diagnostics": {
+        "annualized_weekly_sharpe": 0.5146848879880606,
+        "eligible_weeks": 37,
+        "exposed_weeks": 3,
+        "exposure": 0.08108108108108109,
+        "state_changes": 6
+      },
+      "gates": {
+        "acceptable_quarter_concentration": false,
+        "annualized_weekly_sharpe_0_5": true,
+        "beats_both_single_venue_means": false,
+        "beats_momentum_and_weekly_long_pnl": false,
+        "beats_permutation_bonferroni": false,
+        "bootstrap_lower_bound_positive": false,
+        "data_quality": true,
+        "eligible_exposure_and_state_changes": false,
+        "min_30_trades": false,
+        "positive_at_100bps": true,
+        "positive_each_year": true,
+        "positive_leave_one_quarter_out": false,
+        "positive_mean": true,
+        "positive_pnl": true,
+        "win_rate_50pct": true
+      },
+      "passed": false,
+      "primary": {
+        "best_return": 0.13963509342537594,
+        "mean_return": 0.02308584924579186,
+        "median_return": 0.0029907925024662595,
+        "pnl_usd": 69.25754773737559,
+        "trade_count": 3,
+        "win_rate": 0.6666666666666666,
+        "worst_return": -0.07336833819046662
+      },
+      "primary_cost_bps": 50.0,
+      "quarterly_robustness": {
+        "acceptable_quarter_concentration": false,
+        "leave_one_quarter_out": {
+          "2023-Q1": 0.06925754773737558,
+          "2023-Q2": 0.13963509342537594,
+          "2023-Q3": 0.06925754773737558,
+          "2023-Q4": -0.07037754568800036
+        },
+        "max_positive_gain_share": 0.9790305070989752,
+        "pnl_return_by_quarter": {
+          "2023-Q1": 0.0,
+          "2023-Q2": -0.07037754568800036,
+          "2023-Q3": 0.0,
+          "2023-Q4": 0.13963509342537594
+        },
+        "pnl_return_by_year": {
+          "2023": 0.06925754773737558
+        },
+        "positive_each_year": true,
+        "positive_leave_one_quarter_out": false
+      },
+      "single_venue_baselines": {
+        "always_long_weekly": {
+          "best_return": 0.14837935219601006,
+          "mean_return": 0.007709025200257939,
+          "median_return": -0.0006817804351436597,
+          "pnl_usd": 285.2339324095438,
+          "trade_count": 37,
+          "win_rate": 0.4594594594594595,
+          "worst_return": -0.11165345316611419
+        },
+        "binance": {
+          "best_return": 0.13963509342537594,
+          "mean_return": 0.0375502834887654,
+          "median_return": 0.046384095231386875,
+          "pnl_usd": 112.65085046629619,
+          "trade_count": 3,
+          "win_rate": 0.6666666666666666,
+          "worst_return": -0.07336833819046662
+        },
+        "kraken": {
+          "best_return": 0.13963509342537594,
+          "mean_return": 0.007732096309603242,
+          "median_return": -0.004527011554290247,
+          "pnl_usd": 61.85677047682594,
+          "trade_count": 8,
+          "win_rate": 0.5,
+          "worst_return": -0.07336833819046662
+        },
+        "momentum": {
+          "best_return": 0.14837935219601006,
+          "mean_return": 0.00914283867221843,
+          "median_return": -0.0003134624139685639,
+          "pnl_usd": 173.7139347721502,
+          "trade_count": 19,
+          "win_rate": 0.47368421052631576,
+          "worst_return": -0.11165345316611419
+        }
+      },
+      "status": "insufficient_power",
+      "stratified_permutation": {
+        "empirical_p_value": 0.3333333333333333,
+        "permuted_mean": 0.009481737406936962,
+        "replications": 2000
+      },
+      "stress_100bps": {
+        "best_return": 0.13463509342537594,
+        "mean_return": 0.018085849245791864,
+        "median_return": -0.0020092074975337406,
+        "pnl_usd": 54.25754773737559,
+        "trade_count": 3,
+        "win_rate": 0.3333333333333333,
+        "worst_return": -0.07836833819046661
+      }
+    },
+    "validation": {
+      "bootstrap_lower_95_one_sided": -0.011740500675274495,
+      "exposure_diagnostics": {
+        "annualized_weekly_sharpe": 1.0968776790812338,
+        "eligible_weeks": 104,
+        "exposed_weeks": 9,
+        "exposure": 0.08653846153846154,
+        "state_changes": 14
+      },
+      "gates": {
+        "acceptable_quarter_concentration": false,
+        "annualized_weekly_sharpe_0_5": true,
+        "beats_both_single_venue_means": true,
+        "beats_momentum_and_weekly_long_pnl": true,
+        "beats_permutation_bonferroni": false,
+        "bootstrap_lower_bound_positive": false,
+        "data_quality": true,
+        "eligible_exposure_and_state_changes": false,
+        "min_30_trades": false,
+        "positive_at_100bps": true,
+        "positive_each_year": true,
+        "positive_leave_one_quarter_out": false,
+        "positive_mean": true,
+        "positive_pnl": true,
+        "win_rate_50pct": true
+      },
+      "passed": false,
+      "primary": {
+        "best_return": 0.22683330753753295,
+        "mean_return": 0.056000582090439996,
+        "median_return": 0.06617840147005694,
+        "pnl_usd": 504.00523881396003,
+        "trade_count": 9,
+        "win_rate": 0.6666666666666666,
+        "worst_return": -0.10896657103654739
+      },
+      "primary_cost_bps": 50.0,
+      "quarterly_robustness": {
+        "acceptable_quarter_concentration": false,
+        "leave_one_quarter_out": {
+          "2024-Q1": -0.0020075412031290707,
+          "2024-Q2": 0.50400523881396,
+          "2024-Q3": 0.5035913908638476,
+          "2024-Q4": 0.5290500397388823,
+          "2025-Q1": 0.50400523881396,
+          "2025-Q2": 0.50400523881396,
+          "2025-Q3": 0.5148411557563564,
+          "2025-Q4": 0.47054591009988267
+        },
+        "max_positive_gain_share": 0.7798579159379412,
+        "pnl_return_by_quarter": {
+          "2024-Q1": 0.506012780017089,
+          "2024-Q2": 0.0,
+          "2024-Q3": 0.0004138479501123449,
+          "2024-Q4": -0.025044800924922336,
+          "2025-Q1": 0.0,
+          "2025-Q2": 0.0,
+          "2025-Q3": -0.01083591694239638,
+          "2025-Q4": 0.033459328714077315
+        },
+        "pnl_return_by_year": {
+          "2024": 0.48138182704227905,
+          "2025": 0.022623411771680934
+        },
+        "positive_each_year": true,
+        "positive_leave_one_quarter_out": false
+      },
+      "single_venue_baselines": {
+        "always_long_weekly": {
+          "best_return": 0.22683330753753295,
+          "mean_return": 0.004083346168737653,
+          "median_return": -0.003874718989082311,
+          "pnl_usd": 424.6680015487159,
+          "trade_count": 104,
+          "win_rate": 0.46153846153846156,
+          "worst_return": -0.18856658616776745
+        },
+        "binance": {
+          "best_return": 0.22683330753753295,
+          "mean_return": 0.027480729930911958,
+          "median_return": 0.0015613472437003883,
+          "pnl_usd": 714.4989782037109,
+          "trade_count": 26,
+          "win_rate": 0.5384615384615384,
+          "worst_return": -0.10896657103654739
+        },
+        "kraken": {
+          "best_return": 0.22683330753753295,
+          "mean_return": 0.03799529562936907,
+          "median_return": 0.008394385484423176,
+          "pnl_usd": 417.9482519230598,
+          "trade_count": 11,
+          "win_rate": 0.5454545454545454,
+          "worst_return": -0.10896657103654739
+        },
+        "momentum": {
+          "best_return": 0.16933276547416243,
+          "mean_return": 0.00563918348385792,
+          "median_return": -0.0074702314332926135,
+          "pnl_usd": 304.51590812832774,
+          "trade_count": 54,
+          "win_rate": 0.46296296296296297,
+          "worst_return": -0.18856658616776745
+        }
+      },
+      "status": "insufficient_power",
+      "stratified_permutation": {
+        "empirical_p_value": 0.046476761619190406,
+        "permuted_mean": 0.01906512555932006,
+        "replications": 2000
+      },
+      "stress_100bps": {
+        "best_return": 0.22183330753753294,
+        "mean_return": 0.05100058209044,
+        "median_return": 0.06117840147005694,
+        "pnl_usd": 459.00523881396,
+        "trade_count": 9,
+        "win_rate": 0.6666666666666666,
+        "worst_return": -0.11396657103654738
+      }
+    }
+  },
+  "source_code_sha256": {
+    "scripts\\run_cross_venue_order_flow_hof001.py": "a1ab79081c5ae1e0a0ee8374ed1881c3823191828a4a747890cdea1ddf154c53",
+    "src\\data\\collectors\\binance_public_klines.py": "5aa022ee8be17a5d2b9cece05214cbd96276f7f66285ca18637cadd9fc2b8b65",
+    "src\\data\\collectors\\kraken_futures_charts.py": "d54af52ac923427211a30c133ce2d4cdf10059993dcc54e0ebc91ee5ccb30ecc",
+    "src\\research\\cross_venue_order_flow.py": "3fd2954f9a0a8e3ec544a86ed8127d3e976b67d865a26669629cc714a9ae000b"
+  },
+  "source_docs": {
+    "binance": "https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md",
+    "kraken_analytics": "https://docs.kraken.com/api/docs/futures-api/charts/market-analytics",
+    "primary_paper": "https://doi.org/10.1016/j.finmar.2026.101047"
+  },
+  "stage": "validation",
+  "status": "insufficient_power",
+  "symbol": "PF_XBTUSD",
+  "test_final_sealed": true
+}

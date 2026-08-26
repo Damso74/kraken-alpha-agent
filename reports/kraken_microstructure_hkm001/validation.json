@@ -1,0 +1,491 @@
+{
+  "cost_model": {
+    "fee_source": "https://support.kraken.com/articles/360048917612-fee-schedule",
+    "funding_buffer_bps": 5,
+    "primary_round_trip_bps": 35,
+    "slippage_each_side_bps": 10,
+    "taker_fee_each_side_bps": 5
+  },
+  "data_end_exclusive": "2026-01-01",
+  "data_provenance": {
+    "aggressor-differential": {
+      "load_mode": "cache",
+      "path": "C:\\Code\\perso\\kraken-alpha-agent-microstructure\\data\\collector_cache\\kraken_futures_charts\\PF_XBTUSD_1h_aggressor_differential_2023-03-08_2025-12-31.json",
+      "row_count": 24720,
+      "sha256": "805a37913362ef0b1e85b4c1a7f3412ecd1157f1582693eb58ca772d818938de"
+    },
+    "candles": {
+      "load_mode": "cache",
+      "path": "C:\\Code\\perso\\kraken-alpha-agent-microstructure\\data\\collector_cache\\kraken_futures_charts\\PF_XBTUSD_1h_candles_2023-03-08_2025-12-31.json",
+      "row_count": 24720,
+      "sha256": "28486f7f58e2fb80d0866878c4adc7e4ebdd59effeb68c91c1b9c9427d409957"
+    },
+    "liquidation-volume": {
+      "load_mode": "cache",
+      "path": "C:\\Code\\perso\\kraken-alpha-agent-microstructure\\data\\collector_cache\\kraken_futures_charts\\PF_XBTUSD_1h_liquidation_volume_2023-03-08_2025-12-31.json",
+      "row_count": 24720,
+      "sha256": "47d9889f164b62feb144b54f2445e682fef1076a33dfd6e31f61bab08ef9f7d5"
+    },
+    "open-interest": {
+      "load_mode": "cache",
+      "path": "C:\\Code\\perso\\kraken-alpha-agent-microstructure\\data\\collector_cache\\kraken_futures_charts\\PF_XBTUSD_1h_open_interest_2023-03-08_2025-12-31.json",
+      "row_count": 24720,
+      "sha256": "d9bfd5774b7934fdd7fed94f8524569b88eb7d328c3b0432d3ff9fbcb0e4eb76"
+    }
+  },
+  "data_quality": {
+    "alignment": {
+      "aggressor": 24720,
+      "candles": 24720,
+      "common": 24720,
+      "invalid": 0,
+      "liquidations": 24720,
+      "open_interest": 24720,
+      "valid": 24720
+    },
+    "common_coverage": 1.0,
+    "common_expected": 8760,
+    "common_valid": 8760,
+    "coverage": {
+      "aggressor-differential": {
+        "coverage": 1.0,
+        "expected": 8760,
+        "first_missing": null,
+        "first_off_grid": null,
+        "missing_count": 0,
+        "observed": 8760,
+        "off_grid_count": 0
+      },
+      "candles": {
+        "coverage": 1.0,
+        "expected": 8760,
+        "first_missing": null,
+        "first_off_grid": null,
+        "missing_count": 0,
+        "observed": 8760,
+        "off_grid_count": 0
+      },
+      "liquidation-volume": {
+        "coverage": 1.0,
+        "expected": 8760,
+        "first_missing": null,
+        "first_off_grid": null,
+        "missing_count": 0,
+        "observed": 8760,
+        "off_grid_count": 0
+      },
+      "open-interest": {
+        "coverage": 1.0,
+        "expected": 8760,
+        "first_missing": null,
+        "first_off_grid": null,
+        "missing_count": 0,
+        "observed": 8760,
+        "off_grid_count": 0
+      }
+    },
+    "passed": true
+  },
+  "generated_at": "2026-08-26T16:10:13Z",
+  "git_commit": "8c8dc1d41543900ad126e9e1924ffec9f1764536",
+  "preregistration": "docs\\KRAKEN_MICROSTRUCTURE_PREREGISTRATION.md",
+  "preregistration_sha256": "fcbfc9f1e907e2ae997c85345734d61e8c9e6650d068bfb871f9337e5df890a9",
+  "previous_validation_sha256": null,
+  "resolution": "1h",
+  "schema_version": "hkm001-report-v1",
+  "segments": {
+    "development": {
+      "bootstrap_lower_95_one_sided": -0.005574862655940984,
+      "concentration": {
+        "event_count": {
+          "min_events": 30,
+          "n_events": 141,
+          "sufficient": true
+        },
+        "insufficient_evidence": false,
+        "max_month": {
+          "high_risk": false,
+          "max_share": 0.20121485715332685,
+          "month": "2024-04",
+          "month_shares": [
+            [
+              "2024-04",
+              0.20121485715332685
+            ],
+            [
+              "2024-03",
+              0.15151123520415508
+            ],
+            [
+              "2024-01",
+              0.1198732011822198
+            ],
+            [
+              "2024-08",
+              0.11564347431980584
+            ],
+            [
+              "2024-12",
+              0.07874348213496946
+            ],
+            [
+              "2024-07",
+              0.06413147560858654
+            ],
+            [
+              "2024-06",
+              0.04523895353372882
+            ],
+            [
+              "2024-11",
+              0.04271532396494221
+            ],
+            [
+              "2024-05",
+              0.04148266912547478
+            ],
+            [
+              "2024-02",
+              0.036395488556383575
+            ],
+            [
+              "2023-12",
+              0.021037806552893022
+            ],
+            [
+              "2023-11",
+              0.020608753348854404
+            ],
+            [
+              "2024-09",
+              0.019846816034981774
+            ],
+            [
+              "2024-10",
+              0.01947747678102971
+            ],
+            [
+              "2023-10",
+              0.010566968691148947
+            ],
+            [
+              "2023-08",
+              0.005986163030658212
+            ],
+            [
+              "2023-09",
+              0.0055258547768409355
+            ]
+          ],
+          "total_abs": 1.874400570449389
+        },
+        "max_single": {
+          "contribution": -0.09243615549560763,
+          "event_index": 107,
+          "high_risk": false,
+          "max_share": 0.04931504874299414,
+          "total_abs": 1.874400570449389
+        },
+        "month_high_risk": false,
+        "reasons": [],
+        "single_event_high_risk": false,
+        "top_n": {
+          "combined_share": 0.11455218190002875,
+          "event_indices": [
+            107,
+            76,
+            72
+          ],
+          "high_risk": false,
+          "top_n": 3,
+          "total_abs": 1.874400570449389
+        },
+        "top_n_high_risk": false,
+        "verdict": "acceptable"
+      },
+      "event_rate": 0.010129310344827586,
+      "gates": {
+        "acceptable_concentration": true,
+        "beats_matched_price_baseline": false,
+        "bootstrap_lower_bound_positive": false,
+        "data_quality": true,
+        "jackknife_robust": false,
+        "min_30_trades": true,
+        "positive_at_50bps": false,
+        "positive_mean": false,
+        "positive_pnl": false,
+        "turnover_and_event_rate": true,
+        "win_rate_50pct": false
+      },
+      "jackknife": {
+        "hit_rate_without_largest": 0.4714285714285714,
+        "mean_change_fraction": 0.21753585674713902,
+        "mean_without_largest": -0.0022994096758751827,
+        "passed": false,
+        "removed_index": 107,
+        "removed_return": -0.09243615549560763
+      },
+      "matched_baseline": {
+        "empirical_p_value": 0.719640179910045,
+        "matched_mean": -0.001989853095385301,
+        "replications": 2000
+      },
+      "microstructure": {
+        "best_return": 0.0614978689223305,
+        "mean_return": -0.002938677376724349,
+        "median_return": -0.0008297104843998896,
+        "pnl_usd": -414.3535101181332,
+        "trade_count": 141,
+        "win_rate": 0.46808510638297873,
+        "worst_return": -0.09243615549560763
+      },
+      "passed": false,
+      "price_only_baseline": {
+        "best_return": 0.08717646687165664,
+        "mean_return": -0.0021192622022101763,
+        "median_return": -0.0015621814911567747,
+        "pnl_usd": -688.7602157183073,
+        "trade_count": 325,
+        "win_rate": 0.4369230769230769,
+        "worst_return": -0.0846813694214043
+      },
+      "primary_cost_bps": 35.0,
+      "rotations_per_day": 0.24310344827586206,
+      "status": "not_supported",
+      "stress_costs": {
+        "100.0": {
+          "best_return": 0.0549978689223305,
+          "mean_return": -0.00943867737672435,
+          "median_return": -0.00732971048439989,
+          "pnl_usd": -1330.8535101181333,
+          "trade_count": 141,
+          "win_rate": 0.24113475177304963,
+          "worst_return": -0.09893615549560762
+        },
+        "20.0": {
+          "best_return": 0.0629978689223305,
+          "mean_return": -0.0014386773767243494,
+          "median_return": 0.0006702895156001105,
+          "pnl_usd": -202.8535101181333,
+          "trade_count": 141,
+          "win_rate": 0.5106382978723404,
+          "worst_return": -0.09093615549560763
+        },
+        "35.0": {
+          "best_return": 0.0614978689223305,
+          "mean_return": -0.002938677376724349,
+          "median_return": -0.0008297104843998896,
+          "pnl_usd": -414.3535101181332,
+          "trade_count": 141,
+          "win_rate": 0.46808510638297873,
+          "worst_return": -0.09243615549560763
+        },
+        "50.0": {
+          "best_return": 0.059997868922330506,
+          "mean_return": -0.00443867737672435,
+          "median_return": -0.0023297104843998896,
+          "pnl_usd": -625.8535101181333,
+          "trade_count": 141,
+          "win_rate": 0.41843971631205673,
+          "worst_return": -0.09393615549560763
+        }
+      }
+    },
+    "validation": {
+      "bootstrap_lower_95_one_sided": -0.005731689101398152,
+      "concentration": {
+        "event_count": {
+          "min_events": 30,
+          "n_events": 72,
+          "sufficient": true
+        },
+        "insufficient_evidence": false,
+        "max_month": {
+          "high_risk": false,
+          "max_share": 0.18829767159743405,
+          "month": "2025-03",
+          "month_shares": [
+            [
+              "2025-03",
+              0.18829767159743405
+            ],
+            [
+              "2025-01",
+              0.13859118169088427
+            ],
+            [
+              "2025-02",
+              0.12528540616467335
+            ],
+            [
+              "2025-04",
+              0.1225581664107592
+            ],
+            [
+              "2025-11",
+              0.11522553873661501
+            ],
+            [
+              "2025-10",
+              0.10809507819119273
+            ],
+            [
+              "2025-08",
+              0.07461135577465752
+            ],
+            [
+              "2025-12",
+              0.049653974605767905
+            ],
+            [
+              "2025-05",
+              0.044561263178598404
+            ],
+            [
+              "2025-06",
+              0.02214133607179802
+            ],
+            [
+              "2025-07",
+              0.010378963343222797
+            ],
+            [
+              "2025-09",
+              0.0006000642343966941
+            ]
+          ],
+          "total_abs": 1.0557568808374174
+        },
+        "max_single": {
+          "contribution": 0.062134385805507286,
+          "event_index": 12,
+          "high_risk": false,
+          "max_share": 0.05885293000053461,
+          "total_abs": 1.0557568808374174
+        },
+        "month_high_risk": false,
+        "reasons": [],
+        "single_event_high_risk": false,
+        "top_n": {
+          "combined_share": 0.16281608777932502,
+          "event_indices": [
+            12,
+            25,
+            9
+          ],
+          "high_risk": false,
+          "top_n": 3,
+          "total_abs": 1.0557568808374174
+        },
+        "top_n_high_risk": false,
+        "verdict": "acceptable"
+      },
+      "event_rate": 0.00821917808219178,
+      "gates": {
+        "acceptable_concentration": true,
+        "beats_matched_price_baseline": false,
+        "bootstrap_lower_bound_positive": false,
+        "data_quality": true,
+        "jackknife_robust": false,
+        "min_30_trades": true,
+        "positive_at_50bps": false,
+        "positive_mean": false,
+        "positive_pnl": false,
+        "turnover_and_event_rate": true,
+        "win_rate_50pct": false
+      },
+      "jackknife": {
+        "hit_rate_without_largest": 0.43661971830985913,
+        "mean_change_fraction": 0.35736161369748404,
+        "mean_without_largest": -0.003460384699763401,
+        "passed": false,
+        "removed_index": 12,
+        "removed_return": 0.062134385805507286
+      },
+      "matched_baseline": {
+        "empirical_p_value": 0.31334332833583206,
+        "matched_mean": -0.003739750281991147,
+        "replications": 2000
+      },
+      "microstructure": {
+        "best_return": 0.062134385805507286,
+        "mean_return": -0.00254934622052353,
+        "median_return": -0.0019300470074738421,
+        "pnl_usd": -183.5529278776942,
+        "trade_count": 72,
+        "win_rate": 0.4444444444444444,
+        "worst_return": -0.06031004259810763
+      },
+      "passed": false,
+      "price_only_baseline": {
+        "best_return": 0.04695311955385156,
+        "mean_return": -0.004188465714261184,
+        "median_return": -0.0029799334314792284,
+        "pnl_usd": -841.8816085664979,
+        "trade_count": 201,
+        "win_rate": 0.43781094527363185,
+        "worst_return": -0.07101186124290265
+      },
+      "primary_cost_bps": 35.0,
+      "rotations_per_day": 0.19726027397260273,
+      "status": "not_supported",
+      "stress_costs": {
+        "100.0": {
+          "best_return": 0.05563438580550729,
+          "mean_return": -0.009049346220523532,
+          "median_return": -0.008430047007473842,
+          "pnl_usd": -651.5529278776943,
+          "trade_count": 72,
+          "win_rate": 0.2777777777777778,
+          "worst_return": -0.06681004259810762
+        },
+        "20.0": {
+          "best_return": 0.06363438580550729,
+          "mean_return": -0.0010493462205235307,
+          "median_return": -0.0004300470074738421,
+          "pnl_usd": -75.55292787769423,
+          "trade_count": 72,
+          "win_rate": 0.4861111111111111,
+          "worst_return": -0.058810042598107626
+        },
+        "35.0": {
+          "best_return": 0.062134385805507286,
+          "mean_return": -0.00254934622052353,
+          "median_return": -0.0019300470074738421,
+          "pnl_usd": -183.5529278776942,
+          "trade_count": 72,
+          "win_rate": 0.4444444444444444,
+          "worst_return": -0.06031004259810763
+        },
+        "50.0": {
+          "best_return": 0.06063438580550729,
+          "mean_return": -0.00404934622052353,
+          "median_return": -0.003430047007473842,
+          "pnl_usd": -291.5529278776942,
+          "trade_count": 72,
+          "win_rate": 0.3611111111111111,
+          "worst_return": -0.06181004259810762
+        }
+      }
+    }
+  },
+  "signal_diagnostics": {
+    "baseline_events": 528,
+    "eligible_points": 20592,
+    "feature_points": 24696,
+    "micro_events": 213
+  },
+  "source_code_sha256": {
+    "scripts\\run_kraken_microstructure_hkm001.py": "d9599f28668d60d09740cfd222d457b5a2c1af4d5384c833c8f4fa90c1dfa321",
+    "src\\data\\collectors\\kraken_futures_charts.py": "d54af52ac923427211a30c133ce2d4cdf10059993dcc54e0ebc91ee5ccb30ecc",
+    "src\\research\\kraken_microstructure.py": "6031aa77ab9f784f12290d93ae921b446ce00cf7a7d2e6699308935eac38e779"
+  },
+  "source_docs": {
+    "analytics": "https://docs.kraken.com/api/docs/futures-api/charts/market-analytics",
+    "candles": "https://docs.kraken.com/api/docs/futures-api/charts/candles"
+  },
+  "stage": "validation",
+  "status": "not_supported",
+  "symbol": "PF_XBTUSD",
+  "test_final_sealed": true
+}

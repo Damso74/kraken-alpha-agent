@@ -1,0 +1,256 @@
+{
+  "cost_model": {
+    "funding_buffer_bps": 20,
+    "primary_round_trip_bps": 50,
+    "slippage_round_trip_bps": 20,
+    "stress_round_trip_bps": 100,
+    "taker_fee_round_trip_bps": 10
+  },
+  "data_end_exclusive": "2026-01-01",
+  "data_provenance": {
+    "dvol": {
+      "load_mode": "cache",
+      "path": "C:\\Code\\perso\\kraken-alpha-agent-microstructure\\data\\collector_cache\\deribit_dvol\\BTC_1D_2021-03-24_2025-12-31.json",
+      "row_count": 1744,
+      "sha256": "6641deb18c315609ebe30808a1f569b591f292dc5d25bdbf3a1c4ee56bafc6cf"
+    },
+    "prices": {
+      "load_mode": "cache",
+      "path": "C:\\Code\\perso\\kraken-alpha-agent-microstructure\\data\\collector_cache\\deribit_dvol\\PF_XBTUSD_1h_2022-03-23_2025-12-31.json",
+      "row_count": 33110,
+      "sha256": "e89f77714fa2897b88d945f930b43eb740819e4961bdd60b09880bc35fee04e6"
+    }
+  },
+  "data_quality": {
+    "development": {
+      "dvol": {
+        "coverage": 1.0,
+        "expected": 648,
+        "first_missing": null,
+        "first_off_grid": null,
+        "missing_count": 0,
+        "observed": 648,
+        "off_grid_count": 0
+      },
+      "passed": true,
+      "prices": {
+        "coverage": 1.0,
+        "expected": 15552,
+        "first_missing": null,
+        "first_off_grid": null,
+        "missing_count": 0,
+        "observed": 15552,
+        "off_grid_count": 0
+      }
+    },
+    "validation": {
+      "dvol": {
+        "coverage": 1.0,
+        "expected": 731,
+        "first_missing": null,
+        "first_off_grid": null,
+        "missing_count": 0,
+        "observed": 731,
+        "off_grid_count": 0
+      },
+      "passed": true,
+      "prices": {
+        "coverage": 1.0,
+        "expected": 17544,
+        "first_missing": null,
+        "first_off_grid": null,
+        "missing_count": 0,
+        "observed": 17544,
+        "off_grid_count": 0
+      }
+    }
+  },
+  "feature_diagnostics": {
+    "dvol_rows": 1744,
+    "eligible_points": 1002,
+    "invalid_vov_windows": 0,
+    "price_volatility_points": 1349,
+    "raw_vov_points": 1737
+  },
+  "generated_at": "2026-08-26T16:10:14Z",
+  "git_commit": "8c8dc1d41543900ad126e9e1924ffec9f1764536",
+  "nature": "exploratory_dvol_proxy_not_replication",
+  "outcome_diagnostics": {
+    "development": {
+      "placebo_candidates": 236,
+      "signals": 6,
+      "skipped_missing_price": 0,
+      "skipped_signal_overlap": 21
+    },
+    "validation": {
+      "placebo_candidates": 670,
+      "signals": 11,
+      "skipped_missing_price": 0,
+      "skipped_signal_overlap": 42
+    }
+  },
+  "preregistration": "docs\\DERIBIT_DVOL_PREREGISTRATION.md",
+  "preregistration_sha256": "a8cf5d1255e120471c5e5f65b368fecf647779276d30d836e2e2de4b61ea9ed8",
+  "previous_validation_sha256": null,
+  "schema_version": "hdv001-report-v1",
+  "segments": {
+    "development": {
+      "bootstrap_lower_95_one_sided": -0.021221397460234454,
+      "gates": {
+        "acceptable_quarter_concentration": false,
+        "beats_matched_placebo_bonferroni": false,
+        "bootstrap_lower_bound_positive": false,
+        "data_quality": true,
+        "min_30_trades": false,
+        "positive_at_100bps": false,
+        "positive_each_year": false,
+        "positive_leave_one_quarter_out": false,
+        "positive_mean": false,
+        "positive_pnl": false,
+        "win_rate_50pct": true
+      },
+      "matched_placebo": {
+        "empirical_p_value": 0.5972013993003499,
+        "matched_mean": 0.005697380490695747,
+        "replications": 2000
+      },
+      "passed": false,
+      "primary": {
+        "best_return": 0.03151851851851862,
+        "mean_return": -0.0014572231414680809,
+        "median_return": 0.007818984650610154,
+        "pnl_usd": -8.74333884880849,
+        "trade_count": 6,
+        "win_rate": 0.6666666666666666,
+        "worst_return": -0.04685716817295759
+      },
+      "primary_cost_bps": 50.0,
+      "quarterly_robustness": {
+        "acceptable_quarter_concentration": false,
+        "leave_one_quarter_out": {
+          "2022-Q1": -0.008743338848808482,
+          "2022-Q2": -0.008743338848808482,
+          "2022-Q3": -0.008743338848808482,
+          "2022-Q4": -0.008743338848808482,
+          "2023-Q1": -0.008743338848808482,
+          "2023-Q2": 0.029532842705415358,
+          "2023-Q3": -0.019288219793336264,
+          "2023-Q4": -0.027731300609696058
+        },
+        "max_positive_gain_share": 0.5832008799768411,
+        "pnl_return_by_quarter": {
+          "2022-Q1": 0.0,
+          "2022-Q2": 0.0,
+          "2022-Q3": 0.0,
+          "2022-Q4": 0.0,
+          "2023-Q1": 0.0,
+          "2023-Q2": -0.03827618155422384,
+          "2023-Q3": 0.010544880944527782,
+          "2023-Q4": 0.018987961760887576
+        },
+        "pnl_return_by_year": {
+          "2022": 0.0,
+          "2023": -0.008743338848808482
+        },
+        "positive_each_year": false,
+        "positive_leave_one_quarter_out": false
+      },
+      "status": "insufficient_power",
+      "stress_100bps": {
+        "best_return": 0.026518518518518615,
+        "mean_return": -0.006457223141468082,
+        "median_return": 0.0028189846506101544,
+        "pnl_usd": -38.74333884880849,
+        "trade_count": 6,
+        "win_rate": 0.6666666666666666,
+        "worst_return": -0.051857168172957595
+      }
+    },
+    "validation": {
+      "bootstrap_lower_95_one_sided": -0.020449111941261137,
+      "gates": {
+        "acceptable_quarter_concentration": false,
+        "beats_matched_placebo_bonferroni": false,
+        "bootstrap_lower_bound_positive": false,
+        "data_quality": true,
+        "min_30_trades": false,
+        "positive_at_100bps": true,
+        "positive_each_year": false,
+        "positive_leave_one_quarter_out": false,
+        "positive_mean": true,
+        "positive_pnl": true,
+        "win_rate_50pct": false
+      },
+      "matched_placebo": {
+        "empirical_p_value": null,
+        "matched_mean": null,
+        "replications": 0
+      },
+      "passed": false,
+      "primary": {
+        "best_return": 0.19147071301673158,
+        "mean_return": 0.014690995718401946,
+        "median_return": -0.005787985962854676,
+        "pnl_usd": 161.6009529024214,
+        "trade_count": 11,
+        "win_rate": 0.45454545454545453,
+        "worst_return": -0.07846866255052631
+      },
+      "primary_cost_bps": 50.0,
+      "quarterly_robustness": {
+        "acceptable_quarter_concentration": false,
+        "leave_one_quarter_out": {
+          "2024-Q1": 0.16160095290242138,
+          "2024-Q2": 0.16160095290242138,
+          "2024-Q3": 0.189367247560019,
+          "2024-Q4": -0.0757534655827572,
+          "2025-Q1": 0.2137641837448121,
+          "2025-Q2": 0.09201451338287303,
+          "2025-Q3": 0.16738893886527606,
+          "2025-Q4": 0.22122334654188391
+        },
+        "max_positive_gain_share": 0.66453805880259,
+        "pnl_return_by_quarter": {
+          "2024-Q1": 0.0,
+          "2024-Q2": 0.0,
+          "2024-Q3": -0.02776629465759761,
+          "2024-Q4": 0.23735441848517858,
+          "2025-Q1": -0.05216323084239072,
+          "2025-Q2": 0.06958643951954835,
+          "2025-Q3": -0.005787985962854676,
+          "2025-Q4": -0.05962239363946252
+        },
+        "pnl_return_by_year": {
+          "2024": 0.20958812382758096,
+          "2025": -0.04798717092515956
+        },
+        "positive_each_year": false,
+        "positive_leave_one_quarter_out": false
+      },
+      "status": "insufficient_power",
+      "stress_100bps": {
+        "best_return": 0.18647071301673157,
+        "mean_return": 0.009690995718401946,
+        "median_return": -0.010787985962854676,
+        "pnl_usd": 106.60095290242141,
+        "trade_count": 11,
+        "win_rate": 0.45454545454545453,
+        "worst_return": -0.0834686625505263
+      }
+    }
+  },
+  "source_code_sha256": {
+    "scripts\\run_deribit_dvol_hdv001.py": "10c1fe3448f22f6a139bd369b85d292500523c40190334be328b04243ec9ca02",
+    "src\\data\\collectors\\deribit_dvol.py": "06b69d9b2a4b39f22eb5843c822b6341f1716375e0ed86e5c6e3308d2d186c0e",
+    "src\\data\\collectors\\kraken_futures_charts.py": "d54af52ac923427211a30c133ce2d4cdf10059993dcc54e0ebc91ee5ccb30ecc",
+    "src\\research\\deribit_dvol.py": "fd2dfad97454cd1ce9dc0f7f175877251f20c3bbf921363a6151d9209ba9d918"
+  },
+  "source_docs": {
+    "dvol": "https://docs.deribit.com/api-reference/market-data/public-get_volatility_index_data",
+    "kraken_candles": "https://docs.kraken.com/api/docs/futures-api/charts/candles"
+  },
+  "stage": "validation",
+  "status": "insufficient_power",
+  "symbol": "PF_XBTUSD",
+  "test_final_sealed": true
+}
