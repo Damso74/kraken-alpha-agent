@@ -59,6 +59,13 @@ additionnel.
 - le passage sur batterie ne tue pas une occurrence déjà lancée ;
 - redémarrage après échec autorisé, sans élévation de privilèges.
 
+Un lancement manuel avec `Start-ScheduledTask` ne déplace pas le déclencheur
+horaire existant. Après une relance manuelle, sa prochaine occurrence doit donc
+être réalignée à exactement une heure après le début de la nouvelle session :
+3 580 secondes de collecte puis 20 secondes de marge. Le healthcheck PowerShell
+signale désormais une occurrence qui chevaucherait la session courante ou un
+trou nominal supérieur à 60 secondes.
+
 Le dépôt fournit un installateur idempotent qui refuse d'écraser une tâche
 existante sans option explicite :
 

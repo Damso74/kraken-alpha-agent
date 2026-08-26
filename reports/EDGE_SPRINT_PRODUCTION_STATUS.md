@@ -120,6 +120,16 @@ et zéro erreur, avec environ 783 Gio libres. H-EXE reste
 preuves de reproduction et CI valides. Aucun de ces états n'autorise le paper ou
 le live.
 
+Un contrôle supplémentaire a détecté que la relance manuelle de cette session
+n'avait pas déplacé le déclencheur initial à `:38`. L'occurrence suivante aurait
+été ignorée pendant le run, créant ensuite environ 49 minutes sans collecte. La
+définition Task Scheduler antérieure a été sauvegardée sous
+`archive/task_scheduler_realign_20260826T210149Z`, puis le déclencheur a été
+réaligné sans interrompre le processus : fin nominale à 23:49:50 locale,
+prochaine occurrence à 23:50:10, soit 20 secondes de marge. Le healthcheck
+manuel échoue désormais explicitement sur tout chevauchement ou trou supérieur
+à 60 secondes.
+
 La désinstallation est locale et réversible via
 `scripts/uninstall_edge_forward_tasks.ps1`.
 

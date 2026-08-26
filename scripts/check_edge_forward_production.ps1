@@ -97,6 +97,7 @@ $latestProgress = Get-ChildItem -LiteralPath $rawRoot -Filter 'progress.json' -R
     Select-Object -First 1
 $progressPayload = $null
 $progressAgeMinutes = $null
+$scheduleGapSeconds = $null
 if (-not $latestProgress) {
     $reasons.Add('H_EXE_PROGRESS_MISSING')
 } else {
@@ -117,6 +118,30 @@ if (-not $latestProgress) {
         }
     } catch {
         $reasons.Add('H_EXE_PROGRESS_JSON_INVALID')
+    }
+}
+if (-not $SkipTaskInspection -and $exeTask -and $progressPayload) {
+    try {
+        $sessionStartUtc = [datetime]::ParseExact(
+            [string]$progressPayload.session_id,
+            "yyyyMMdd'T'HHmmss.ffffff'Z'",
+            [System.Globalization.CultureInfo]::InvariantCulture,
+            [System.Globalization.DateTimeStyles]::AssumeUniversal -bor [System.Globalization.DateTimeStyles]::AdjustToUniversal
+        )
+        $expectedEndUtc = $sessionStartUtc.AddSeconds(3580)
+        $nextRunUtc = [datetime]::Parse(
+            [string]$exeTask.next_run_time,
+            [System.Globalization.CultureInfo]::InvariantCulture,
+            [System.Globalization.DateTimeStyles]::RoundtripKind
+        ).ToUniversalTime()
+        $scheduleGapSeconds = ($nextRunUtc - $expectedEndUtc).TotalSeconds
+        if ($scheduleGapSeconds -lt 0) {
+            $reasons.Add('H_EXE_NEXT_RUN_OVERLAPS_CURRENT_SESSION')
+        } elseif ($scheduleGapSeconds -gt 60) {
+            $reasons.Add('H_EXE_NEXT_RUN_GAP_GT_60_SECONDS')
+        }
+    } catch {
+        $reasons.Add('H_EXE_SCHEDULE_ALIGNMENT_UNVERIFIABLE')
     }
 }
 Write-HealthTrace -Stage 'progress-check-complete'
@@ -184,6 +209,7 @@ $payload = [ordered]@{
             age_minutes = [math]::Round($progressAgeMinutes, 3)
             event_count = if ($progressPayload) { [long]$progressPayload.event_count } else { $null }
             last_exchange_timestamp_ms = if ($progressPayload) { [long]$progressPayload.last_exchange_timestamp_ms } else { $null }
+            schedule_gap_seconds = if ($null -ne $scheduleGapSeconds) { [math]::Round($scheduleGapSeconds, 3) } else { $null }
             last_write_utc = $latestProgress.LastWriteTimeUtc.ToString('o')
         }
     } else { $null }
