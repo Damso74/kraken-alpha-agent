@@ -88,13 +88,16 @@ lié aux mêmes hashes. Le contrôle réel à 20:11 UTC a reproduit exactement l
 journal vide de bootstrap, mais retourne correctement `collecting`, `NO-GO`,
 zéro semaine éligible et aucune autorisation paper/live.
 
-Le reçu CI lié au jeu de sources
-`af6af9a50bc3de919abc701172b79752dfe3f39493ed665953dd6636d05e5419`
-a ensuite été émis après Ruff `src tests scripts`, collecte de 1 165 tests et
-passage intégral de ces 1 165 tests sous transport mock et triple verrou live à
-`false`. Le moniteur réel lit `ci_verified=true` et
-`reproduction_verified=true`, sans que ces preuves puissent contourner
-l'horizon : le verdict reste `collecting`, `NO-GO` avec zéro semaine.
+Le premier reçu CI WOF ne liait que les sources scientifiques à Ruff et pytest.
+Avant la première semaine causale, ce gate a été durci pour sceller les 385
+fichiers suivis du périmètre CI et exiger également `bash -n`, ShellCheck,
+`git diff --exit-code` et un worktree sans fichier non suivi. Le reçu courant
+WOF est `beb70f71166d9187a36f19d45b6779379e6e903334b0e3a0f383d795ac23d88c` ;
+le scope commun est
+`98cee88ef3981b37876b129ac498dd12894c27abe4f753ca41f9f7455f45643e`.
+Le moniteur réel lit `ci_verified=true` et `reproduction_verified=true`, sans
+que ces preuves puissent contourner l'horizon : le verdict reste `collecting`,
+`NO-GO` avec zéro semaine.
 
 Avant le premier jour UTC complet H-EXE, le gate 8 a été rendu falsifiable : les
 deux moitiés temporelles, chaque retrait d'un jour et chaque retrait d'un probe
@@ -108,7 +111,7 @@ Les données collectées avant cette définition puis avant l'évaluateur comple
 ont été préservées, sans suppression, sous
 `archive/h_exe_pre_gate8_definition_20260826T203006Z` et
 `archive/h_exe_pre_frozen_evaluator_20260826T205009Z`. La période technique
-définitive repart de zéro avec la session `20260826T205010.286268Z`. Son premier
+alors gelée est repartie avec la session `20260826T205010.286268Z`. Son premier
 fichier raw porte bien `connection_id=1`. L'attestation associée au jeu de
 sources `9d7e12c77399eeb6ace6930e37d31e00cb440f383c46e7ba8985e8b6c084266c`
 a passé Ruff sur `src tests scripts` et les 1 175 tests sous transport mock,
@@ -119,6 +122,18 @@ et zéro erreur, avec environ 783 Gio libres. H-EXE reste
 `technical_gate_pending`, `NO-GO`; H-WOF reste `collecting`, `NO-GO`, avec ses
 preuves de reproduction et CI valides. Aucun de ces états n'autorise le paper ou
 le live.
+
+L'audit du reçu CI a ensuite démontré qu'un changement de test ou de script non
+scientifique pouvait laisser un ancien reçu apparemment valide. Avant le premier
+jour UTC complet, l'attestation commune H-EXE/H-WOF a donc été liée aux 385
+fichiers suivis et au workflow complet. L'état précédent a été préservé sous
+`archive/h_exe_pre_full_ci_scope_20260826T211811Z` et
+`archive/h_wof_pre_full_ci_scope_20260826T211811Z`. H-EXE repart définitivement
+avec la session `20260826T211815.791884Z` et le reçu
+`28aba9fa3f8cbe170d9864c89c99ceec53ebfcc2db643540ad9ccfe2bb751542`.
+H-WOF a recapturé les deux snapshots du 26 août avec les nouveaux hashes. Deux
+processus de contrôle successifs ont établi puis reproduit exactement son
+baseline ; l'état global reste `healthy=true`, zéro credential, zéro ordre.
 
 Un contrôle supplémentaire a détecté que la relance manuelle de cette session
 n'avait pas déplacé le déclencheur initial à `:38`. L'occurrence suivante aurait

@@ -91,9 +91,12 @@ utilisateur courant avec un niveau d'exécution limité.
 Le même moniteur écrit aussi l'état de décision H-EXE. Pour chaque session de
 validation, il vérifie les manifests et leurs SHA-256, rejoue tous les événements
 raw avec le moteur gelé, exige l'égalité exacte des observations et lie un reçu
-Ruff/pytest au même jeu de sources. L'identifiant de connexion présent dans
-chaque événement raw permet de reproduire exactement les abandons de probes lors
-d'une reconnexion. Avant le gate technique, l'état reste
+au même jeu de sources. Ce reçu scelle aussi le hash de chaque fichier suivi par
+le périmètre CI, puis exige Ruff, `bash -n`, ShellCheck niveau erreur, la collecte
+et le passage intégral de pytest, `git diff --exit-code` et un worktree sans
+fichier non suivi. L'identifiant de connexion présent dans chaque événement raw
+permet de reproduire exactement les abandons de probes lors d'une reconnexion.
+Avant le gate technique, l'état reste
 `technical_gate_pending`; avant 30 jours et 10 000 probes, il reste `collecting`.
 
 Le plan d'alimentation Windows n'est pas modifié. Sur cette machine, la veille

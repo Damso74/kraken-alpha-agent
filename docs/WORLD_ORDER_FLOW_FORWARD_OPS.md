@@ -137,8 +137,11 @@ Les statuts sont strictement séparés :
 - `candidate_for_forward_observation` seulement si toutes les gates passent,
   avec décision `REVIEW_REQUIRED` et sans autorisation paper/live.
 
-Le reçu CI lié aux mêmes hashes est généré uniquement après exécution réelle du
-périmètre Ruff et de toute la suite sous environnement inoffensif :
+Le reçu CI lié aux mêmes hashes est généré uniquement après exécution réelle de
+Ruff, `bash -n`, ShellCheck niveau erreur, la collecte et le passage intégral de
+pytest, puis `git diff --exit-code`. Il scelle le hash de chaque fichier suivi
+du périmètre CI et exige aussi l'absence de fichier non suivi, sous environnement
+inoffensif :
 
 ```powershell
 .\.venv\Scripts\python.exe `
