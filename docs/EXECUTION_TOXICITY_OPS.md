@@ -64,11 +64,12 @@ Une troisième tâche `KrakenEdge-Forward-Health` vérifie toutes les quinze
 minutes les actions enregistrées, la fraîcheur du raw H-EXE et des snapshots
 WOF, ainsi qu'une réserve disque minimale de 250 Gio. Elle produit des digests
 JSON immuables sous `data/collector_cache/edge_forward_health/` et retourne un
-code non nul fail-closed en cas d'anomalie. L'exécution planifiée vérifie les
-données et le disque sans réinterroger Task Scheduler depuis son propre contexte
-d'exécution ; une invocation manuelle du même script ajoute le contrôle exact
-des actions enregistrées. Les tâches utilisent le venv propre au worktree et le
-compte utilisateur courant avec un niveau d'exécution limité.
+code non nul fail-closed en cas d'anomalie. L'exécution planifiée utilise le
+contrôleur Python `check_edge_forward_production.py` pour vérifier rapidement les
+données et le disque. Une invocation manuelle de
+`check_edge_forward_production.ps1` ajoute le contrôle exact des actions
+enregistrées. Les tâches utilisent le venv propre au worktree et le compte
+utilisateur courant avec un niveau d'exécution limité.
 
 Le plan d'alimentation Windows n'est pas modifié. Sur cette machine, la veille
 reste désactivée sur secteur mais intervient après dix minutes sur batterie ;

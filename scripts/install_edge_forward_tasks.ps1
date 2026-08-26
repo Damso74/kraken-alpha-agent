@@ -74,11 +74,9 @@ $wofSettings = New-ScheduledTaskSettingsSet `
     -RestartInterval (New-TimeSpan -Minutes 5) `
     -ExecutionTimeLimit (New-TimeSpan -Minutes 20)
 
-$powershell = (Get-Command powershell.exe -ErrorAction Stop).Source
-$healthScript = Join-Path $repoRoot 'scripts\check_edge_forward_production.ps1'
 $healthAction = New-ScheduledTaskAction `
-    -Execute $powershell `
-    -Argument "-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$healthScript`" -SkipTaskInspection" `
+    -Execute $python `
+    -Argument 'scripts\check_edge_forward_production.py' `
     -WorkingDirectory $repoRoot
 $healthTrigger = New-ScheduledTaskTrigger `
     -Once `
