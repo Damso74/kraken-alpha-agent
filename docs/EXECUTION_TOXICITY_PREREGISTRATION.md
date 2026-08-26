@@ -50,7 +50,10 @@ contrôle. Un watchdog fixe de 15 secondes sur les événements normalisés a do
 fermée et remplacée par un collecteur neuf exigeant de nouveaux snapshots. Les
 données canary antérieures à cet amendement sont archivées et exclues de la
 phase technique. Aucun seuil de signal, coût, probe ou gate économique n'a été
-modifié.
+modifié. Un heartbeat opérationnel atomique `progress.json`, rafraîchi au plus
+toutes les cinq secondes par les seuls événements normalisés, sert à contrôler
+la fraîcheur pendant que le segment gzip courant reste bufferisé. Il est mutable,
+exclu des données scientifiques et hashé dans le résumé final de la session.
 
 ## Phases forward
 

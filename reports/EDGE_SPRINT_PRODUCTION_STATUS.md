@@ -29,9 +29,17 @@ le 26 août 2026 par `scripts/install_edge_forward_tasks.ps1` :
 
 Le premier lancement planifié H-WOF a terminé avec le code `0` en état
 `bootstrap-pending`, après vérification des snapshots. La première session
-longue H-EXE a démarré dans
-`technical/sessions/20260826T174144.230350Z` avec une connexion publique TLS
-établie vers Kraken.
+longue H-EXE a révélé une socket TLS vivante sans événements marché. Les deux
+canaries pré-correction ont été préservés sous
+`data/collector_cache/archive/` et sont exclus de la phase technique.
+
+L'amendement opérationnel impose désormais une reconnexion avec snapshots frais
+après 15 secondes sans événement marché normalisé ; les trames de contrôle ne
+réinitialisent pas ce watchdog. Le smoke final de 60 secondes
+`20260826T184402.271773Z` a produit 30 515 messages marché normalisés, 30 713
+lignes raw (1 134 762 octets compressés), zéro gap, zéro credential et zéro
+ordre. La production corrigée a redémarré dans la session
+`20260826T184553.954161Z`.
 
 La désinstallation est locale et réversible via
 `scripts/uninstall_edge_forward_tasks.ps1`.

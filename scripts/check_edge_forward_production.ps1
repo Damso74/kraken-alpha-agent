@@ -84,14 +84,37 @@ if (-not $latestRaw) {
     $reasons.Add('H_EXE_RAW_MISSING')
 } else {
     $rawAgeMinutes = ($now - $latestRaw.LastWriteTimeUtc).TotalMinutes
-    if ($latestRaw.Length -le 0 -and $rawAgeMinutes -gt 10) {
-        $reasons.Add('H_EXE_RAW_EMPTY_GT_10_MIN')
-    }
-    if ($rawAgeMinutes -gt 20) {
-        $reasons.Add('H_EXE_RAW_STALE_GT_20_MIN')
-    }
 }
 Write-HealthTrace -Stage 'raw-check-complete'
+
+$latestProgress = Get-ChildItem -LiteralPath $rawRoot -Filter 'progress.json' -Recurse -File -ErrorAction SilentlyContinue |
+    Sort-Object LastWriteTimeUtc -Descending |
+    Select-Object -First 1
+$progressPayload = $null
+$progressAgeMinutes = $null
+if (-not $latestProgress) {
+    $reasons.Add('H_EXE_PROGRESS_MISSING')
+} else {
+    $progressAgeMinutes = ($now - $latestProgress.LastWriteTimeUtc).TotalMinutes
+    if ($progressAgeMinutes -gt 2) {
+        $reasons.Add('H_EXE_PROGRESS_STALE_GT_2_MIN')
+    }
+    try {
+        $progressPayload = Get-Content -LiteralPath $latestProgress.FullName -Raw | ConvertFrom-Json
+        if ($progressPayload.schema_version -ne 'h-exe-001-progress-v1') {
+            $reasons.Add('H_EXE_PROGRESS_SCHEMA_INVALID')
+        }
+        if ([long]$progressPayload.event_count -le 0) {
+            $reasons.Add('H_EXE_PROGRESS_EVENT_COUNT_EMPTY')
+        }
+        if ($progressPayload.credentials_used -ne $false -or [int]$progressPayload.orders_sent -ne 0) {
+            $reasons.Add('H_EXE_PROGRESS_SAFETY_INVARIANT_FAILED')
+        }
+    } catch {
+        $reasons.Add('H_EXE_PROGRESS_JSON_INVALID')
+    }
+}
+Write-HealthTrace -Stage 'progress-check-complete'
 
 $snapshotRoots = @(
     (Join-Path $repoRoot 'data\collector_cache\world_order_flow_forward\snapshot_days'),
@@ -145,6 +168,15 @@ $payload = [ordered]@{
             age_minutes = [math]::Round($rawAgeMinutes, 3)
             state = if ($latestRaw.Length -gt 0) { 'receiving' } else { 'rotation_grace' }
             last_write_utc = $latestRaw.LastWriteTimeUtc.ToString('o')
+        }
+    } else { $null }
+    h_exe_progress = if ($latestProgress) {
+        [ordered]@{
+            path = $latestProgress.FullName
+            age_minutes = [math]::Round($progressAgeMinutes, 3)
+            event_count = if ($progressPayload) { [long]$progressPayload.event_count } else { $null }
+            last_exchange_timestamp_ms = if ($progressPayload) { [long]$progressPayload.last_exchange_timestamp_ms } else { $null }
+            last_write_utc = $latestProgress.LastWriteTimeUtc.ToString('o')
         }
     } else { $null }
     h_wof_snapshots = @($snapshotState)

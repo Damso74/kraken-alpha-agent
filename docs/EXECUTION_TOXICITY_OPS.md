@@ -66,6 +66,11 @@ données et le disque sans réinterroger Task Scheduler depuis son propre contex
 d'exécution ; une invocation manuelle du même script ajoute le contrôle exact
 des actions enregistrées. Les tâches utilisent le venv propre au worktree et le
 compte utilisateur courant avec un niveau d'exécution limité.
+
+Chaque session H-EXE publie aussi un `progress.json` atomique toutes les cinq
+secondes lorsqu'elle reçoit des événements normalisés. Ce fichier mutable est
+une preuve d'activité opérationnelle uniquement ; il est exclu des données
+scientifiques append-only puis hashé dans le résumé immuable à la fin du run.
 La désinstallation réversible est :
 
 ```powershell

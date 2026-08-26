@@ -4,6 +4,8 @@ import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+from scripts.run_execution_toxicity_shadow import ProgressHeartbeat
+from src.data.collectors.kraken_execution_l2 import GlobalStorageBudget
 from src.research.execution_toxicity_ops import (
     DAY_MS,
     aggregate_technical_health,
@@ -121,3 +123,39 @@ def test_health_fails_with_less_than_fourteen_days(tmp_path: Path) -> None:
     )
     assert health["passed"] is False
     assert "FEWER_THAN_14_COMPLETE_UTC_DAYS" in health["reason_codes"]
+
+
+def test_progress_heartbeat_is_atomic_and_tracks_only_observed_events(
+    tmp_path: Path,
+) -> None:
+    budget = GlobalStorageBudget(tmp_path, storage_cap_bytes=10_000)
+    heartbeat = ProgressHeartbeat(
+        tmp_path / "session" / "progress.json",
+        session_id="session-progress",
+        storage_budget=budget,
+        interval_ns=5_000_000_000,
+    )
+    heartbeat.observe(
+        {
+            "exchange_timestamp_ms": 1_700_000_000_000,
+            "received_wall_ns": 1_700_000_000_100_000_000,
+            "received_monotonic_ns": 10_000_000_000,
+        }
+    )
+    heartbeat.observe(
+        {
+            "exchange_timestamp_ms": 1_700_000_001_000,
+            "received_wall_ns": 1_700_000_001_100_000_000,
+            "received_monotonic_ns": 11_000_000_000,
+        }
+    )
+    heartbeat.finalize()
+    payload = json.loads((tmp_path / "session" / "progress.json").read_text())
+    assert payload["event_count"] == 2
+    assert payload["last_exchange_timestamp_ms"] == 1_700_000_001_000
+    assert payload["credentials_used"] is False
+    assert payload["orders_sent"] == 0
+    assert not list(tmp_path.rglob("*.tmp"))
+    manifest = heartbeat.manifest()
+    assert manifest is not None
+    assert len(manifest["sha256"]) == 64

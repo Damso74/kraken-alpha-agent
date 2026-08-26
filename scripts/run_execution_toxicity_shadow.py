@@ -38,6 +38,7 @@ from src.research.execution_toxicity import (  # noqa: E402
 PREREGISTRATION_PATH = Path("docs/EXECUTION_TOXICITY_PREREGISTRATION.md")
 DEFAULT_OUTPUT_DIR = Path("data/collector_cache/kraken_execution_toxicity_hexe001")
 DEFAULT_PRODUCTS = ("PF_XBTUSD", "PF_ETHUSD")
+PROGRESS_INTERVAL_NS = 5_000_000_000
 SOURCE_PATHS = {
     "collector_sha256": Path("src/data/collectors/kraken_execution_l2.py"),
     "supervisor_sha256": Path("src/data/collectors/kraken_execution_supervisor.py"),
@@ -46,6 +47,89 @@ SOURCE_PATHS = {
     "runner_sha256": Path("scripts/run_execution_toxicity_shadow.py"),
     "ops_runner_sha256": Path("scripts/run_execution_toxicity_ops_once.py"),
 }
+
+
+class ProgressHeartbeat:
+    """Mutable operational heartbeat; scientific evidence remains append-only."""
+
+    def __init__(
+        self,
+        path: Path,
+        *,
+        session_id: str,
+        storage_budget: GlobalStorageBudget,
+        interval_ns: int = PROGRESS_INTERVAL_NS,
+    ) -> None:
+        if interval_ns <= 0:
+            raise ValueError("progress interval must be positive")
+        self.path = Path(path)
+        self.session_id = session_id
+        self.storage_budget = storage_budget
+        self.interval_ns = int(interval_ns)
+        self.event_count = 0
+        self.last_exchange_timestamp_ms: int | None = None
+        self.last_received_wall_ns: int | None = None
+        self.last_received_monotonic_ns: int | None = None
+        self._last_written_monotonic_ns: int | None = None
+        self._reserved_bytes = 0
+
+    def observe(self, event: dict[str, Any]) -> None:
+        monotonic_ns = int(event["received_monotonic_ns"])
+        self.event_count += 1
+        self.last_exchange_timestamp_ms = int(event["exchange_timestamp_ms"])
+        self.last_received_wall_ns = int(event["received_wall_ns"])
+        self.last_received_monotonic_ns = monotonic_ns
+        if (
+            self._last_written_monotonic_ns is None
+            or monotonic_ns - self._last_written_monotonic_ns >= self.interval_ns
+        ):
+            self._write()
+
+    def finalize(self) -> None:
+        if self.event_count and (
+            self._last_written_monotonic_ns != self.last_received_monotonic_ns
+        ):
+            self._write()
+
+    def _payload(self) -> dict[str, Any]:
+        wall_ns = self.last_received_wall_ns
+        updated_at = (
+            datetime.fromtimestamp(wall_ns / 1_000_000_000, tz=UTC).isoformat()
+            if wall_ns is not None
+            else None
+        )
+        return {
+            "schema_version": "h-exe-001-progress-v1",
+            "session_id": self.session_id,
+            "updated_at": updated_at,
+            "event_count": self.event_count,
+            "last_exchange_timestamp_ms": self.last_exchange_timestamp_ms,
+            "last_received_wall_ns": wall_ns,
+            "last_received_monotonic_ns": self.last_received_monotonic_ns,
+            "credentials_used": False,
+            "orders_sent": 0,
+        }
+
+    def _write(self) -> None:
+        content = json.dumps(self._payload(), indent=2, sort_keys=True)
+        encoded_bytes = len(content.encode("utf-8"))
+        self.storage_budget.reserve(max(0, encoded_bytes - self._reserved_bytes))
+        self._reserved_bytes = max(self._reserved_bytes, encoded_bytes)
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = self.path.with_suffix(self.path.suffix + ".tmp")
+        temporary.write_text(content, encoding="utf-8")
+        temporary.replace(self.path)
+        self._last_written_monotonic_ns = self.last_received_monotonic_ns
+
+    def manifest(self) -> dict[str, Any] | None:
+        if not self.path.is_file():
+            return None
+        return {
+            "path": str(self.path.resolve()),
+            "bytes": self.path.stat().st_size,
+            "sha256": _sha256(self.path),
+            **self._payload(),
+        }
 
 
 def _atomic_json(
@@ -176,9 +260,15 @@ def run(args: argparse.Namespace) -> int:
         storage_cap_bytes=storage_cap_bytes,
         storage_budget=storage_budget,
     )
+    progress = ProgressHeartbeat(
+        output_dir / "progress.json",
+        session_id=session_id,
+        storage_budget=storage_budget,
+    )
     analyzers = {product: ExecutionToxicityShadow(product) for product in args.products}
 
     def on_market_event(event: dict[str, Any], _book: Any) -> None:
+        progress.observe(event)
         completed = analyzers[event["product_id"]].process_event(event)
         for item in completed:
             observation_writer.append(_observation_record(item))
@@ -213,6 +303,7 @@ def run(args: argparse.Namespace) -> int:
     except ExecutionCollectorError as exc:
         failure = str(exc)
     finally:
+        progress.finalize()
         raw_manifest = raw_writer.manifest()
         observation_manifest = observation_writer.manifest()
 
@@ -264,6 +355,7 @@ def run(args: argparse.Namespace) -> int:
         "collector": {
             "raw": raw_manifest,
             "observations": observation_manifest,
+            "progress": progress.manifest(),
             "connections_started": (
                 supervision.connections_started if supervision is not None else len(collectors)
             ),
