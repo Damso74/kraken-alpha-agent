@@ -38,18 +38,22 @@ après 15 secondes sans événement marché normalisé ; les trames de contrôle
 réinitialisent pas ce watchdog. Un `progress.json` atomique matérialise en plus
 la progression toutes les cinq secondes, indépendamment du buffering gzip.
 
-Le smoke final de 60 secondes `20260826T185910.090273Z` a produit 34 698
+Le smoke watchdog de 60 secondes `20260826T185910.090273Z` a produit 34 698
 messages marché normalisés, 34 896 lignes raw (1 300 384 octets compressés), un
 heartbeat hashé de 34 896 événements, zéro gap, zéro credential et zéro ordre.
-La production corrigée a redémarré dans la session
-`20260826T190049.911965Z` ; son heartbeat comptait déjà 15 363 événements après
-vingt secondes.
+Cette phase pré-audit de capacité a ensuite été archivée sans suppression.
 
 Un audit de capacité a ensuite mesuré 24,28 Gio/jour réservés sur le JSON non
 compressé contre 1,75 Gio/jour réellement écrit. Le quota aurait été atteint en
 4,12 jours. Avant le premier jour UTC complet, le budget a été corrigé pour
 réserver les blocs gzip exacts et le plafond physique porté à 200 Gio, soit
 environ 114 jours au débit observé pour un horizon maximal de 60 jours.
+
+Le smoke physique final `20260826T191516.107215Z` est valide : 33 007 messages,
+33 205 lignes raw, 898 949 octets gzip et 899 319 octets projetés globalement,
+sans mismatch de hash, credential ni ordre. La production gelée active est la
+session `20260826T191702.344218Z`, dont le heartbeat est alimenté toutes les cinq
+secondes. La tâche utilise désormais explicitement `--storage-cap-gib 200`.
 
 La désinstallation est locale et réversible via
 `scripts/uninstall_edge_forward_tasks.ps1`.
