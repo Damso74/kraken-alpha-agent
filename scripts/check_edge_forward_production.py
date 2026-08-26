@@ -206,9 +206,14 @@ def attach_h_exe_evaluation(payload: dict[str, Any], *, repo_root: Path) -> None
     root = Path(repo_root).resolve() / "data/collector_cache/kraken_execution_toxicity_hexe001"
     evaluation, digest = evaluate_and_write(output_root=root)
     result = evaluation.get("evaluation", {})
+    technical = evaluation.get("technical_health", {})
     payload["h_exe_evaluation"] = {
         "status": evaluation["status"],
         "decision": evaluation["decision"],
+        "complete_technical_utc_days": technical.get("complete_utc_days", 0),
+        "technical_gate_passed": technical.get("passed", False),
+        "technical_reason_codes": technical.get("reason_codes", []),
+        "technical_session_counts": technical.get("session_counts", {}),
         "complete_validation_utc_days": evaluation.get("complete_validation_utc_days", 0),
         "completed_probes": evaluation.get("completed_probes", 0),
         "sessions_verified": evaluation.get("sessions_verified", False),

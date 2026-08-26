@@ -23,6 +23,9 @@ def test_h_exe_evaluation_is_fail_closed_before_technical_gate(tmp_path: Path) -
     result = payload["h_exe_evaluation"]
     assert result["status"] == "technical_gate_pending"
     assert result["decision"] == "NO-GO"
+    assert result["complete_technical_utc_days"] == 0
+    assert result["technical_gate_passed"] is False
+    assert "FEWER_THAN_14_COMPLETE_UTC_DAYS" in result["technical_reason_codes"]
     assert result["authorizes_paper_or_live"] is False
 
 
