@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any
 
 KRAKEN_FUTURES_WS_URL = "wss://futures.kraken.com/ws/v1"
+DEFAULT_FEED_SILENCE_TIMEOUT_SECONDS = 15.0
 SCHEMA_VERSION = "h-exe-001-v1"
 
 
@@ -538,26 +539,32 @@ def run_public_shadow_stream(
     *,
     duration_seconds: float,
     websocket_url: str = KRAKEN_FUTURES_WS_URL,
+    feed_silence_timeout_seconds: float = DEFAULT_FEED_SILENCE_TIMEOUT_SECONDS,
+    monotonic_clock: Callable[[], float] | None = None,
 ) -> int:
     """Collect one public connection for a bounded duration; never trade."""
     if duration_seconds <= 0:
         raise ValueError("duration_seconds must be positive")
+    if feed_silence_timeout_seconds <= 0:
+        raise ValueError("feed_silence_timeout_seconds must be positive")
     try:
         from websockets.exceptions import WebSocketException
         from websockets.sync.client import connect
     except ImportError as exc:  # pragma: no cover - dependency is installed by uvicorn[standard]
         raise ExecutionCollectorError("websockets package is required for collection") from exc
 
-    deadline = time.monotonic() + duration_seconds
+    clock = monotonic_clock or time.monotonic
+    deadline = clock() + duration_seconds
     messages_received = 0
     collector.begin_connection()
     try:
         with connect(websocket_url, open_timeout=15, close_timeout=10) as websocket:
             for subscription in collector.subscriptions():
                 websocket.send(json.dumps(subscription))
-            last_ping = time.monotonic()
-            while time.monotonic() < deadline:
-                now = time.monotonic()
+            last_ping = clock()
+            last_message = last_ping
+            while clock() < deadline:
+                now = clock()
                 if now - last_ping >= 30:
                     websocket.ping()
                     last_ping = now
@@ -565,9 +572,18 @@ def run_public_shadow_stream(
                 try:
                     message = websocket.recv(timeout=timeout)
                 except TimeoutError:
+                    silence_seconds = clock() - last_message
+                    if silence_seconds >= feed_silence_timeout_seconds:
+                        raise RecoverableConnectionError(
+                            "public feed silent for "
+                            f"{silence_seconds:.3f}s (limit "
+                            f"{feed_silence_timeout_seconds:.3f}s)",
+                            messages_received=messages_received,
+                        ) from None
                     continue
                 collector.process_message(message)
                 messages_received += 1
+                last_message = clock()
     except (OSError, WebSocketException) as exc:
         raise RecoverableConnectionError(
             f"{type(exc).__name__}: {exc}", messages_received=messages_received

@@ -7,12 +7,15 @@ from pathlib import Path
 import pytest
 
 from src.data.collectors.kraken_execution_l2 import (
+    DEFAULT_FEED_SILENCE_TIMEOUT_SECONDS,
     ExecutionCollectorError,
     GlobalStorageBudget,
     KrakenExecutionL2Collector,
+    RecoverableConnectionError,
     RotatingGzipJsonlWriter,
     SequenceGapError,
     StorageCapExceeded,
+    run_public_shadow_stream,
 )
 
 
@@ -25,6 +28,48 @@ def _snapshot(seq: int = 10, timestamp: int = 1_700_000_000_000) -> dict:
         "bids": [{"price": 100, "qty": 10}, {"price": 99, "qty": 20}],
         "asks": [{"price": 101, "qty": 12}, {"price": 102, "qty": 25}],
     }
+
+
+def test_public_stream_reconnects_after_feed_silence(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class SilentWebSocket:
+        def __init__(self) -> None:
+            self.sent: list[str] = []
+
+        def __enter__(self) -> SilentWebSocket:
+            return self
+
+        def __exit__(self, *_args: object) -> None:
+            return None
+
+        def send(self, payload: str) -> None:
+            self.sent.append(payload)
+
+        def ping(self) -> None:
+            raise AssertionError("watchdog must fire before the first ping")
+
+        def recv(self, *, timeout: float) -> str:
+            assert timeout > 0
+            raise TimeoutError
+
+    websocket = SilentWebSocket()
+    clock = iter([0.0, 0.0, 0.0, 0.0, 16.0])
+    monkeypatch.setattr(
+        "websockets.sync.client.connect",
+        lambda *_args, **_kwargs: websocket,
+    )
+    collector = KrakenExecutionL2Collector(["PF_XBTUSD"])
+    with pytest.raises(RecoverableConnectionError, match="public feed silent") as exc:
+        run_public_shadow_stream(
+            collector,
+            duration_seconds=100,
+            feed_silence_timeout_seconds=DEFAULT_FEED_SILENCE_TIMEOUT_SECONDS,
+            monotonic_clock=lambda: next(clock),
+        )
+    assert exc.value.messages_received == 0
+    assert len(websocket.sent) == 2
+    assert all("api_key" not in payload for payload in websocket.sent)
 
 
 def test_book_snapshot_and_contiguous_delta_are_normalized() -> None:

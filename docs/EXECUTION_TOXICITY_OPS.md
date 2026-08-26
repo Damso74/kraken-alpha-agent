@@ -17,7 +17,8 @@ Depuis PowerShell, dans le worktree :
 Le superviseur crée une session horodatée immuable. Si le WebSocket tombe, il
 recrée un collecteur vide : les séquences et le carnet précédents ne sont jamais
 réutilisés, les probes en attente sont abandonnés, et de nouveaux snapshots book
-et trade sont obligatoires.
+et trade sont obligatoires. Une absence totale de message pendant 15 secondes
+est traitée comme une rupture récupérable, même si la socket TLS reste ouverte.
 
 Les chemins runtime, ignorés par Git, sont :
 
@@ -59,8 +60,11 @@ Une troisième tâche `KrakenEdge-Forward-Health` vérifie toutes les quinze
 minutes les actions enregistrées, la fraîcheur du raw H-EXE et des snapshots
 WOF, ainsi qu'une réserve disque minimale de 125 Gio. Elle produit des digests
 JSON immuables sous `data/collector_cache/edge_forward_health/` et retourne un
-code non nul fail-closed en cas d'anomalie. Les tâches utilisent le venv propre
-au worktree et le compte utilisateur courant avec un niveau d'exécution limité.
+code non nul fail-closed en cas d'anomalie. L'exécution planifiée vérifie les
+données et le disque sans réinterroger Task Scheduler depuis son propre contexte
+d'exécution ; une invocation manuelle du même script ajoute le contrôle exact
+des actions enregistrées. Les tâches utilisent le venv propre au worktree et le
+compte utilisateur courant avec un niveau d'exécution limité.
 La désinstallation réversible est :
 
 ```powershell

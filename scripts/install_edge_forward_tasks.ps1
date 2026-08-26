@@ -74,7 +74,7 @@ $powershell = (Get-Command powershell.exe -ErrorAction Stop).Source
 $healthScript = Join-Path $repoRoot 'scripts\check_edge_forward_production.ps1'
 $healthAction = New-ScheduledTaskAction `
     -Execute $powershell `
-    -Argument "-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$healthScript`"" `
+    -Argument "-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$healthScript`" -SkipTaskInspection" `
     -WorkingDirectory $repoRoot
 $healthTrigger = New-ScheduledTaskTrigger `
     -Once `
@@ -88,7 +88,7 @@ $healthSettings = New-ScheduledTaskSettingsSet `
     -Hidden `
     -RestartCount 2 `
     -RestartInterval (New-TimeSpan -Minutes 1) `
-    -ExecutionTimeLimit (New-TimeSpan -Minutes 5)
+    -ExecutionTimeLimit (New-TimeSpan -Minutes 10)
 
 Register-ScheduledTask `
     -TaskName $exeTaskName `

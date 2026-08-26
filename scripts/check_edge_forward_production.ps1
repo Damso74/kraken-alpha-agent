@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
-    [string]$OutputRoot
+    [string]$OutputRoot,
+    [switch]$SkipTaskInspection
 )
 
 $ErrorActionPreference = 'Stop'
@@ -9,6 +10,13 @@ $repoRoot = (Split-Path -Parent $PSScriptRoot)
 if (-not $OutputRoot) {
     $OutputRoot = Join-Path $repoRoot 'data\collector_cache\edge_forward_health'
 }
+New-Item -ItemType Directory -Path $OutputRoot -Force | Out-Null
+$tracePath = Join-Path $OutputRoot 'run-trace.log'
+function Write-HealthTrace {
+    param([Parameter(Mandatory)][string]$Stage)
+    Add-Content -LiteralPath $tracePath -Value "$([datetime]::UtcNow.ToString('o')) pid=$PID stage=$Stage"
+}
+Write-HealthTrace -Stage 'start'
 
 $exeTaskName = 'KrakenEdge-H-EXE-Technical'
 $wofTaskName = 'KrakenEdge-H-WOF-Forward'
@@ -57,8 +65,14 @@ function Get-TaskSnapshot {
     }
 }
 
-$exeTask = Get-TaskSnapshot -TaskName $exeTaskName -ExpectedArguments $expectedExeArguments
-$wofTask = Get-TaskSnapshot -TaskName $wofTaskName -ExpectedArguments $expectedWofArguments
+if ($SkipTaskInspection) {
+    $exeTask = [ordered]@{ inspection = 'skipped_in_scheduled_context' }
+    $wofTask = [ordered]@{ inspection = 'skipped_in_scheduled_context' }
+} else {
+    $exeTask = Get-TaskSnapshot -TaskName $exeTaskName -ExpectedArguments $expectedExeArguments
+    $wofTask = Get-TaskSnapshot -TaskName $wofTaskName -ExpectedArguments $expectedWofArguments
+}
+Write-HealthTrace -Stage 'task-inspection-complete'
 
 $now = [datetime]::UtcNow
 $rawRoot = Join-Path $repoRoot 'data\collector_cache\kraken_execution_toxicity_hexe001\technical\sessions'
@@ -70,13 +84,14 @@ if (-not $latestRaw) {
     $reasons.Add('H_EXE_RAW_MISSING')
 } else {
     $rawAgeMinutes = ($now - $latestRaw.LastWriteTimeUtc).TotalMinutes
-    if ($latestRaw.Length -le 0) {
-        $reasons.Add('H_EXE_RAW_EMPTY')
+    if ($latestRaw.Length -le 0 -and $rawAgeMinutes -gt 10) {
+        $reasons.Add('H_EXE_RAW_EMPTY_GT_10_MIN')
     }
     if ($rawAgeMinutes -gt 20) {
         $reasons.Add('H_EXE_RAW_STALE_GT_20_MIN')
     }
 }
+Write-HealthTrace -Stage 'raw-check-complete'
 
 $snapshotRoots = @(
     (Join-Path $repoRoot 'data\collector_cache\world_order_flow_forward\snapshot_days'),
@@ -102,6 +117,7 @@ foreach ($snapshotRoot in $snapshotRoots) {
         last_write_utc = $latest.LastWriteTimeUtc.ToString('o')
     })
 }
+Write-HealthTrace -Stage 'snapshot-check-complete'
 
 $driveName = ([System.IO.Path]::GetPathRoot($repoRoot)).TrimEnd('\').TrimEnd(':')
 $drive = Get-PSDrive -Name $driveName
@@ -109,6 +125,7 @@ $freeGiB = $drive.Free / 1GB
 if ($freeGiB -lt 125) {
     $reasons.Add('DISK_FREE_BELOW_125_GIB')
 }
+Write-HealthTrace -Stage 'disk-check-complete'
 
 $payload = [ordered]@{
     schema_version = 'edge-forward-production-health-v1'
@@ -126,12 +143,14 @@ $payload = [ordered]@{
             path = $latestRaw.FullName
             bytes = $latestRaw.Length
             age_minutes = [math]::Round($rawAgeMinutes, 3)
+            state = if ($latestRaw.Length -gt 0) { 'receiving' } else { 'rotation_grace' }
             last_write_utc = $latestRaw.LastWriteTimeUtc.ToString('o')
         }
     } else { $null }
     h_wof_snapshots = @($snapshotState)
     disk_free_gib = [math]::Round($freeGiB, 3)
 }
+Write-HealthTrace -Stage 'payload-built'
 
 $digestRoot = Join-Path $OutputRoot 'digests'
 New-Item -ItemType Directory -Path $digestRoot -Force | Out-Null
@@ -145,8 +164,13 @@ $latestPath = Join-Path $OutputRoot 'latest.json'
 $latestTemp = "$latestPath.tmp"
 [System.IO.File]::WriteAllText($latestTemp, $json, [System.Text.UTF8Encoding]::new($false))
 Move-Item -LiteralPath $latestTemp -Destination $latestPath -Force
+Write-HealthTrace -Stage 'digest-written'
 
 Write-Output $json
 Write-Output "digest=$digestPath"
-if ($payload.healthy) { exit 0 }
+if ($payload.healthy) {
+    Write-HealthTrace -Stage 'exit-0'
+    exit 0
+}
+Write-HealthTrace -Stage 'exit-2'
 exit 2
