@@ -124,6 +124,17 @@ def test_trade_requires_strictly_earlier_and_fresh_book() -> None:
     assert fresh.pending_count == 1
 
 
+def test_trade_uses_latest_strictly_prior_book_when_newer_book_arrived_first() -> None:
+    engine = ExecutionToxicityShadow("PF_XBTUSD")
+    engine.process_event(_book(BASE_MS, bid=100, ask=101))
+    # Kraken commonly emits the resulting book update before the trade feed
+    # message. Its exchange timestamp is later, so the frozen rule must select
+    # the already-received prior book rather than reject the trade entirely.
+    engine.process_event(_book(BASE_MS + 100, bid=101, ask=102))
+    engine.process_event(_trade(BASE_MS + 99, side="buy", price=101, qty=10))
+    assert engine.pending_count == 1
+
+
 def _completed(timestamp_ms: int, savings: float = 8.0) -> CompletedProbe:
     return CompletedProbe(
         probe_id=str(timestamp_ms),

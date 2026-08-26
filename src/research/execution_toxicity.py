@@ -157,6 +157,7 @@ class ExecutionToxicityShadow:
     def __init__(self, product_id: str) -> None:
         self.product_id = product_id
         self.latest_book: BookTick | None = None
+        self._recent_books: deque[BookTick] = deque()
         self._recent_trades: deque[tuple[int, float, float]] = deque()
         self._pending: list[PendingProbe] = []
         self.completed: list[CompletedProbe] = []
@@ -176,6 +177,7 @@ class ExecutionToxicityShadow:
         self.connection_resets += 1
         self.discarded_pending_on_reset += len(self._pending)
         self.latest_book = None
+        self._recent_books.clear()
         self._recent_trades.clear()
         self._pending.clear()
         self._last_probe_ms = -(10**18)
@@ -198,6 +200,13 @@ class ExecutionToxicityShadow:
         ):
             raise ValueError("book timestamp moved backwards")
         self.latest_book = tick
+        self._recent_books.append(tick)
+        book_cutoff = tick.exchange_timestamp_ms - MAX_BOOK_AGE_MS
+        while (
+            len(self._recent_books) > 1
+            and self._recent_books[0].exchange_timestamp_ms < book_cutoff
+        ):
+            self._recent_books.popleft()
         self.book_events += 1
         newly_completed: list[CompletedProbe] = []
         still_pending: list[PendingProbe] = []
@@ -239,7 +248,14 @@ class ExecutionToxicityShadow:
         while self._recent_trades and self._recent_trades[0][0] < cutoff:
             self._recent_trades.popleft()
 
-        book = self.latest_book
+        book = next(
+            (
+                candidate
+                for candidate in reversed(self._recent_books)
+                if candidate.exchange_timestamp_ms < timestamp_ms
+            ),
+            None,
+        )
         if book is None:
             return
         book_age_ms = timestamp_ms - book.exchange_timestamp_ms
