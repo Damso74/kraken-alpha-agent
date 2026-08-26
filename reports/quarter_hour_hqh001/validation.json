@@ -1,0 +1,206 @@
+{
+  "cost_model": {
+    "primary_round_trip_bps": 20.0,
+    "stress_round_trip_bps": 40.0
+  },
+  "data_end_exclusive": "2026-01-01",
+  "data_provenance": {
+    "aggressor-differential": {
+      "load_mode": "cache",
+      "path": "C:\\Code\\perso\\kraken-alpha-agent-microstructure\\data\\collector_cache\\quarter_hour_hqh001\\PF_XBTUSD_1m_aggressor_differential_2024-07-01_2025-12-31.json",
+      "row_count": 790560,
+      "sha256": "ca0e25c7360b07f9141731af7d39989c3687de07461949a85d5d7e5ea3ee653a"
+    },
+    "candles": {
+      "load_mode": "cache",
+      "path": "C:\\Code\\perso\\kraken-alpha-agent-microstructure\\data\\collector_cache\\quarter_hour_hqh001\\PF_XBTUSD_1m_candles_2024-07-01_2025-12-31.json",
+      "row_count": 790560,
+      "sha256": "3e3f49bdaaeaf7fa89ca7664fa40f86cb5d8e1d013fb6739d3425e568a8465a5"
+    }
+  },
+  "data_quality": {
+    "alignment": {
+      "aggressor": 790560,
+      "candles": 790560,
+      "common": 790560,
+      "invalid": 0,
+      "off_grid": 0,
+      "valid": 790560
+    },
+    "coverage": {
+      "aggressor-differential": {
+        "coverage": 1.0,
+        "expected": 525600,
+        "missing_count": 0,
+        "observed_on_grid": 525600,
+        "off_grid_count": 0
+      },
+      "candles": {
+        "coverage": 1.0,
+        "expected": 525600,
+        "missing_count": 0,
+        "observed_on_grid": 525600,
+        "off_grid_count": 0
+      }
+    },
+    "passed": true,
+    "thresholds": {
+      "coverage_by_week": {
+        "1735516800": 1.0,
+        "1736121600": 1.0,
+        "1736726400": 1.0,
+        "1737331200": 1.0,
+        "1737936000": 1.0,
+        "1738540800": 1.0,
+        "1739145600": 1.0,
+        "1739750400": 1.0,
+        "1740355200": 1.0,
+        "1740960000": 1.0,
+        "1741564800": 1.0,
+        "1742169600": 1.0,
+        "1742774400": 1.0,
+        "1743379200": 1.0,
+        "1743984000": 1.0,
+        "1744588800": 1.0,
+        "1745193600": 1.0,
+        "1745798400": 1.0,
+        "1746403200": 1.0,
+        "1747008000": 1.0,
+        "1747612800": 1.0,
+        "1748217600": 1.0,
+        "1748822400": 1.0,
+        "1749427200": 1.0,
+        "1750032000": 1.0,
+        "1750636800": 1.0,
+        "1751241600": 1.0,
+        "1751846400": 1.0,
+        "1752451200": 1.0,
+        "1753056000": 1.0,
+        "1753660800": 1.0,
+        "1754265600": 1.0,
+        "1754870400": 1.0,
+        "1755475200": 1.0,
+        "1756080000": 1.0,
+        "1756684800": 1.0,
+        "1757289600": 1.0,
+        "1757894400": 1.0,
+        "1758499200": 1.0,
+        "1759104000": 1.0,
+        "1759708800": 1.0,
+        "1760313600": 1.0,
+        "1760918400": 1.0,
+        "1761523200": 1.0,
+        "1762128000": 1.0,
+        "1762732800": 1.0,
+        "1763337600": 1.0,
+        "1763942400": 1.0,
+        "1764547200": 1.0,
+        "1765152000": 1.0,
+        "1765756800": 1.0,
+        "1766361600": 1.0,
+        "1766966400": 1.0
+      },
+      "min_coverage": 1.0,
+      "weeks_expected": 53,
+      "weeks_with_threshold": 53
+    }
+  },
+  "data_start": "2024-07-01",
+  "decision_sha256": "02646bbd2bc2d55ab78273165a05cd08cdeba2b7454e1da648a9945739492791",
+  "event_counts": {
+    "off_quarter_placebo": 731,
+    "quarter_hour": 742
+  },
+  "generated_at": "2026-08-26T17:09:34Z",
+  "git_commit": "dfea37670f057bd146b6ff6f615c3eb49c456916",
+  "orders_sent": 0,
+  "preregistration": "docs\\QUARTER_HOUR_PREREGISTRATION.md",
+  "preregistration_sha256": "1a1bbe8014d571d974b56a25597fd2c1ddbfb0391a6a77b76d93230c9cffeee4",
+  "previous_artifacts_sha256": {},
+  "resolution": "1m",
+  "result": {
+    "bootstrap_lower_95_one_sided": -0.002969415202370975,
+    "family_alpha": 0.016666666666666666,
+    "gates": {
+      "acceptable_concentration": true,
+      "beats_matched_off_quarter_placebo": false,
+      "bootstrap_lower_bound_positive": false,
+      "both_time_halves_positive": false,
+      "data_quality": true,
+      "min_300_trades": true,
+      "positive_at_40bps": false,
+      "positive_mean": false,
+      "positive_pnl": false,
+      "positive_without_best_month": false,
+      "win_rate_50pct": false
+    },
+    "matched_placebo": {
+      "empirical_p_value": 0.32893421315736854,
+      "matched_mean": -0.0023299219062889657,
+      "replications": 5000
+    },
+    "off_quarter_placebo": {
+      "best_return": 0.07665051723241678,
+      "mean_return": -0.0023259647790455722,
+      "median_return": -0.002045969085789799,
+      "pnl_usd": -1700.2802534823134,
+      "trade_count": 731,
+      "win_rate": 0.4117647058823529,
+      "worst_return": -0.074109340582591
+    },
+    "passed": false,
+    "primary_cost_bps": 20.0,
+    "quarter_hour": {
+      "best_return": 0.08266571684871504,
+      "mean_return": -0.002100742156935363,
+      "median_return": -0.0013089589887700353,
+      "pnl_usd": -1558.7506804460395,
+      "trade_count": 742,
+      "win_rate": 0.4393530997304582,
+      "worst_return": -0.1037816714243528
+    },
+    "robustness": {
+      "best_month": [
+        2025,
+        5
+      ],
+      "dominant_quarter_abs_share": 0.0755769735964857,
+      "first_half_pnl_usd": -633.6028964648689,
+      "max_trade_abs_share": 0.01370101686850551,
+      "pnl_without_best_month_usd": -1566.9252945625724,
+      "second_half_pnl_usd": -925.1477839811708
+    },
+    "status": "not_supported",
+    "stress_costs": {
+      "20.0": {
+        "best_return": 0.08266571684871504,
+        "mean_return": -0.002100742156935363,
+        "median_return": -0.0013089589887700353,
+        "pnl_usd": -1558.7506804460395,
+        "trade_count": 742,
+        "win_rate": 0.4393530997304582,
+        "worst_return": -0.1037816714243528
+      },
+      "40.0": {
+        "best_return": 0.08066571684871504,
+        "mean_return": -0.004100742156935363,
+        "median_return": -0.0033089589887700353,
+        "pnl_usd": -3042.75068044604,
+        "trade_count": 742,
+        "win_rate": 0.34097035040431267,
+        "worst_return": -0.1057816714243528
+      }
+    }
+  },
+  "schema_version": "hqh001-report-v1",
+  "segment_start": "2025-01-01",
+  "source_code_sha256": {
+    "scripts\\run_quarter_hour_hqh001.py": "a680591581c0734279ae9bc28349b169f17aa0108e4328eb878fccc15a93eafc",
+    "src\\data\\collectors\\kraken_futures_charts.py": "d54af52ac923427211a30c133ce2d4cdf10059993dcc54e0ebc91ee5ccb30ecc",
+    "src\\research\\quarter_hour.py": "6025126a1f8306de944eb3da99db1f7277f179d5a8eb3a09e231a211400530fc"
+  },
+  "stage": "validation",
+  "status": "not_supported",
+  "symbol": "PF_XBTUSD",
+  "test_final_sealed": true
+}
