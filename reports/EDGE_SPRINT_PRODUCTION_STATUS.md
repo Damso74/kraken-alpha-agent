@@ -89,12 +89,12 @@ journal vide de bootstrap, mais retourne correctement `collecting`, `NO-GO`,
 zéro semaine éligible et aucune autorisation paper/live.
 
 Le premier reçu CI WOF ne liait que les sources scientifiques à Ruff et pytest.
-Avant la première semaine causale, ce gate a été durci pour sceller les 385
+Avant la première semaine causale, ce gate a été durci pour sceller les fichiers
 fichiers suivis du périmètre CI et exiger également `bash -n`, ShellCheck,
 `git diff --exit-code` et un worktree sans fichier non suivi. Le reçu courant
 WOF est `beb70f71166d9187a36f19d45b6779379e6e903334b0e3a0f383d795ac23d88c` ;
-le scope commun est
-`98cee88ef3981b37876b129ac498dd12894c27abe4f753ca41f9f7455f45643e`.
+le scope commun courant contient 387 fichiers, 1 179 tests et porte le hash
+`12f8f653349e83da76d9740d94c100ded09d66161142d3897e04480aa2051ab6`.
 Le moniteur réel lit `ci_verified=true` et `reproduction_verified=true`, sans
 que ces preuves puissent contourner l'horizon : le verdict reste `collecting`,
 `NO-GO` avec zéro semaine.
@@ -125,7 +125,7 @@ le live.
 
 L'audit du reçu CI a ensuite démontré qu'un changement de test ou de script non
 scientifique pouvait laisser un ancien reçu apparemment valide. Avant le premier
-jour UTC complet, l'attestation commune H-EXE/H-WOF a donc été liée aux 385
+jour UTC complet, l'attestation commune H-EXE/H-WOF a donc été liée à tous les
 fichiers suivis et au workflow complet. L'état précédent a été préservé sous
 `archive/h_exe_pre_full_ci_scope_20260826T211811Z` et
 `archive/h_wof_pre_full_ci_scope_20260826T211811Z`. H-EXE repart définitivement
@@ -134,6 +134,15 @@ avec la session `20260826T211815.791884Z` et le reçu
 H-WOF a recapturé les deux snapshots du 26 août avec les nouveaux hashes. Deux
 processus de contrôle successifs ont établi puis reproduit exactement son
 baseline ; l'état global reste `healthy=true`, zéro credential, zéro ordre.
+
+Le contrat de promotion global est également gelé avant tout résultat forward.
+H-EXE seul ne peut jamais autoriser une prise de risque : il n'est qu'un candidat
+d'exécution. Seul H-WOF peut ouvrir une revue paper, encore soumise à décision
+humaine. Une simple revue micro-live exige ensuite quatre semaines paper
+complètes, nettes et stressées positives, limites et kill switch vérifiés, puis
+reste `REVIEW_REQUIRED`. L'état runtime courant est `shadow_collecting`, avec
+`authorizes_paper=false`, `authorizes_live=false` et
+`authorizes_orders=false`.
 
 Un contrôle supplémentaire a détecté que la relance manuelle de cette session
 n'avait pas déplacé le déclencheur initial à `:38`. L'occurrence suivante aurait
