@@ -35,11 +35,15 @@ canaries pré-correction ont été préservés sous
 
 L'amendement opérationnel impose désormais une reconnexion avec snapshots frais
 après 15 secondes sans événement marché normalisé ; les trames de contrôle ne
-réinitialisent pas ce watchdog. Le smoke final de 60 secondes
-`20260826T184402.271773Z` a produit 30 515 messages marché normalisés, 30 713
-lignes raw (1 134 762 octets compressés), zéro gap, zéro credential et zéro
-ordre. La production corrigée a redémarré dans la session
-`20260826T184553.954161Z`.
+réinitialisent pas ce watchdog. Un `progress.json` atomique matérialise en plus
+la progression toutes les cinq secondes, indépendamment du buffering gzip.
+
+Le smoke final de 60 secondes `20260826T185910.090273Z` a produit 34 698
+messages marché normalisés, 34 896 lignes raw (1 300 384 octets compressés), un
+heartbeat hashé de 34 896 événements, zéro gap, zéro credential et zéro ordre.
+La production corrigée a redémarré dans la session
+`20260826T190049.911965Z` ; son heartbeat comptait déjà 15 363 événements après
+vingt secondes.
 
 La désinstallation est locale et réversible via
 `scripts/uninstall_edge_forward_tasks.ps1`.
