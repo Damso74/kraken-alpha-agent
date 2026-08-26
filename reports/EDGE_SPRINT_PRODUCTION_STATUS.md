@@ -111,7 +111,7 @@ ont été préservées, sans suppression, sous
 définitive repart de zéro avec la session `20260826T205010.286268Z`. Son premier
 fichier raw porte bien `connection_id=1`. L'attestation associée au jeu de
 sources `9d7e12c77399eeb6ace6930e37d31e00cb440f383c46e7ba8985e8b6c084266c`
-a passé Ruff sur `src tests scripts` et les 1 174 tests sous transport mock,
+a passé Ruff sur `src tests scripts` et les 1 175 tests sous transport mock,
 `TRADING_MODE=dry_run` et les deux verrous live à `false`.
 
 Le contrôle de production effectué après ce redémarrage retourne `healthy=true`

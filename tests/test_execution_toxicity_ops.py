@@ -4,9 +4,20 @@ import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+import pytest
+
 from scripts.run_execution_toxicity_ops_once import collection_phase
-from scripts.run_execution_toxicity_shadow import ProgressHeartbeat
-from src.data.collectors.kraken_execution_l2 import GlobalStorageBudget
+from scripts.run_execution_toxicity_shadow import (
+    PREREGISTRATION_PATH,
+    SOURCE_PATHS,
+    ProgressHeartbeat,
+    _sha256,
+    _validate_technical_gate,
+)
+from src.data.collectors.kraken_execution_l2 import (
+    ExecutionCollectorError,
+    GlobalStorageBudget,
+)
 from src.research.execution_toxicity_ops import (
     DAY_MS,
     aggregate_technical_health,
@@ -173,3 +184,24 @@ def test_ops_phase_switches_only_after_immutable_technical_gate(tmp_path: Path) 
     phase, selected = collection_phase(tmp_path)
     assert phase == "validation"
     assert selected == newer
+
+
+def test_validation_collector_rechecks_exact_gate_hashes(tmp_path: Path) -> None:
+    preregistration_sha256 = _sha256(PREREGISTRATION_PATH)
+    code_hashes = {label: _sha256(path) for label, path in SOURCE_PATHS.items()}
+    payload = {
+        "schema_version": "h-exe-001-v1",
+        "passed": True,
+        "complete_utc_days": 14,
+        "sequence_gaps": 0,
+        "preregistration_sha256": preregistration_sha256,
+        **code_hashes,
+    }
+    gate = tmp_path / "technical-gate.json"
+    gate.write_text(json.dumps(payload), encoding="utf-8")
+    assert _validate_technical_gate(gate, preregistration_sha256, code_hashes) == payload
+
+    payload["engine_sha256"] = "0" * 64
+    gate.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ExecutionCollectorError, match="technical gate mismatch"):
+        _validate_technical_gate(gate, preregistration_sha256, code_hashes)
