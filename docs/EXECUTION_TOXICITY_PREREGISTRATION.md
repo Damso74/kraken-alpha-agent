@@ -44,8 +44,9 @@ un dépassement projeté provoque un arrêt fail-closed, jamais une suppression.
 ### Amendement opérationnel pré-validation du 26 août 2026
 
 Avant le premier jour UTC complet, le canary long a révélé qu'une connexion TLS
-pouvait rester ouverte sans aucun message public. Un watchdog fixe de 15
-secondes a donc été ajouté : au-delà, la connexion est déclarée récupérable,
+pouvait rester ouverte sans aucun événement marché, malgré des trames de
+contrôle. Un watchdog fixe de 15 secondes sur les événements normalisés a donc
+été ajouté : au-delà, la connexion est déclarée récupérable,
 fermée et remplacée par un collecteur neuf exigeant de nouveaux snapshots. Les
 données canary antérieures à cet amendement sont archivées et exclues de la
 phase technique. Aucun seuil de signal, coût, probe ou gate économique n'a été

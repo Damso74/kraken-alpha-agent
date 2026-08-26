@@ -562,7 +562,7 @@ def run_public_shadow_stream(
             for subscription in collector.subscriptions():
                 websocket.send(json.dumps(subscription))
             last_ping = clock()
-            last_message = last_ping
+            last_market_event = last_ping
             while clock() < deadline:
                 now = clock()
                 if now - last_ping >= 30:
@@ -572,7 +572,7 @@ def run_public_shadow_stream(
                 try:
                     message = websocket.recv(timeout=timeout)
                 except TimeoutError:
-                    silence_seconds = clock() - last_message
+                    silence_seconds = clock() - last_market_event
                     if silence_seconds >= feed_silence_timeout_seconds:
                         raise RecoverableConnectionError(
                             "public feed silent for "
@@ -581,9 +581,10 @@ def run_public_shadow_stream(
                             messages_received=messages_received,
                         ) from None
                     continue
-                collector.process_message(message)
-                messages_received += 1
-                last_message = clock()
+                normalized_events = collector.process_message(message)
+                if normalized_events:
+                    messages_received += 1
+                    last_market_event = clock()
     except (OSError, WebSocketException) as exc:
         raise RecoverableConnectionError(
             f"{type(exc).__name__}: {exc}", messages_received=messages_received

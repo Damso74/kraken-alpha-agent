@@ -30,12 +30,13 @@ def _snapshot(seq: int = 10, timestamp: int = 1_700_000_000_000) -> dict:
     }
 
 
-def test_public_stream_reconnects_after_feed_silence(
+def test_public_stream_reconnects_when_only_control_frames_arrive(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class SilentWebSocket:
         def __init__(self) -> None:
             self.sent: list[str] = []
+            self.recv_count = 0
 
         def __enter__(self) -> SilentWebSocket:
             return self
@@ -51,10 +52,13 @@ def test_public_stream_reconnects_after_feed_silence(
 
         def recv(self, *, timeout: float) -> str:
             assert timeout > 0
+            self.recv_count += 1
+            if self.recv_count == 1:
+                return json.dumps({"event": "heartbeat"})
             raise TimeoutError
 
     websocket = SilentWebSocket()
-    clock = iter([0.0, 0.0, 0.0, 0.0, 16.0])
+    clock = iter([0.0, 0.0, 0.0, 0.0, 16.0, 16.0, 16.0])
     monkeypatch.setattr(
         "websockets.sync.client.connect",
         lambda *_args, **_kwargs: websocket,

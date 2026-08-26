@@ -17,8 +17,9 @@ Depuis PowerShell, dans le worktree :
 Le superviseur crée une session horodatée immuable. Si le WebSocket tombe, il
 recrée un collecteur vide : les séquences et le carnet précédents ne sont jamais
 réutilisés, les probes en attente sont abandonnés, et de nouveaux snapshots book
-et trade sont obligatoires. Une absence totale de message pendant 15 secondes
-est traitée comme une rupture récupérable, même si la socket TLS reste ouverte.
+et trade sont obligatoires. Une absence totale d'événement marché normalisé
+pendant 15 secondes est traitée comme une rupture récupérable, même si la socket
+TLS reste ouverte et continue d'émettre des trames de contrôle.
 
 Les chemins runtime, ignorés par Git, sont :
 
