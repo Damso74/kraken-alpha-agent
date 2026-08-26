@@ -22,7 +22,7 @@ SHA-256.
 Capture manuelle possible pour initialiser le journal :
 
 ```powershell
-C:\Code\perso\kraken-alpha-agent\.venv\Scripts\python.exe `
+.\.venv\Scripts\python.exe `
   scripts\collect_world_order_flow_forward.py snapshot-kraken
 ```
 
@@ -31,10 +31,10 @@ C:\Code\perso\kraken-alpha-agent\.venv\Scripts\python.exe `
 Capturer un premier snapshot sans tenter de reconstruire le passé :
 
 ```powershell
-C:\Code\perso\kraken-alpha-agent\.venv\Scripts\python.exe `
+.\.venv\Scripts\python.exe `
   scripts\collect_world_order_flow_forward.py snapshot
 
-C:\Code\perso\kraken-alpha-agent\.venv\Scripts\python.exe `
+.\.venv\Scripts\python.exe `
   scripts\collect_world_order_flow_forward.py snapshot-kraken
 ```
 
@@ -47,7 +47,7 @@ cette semaine. Il pourra servir à partir du lundi suivant. Avant cela, un refus
 Après la clôture UTC de la journée précédente :
 
 ```powershell
-C:\Code\perso\kraken-alpha-agent\.venv\Scripts\python.exe `
+.\.venv\Scripts\python.exe `
   scripts\collect_world_order_flow_forward.py collect `
   --minimum-assets 30 --maximum-assets 80
 ```
@@ -61,6 +61,11 @@ Chaque exécution :
 5. écrit `days/YYYY-MM-DD.json` atomiquement ;
 6. ajoute un enregistrement hashé à `manifest.jsonl`.
 
+La tâche planifiée utilise `collect-scheduled`. Cette variante conserve les
+mêmes refus fail-closed, mais considère l'attente causale de la première semaine
+comme un bootstrap sain après capture et vérification des deux snapshots. Toute
+autre erreur conserve un code de sortie non nul.
+
 Une répétition produit un cache hit sans réseau. Une interruption après
 l'écriture du fichier quotidien est récupérée en ajoutant le manifeste attendu,
 sans réécrire les données. Aucun téléchargement `aggTrades` n'est effectué.
@@ -68,14 +73,14 @@ sans réécrire les données. Aucun téléchargement `aggTrades` n'est effectué
 ## Vérification hors réseau
 
 ```powershell
-C:\Code\perso\kraken-alpha-agent\.venv\Scripts\python.exe `
+.\.venv\Scripts\python.exe `
   scripts\collect_world_order_flow_forward.py collect `
   --cache-only
 
-C:\Code\perso\kraken-alpha-agent\.venv\Scripts\python.exe `
+.\.venv\Scripts\python.exe `
   scripts\collect_world_order_flow_forward.py healthcheck
 
-C:\Code\perso\kraken-alpha-agent\.venv\Scripts\python.exe `
+.\.venv\Scripts\python.exe `
   scripts\collect_world_order_flow_forward.py digest
 ```
 

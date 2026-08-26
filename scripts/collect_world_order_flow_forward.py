@@ -696,7 +696,14 @@ def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "command",
-        choices=("collect", "snapshot", "snapshot-kraken", "healthcheck", "digest"),
+        choices=(
+            "collect",
+            "collect-scheduled",
+            "snapshot",
+            "snapshot-kraken",
+            "healthcheck",
+            "digest",
+        ),
     )
     parser.add_argument("--root", type=Path, default=DEFAULT_ROOT)
     parser.add_argument("--as-of-date", type=date.fromisoformat)
@@ -715,7 +722,8 @@ def main() -> int:
     try:
         if (
             args.as_of_date is not None
-            and args.command in {"snapshot", "snapshot-kraken", "collect"}
+            and args.command
+            in {"snapshot", "snapshot-kraken", "collect", "collect-scheduled"}
             and not args.cache_only
         ):
             raise ValueError(
@@ -751,14 +759,28 @@ def main() -> int:
                 "assets": len(snapshot["base_assets"]),
                 "source": KRAKEN_ASSET_PAIRS_URL,
             }
-        elif args.command == "collect":
-            result = collect_forward_day(
-                root=args.root,
-                now=now,
-                cache_only=args.cache_only,
-                minimum_assets=args.minimum_assets,
-                maximum_assets=args.maximum_assets,
-            )
+        elif args.command in {"collect", "collect-scheduled"}:
+            try:
+                result = collect_forward_day(
+                    root=args.root,
+                    now=now,
+                    cache_only=args.cache_only,
+                    minimum_assets=args.minimum_assets,
+                    maximum_assets=args.maximum_assets,
+                )
+            except CollectorError as exc:
+                bootstrap_reasons = {
+                    "bootstrap incomplete: no universe snapshot predates target week",
+                    "bootstrap incomplete: no Kraken universe predates target week",
+                }
+                if args.command != "collect-scheduled" or str(exc) not in bootstrap_reasons:
+                    raise
+                result = {
+                    "healthy": True,
+                    "mode": "bootstrap-pending",
+                    "reason": str(exc),
+                    "snapshots_captured": True,
+                }
         else:
             result = healthcheck_forward(
                 root=args.root,

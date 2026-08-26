@@ -303,6 +303,39 @@ def test_cli_forbids_backdated_network_capture(
     assert "historical network capture is forbidden" in capsys.readouterr().err
 
 
+def test_scheduled_collect_treats_only_causal_bootstrap_as_healthy(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    root = tmp_path / "journal"
+    monkeypatch.setattr(
+        "scripts.collect_world_order_flow_forward.default_http_fetcher",
+        _fetcher([]),
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "collect_world_order_flow_forward.py",
+            "collect-scheduled",
+            "--root",
+            str(root),
+            "--minimum-assets",
+            "2",
+            "--maximum-assets",
+            "3",
+        ],
+    )
+    assert main() == 0
+    output = json.loads(capsys.readouterr().out)
+    assert output["healthy"] is True
+    assert output["mode"] == "bootstrap-pending"
+    assert output["snapshots_captured"] is True
+    assert len(list((root / "snapshot_days").glob("*.json"))) == 1
+    assert len(list((root / "kraken_universe_days").glob("*.json"))) == 1
+    assert not (root / "days").exists()
+
+
 def test_snapshot_kraken_subcommand_writes_public_provenance(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

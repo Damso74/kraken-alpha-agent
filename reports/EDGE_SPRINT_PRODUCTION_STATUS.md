@@ -17,13 +17,19 @@ du déploiement. Le VPS partagé `vps-ovh` n'est pas retenu car il est déjà à
 d'occupation avec 21 conteneurs actifs. Le serveur Vultr historique n'est pas
 utilisé faute d'accès SSH dédié non-root vérifié.
 
-Deux tâches Windows limitées au compte utilisateur courant sont installables
-par `scripts/install_edge_forward_tasks.ps1` :
+Deux tâches Windows limitées au compte utilisateur courant ont été installées
+le 26 août 2026 par `scripts/install_edge_forward_tasks.ps1` :
 
 - `KrakenEdge-H-EXE-Technical`, une session publique de 3 580 secondes chaque
   heure, sans fonction d'ordre ;
 - `KrakenEdge-H-WOF-Forward`, une collecte causale quotidienne à 02:15 heure
   locale.
+
+Le premier lancement planifié H-WOF a terminé avec le code `0` en état
+`bootstrap-pending`, après vérification des snapshots. La première session
+longue H-EXE a démarré dans
+`technical/sessions/20260826T174144.230350Z` avec une connexion publique TLS
+établie vers Kraken.
 
 La désinstallation est locale et réversible via
 `scripts/uninstall_edge_forward_tasks.ps1`.

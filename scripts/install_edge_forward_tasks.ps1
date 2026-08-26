@@ -56,7 +56,7 @@ $exeSettings = New-ScheduledTaskSettingsSet `
 
 $wofAction = New-ScheduledTaskAction `
     -Execute $python `
-    -Argument 'scripts\collect_world_order_flow_forward.py collect' `
+    -Argument 'scripts\collect_world_order_flow_forward.py collect-scheduled' `
     -WorkingDirectory $repoRoot
 $wofTrigger = New-ScheduledTaskTrigger -Daily -At '02:15'
 $wofSettings = New-ScheduledTaskSettingsSet `
