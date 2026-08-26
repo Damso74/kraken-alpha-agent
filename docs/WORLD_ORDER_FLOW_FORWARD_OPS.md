@@ -59,7 +59,9 @@ Chaque exécution :
 3. choisit les deux snapshots antérieurs au lundi de la journée cible ;
 4. intersecte les univers et télécharge seulement les klines publiques 1d closes ;
 5. écrit `days/YYYY-MM-DD.json` atomiquement ;
-6. ajoute un enregistrement hashé à `manifest.jsonl`.
+6. y scelle les SHA-256 du pré-enregistrement, du collecteur, du harnais
+   d'analyse et de l'évaluateur, puis ajoute un enregistrement hashé à
+   `manifest.jsonl`.
 7. recherche la plus ancienne semaine source dont l'open Kraken de sortie à
    J+14 01:00 UTC est désormais clos ;
 8. agrège exactement ses sept jours et capture, pour chaque membre causal, les
@@ -108,6 +110,40 @@ hebdomadaire arrivé à maturité. Avant le premier jour causal, l'état
 semaine gouvernable ; il expire ensuite fail-closed. `digest` retourne un résumé
 stable adapté à une alerte ou une tâche planifiée. Code retour : `0` si sain,
 `2` si incomplet, en retard ou corrompu.
+
+## Évaluation et preuves de gate
+
+Le moniteur de quinze minutes exécute l'évaluateur cache-only sans réseau :
+
+```powershell
+.\.venv\Scripts\python.exe `
+  scripts\evaluate_world_order_flow_forward.py baseline
+
+.\.venv\Scripts\python.exe `
+  scripts\evaluate_world_order_flow_forward.py verify-cache
+```
+
+Le premier processus scelle les métriques associées au hash du journal et au
+jeu exact de sources. Un processus ultérieur doit les reproduire byte-for-byte.
+Un changement du pré-enregistrement ou d'un des trois fichiers de harnais
+invalide la chaîne ; un ancien baseline ne peut pas être réutilisé.
+
+Les statuts sont strictement séparés :
+
+- `collecting` avant 30 semaines forward et 100 semaines éligibles ;
+- `no_go` si l'horizon est atteint mais une gate scientifique échoue ;
+- `evidence_pending` si la science passe mais la reproduction ou le reçu CI
+  exact manque ;
+- `candidate_for_forward_observation` seulement si toutes les gates passent,
+  avec décision `REVIEW_REQUIRED` et sans autorisation paper/live.
+
+Le reçu CI lié aux mêmes hashes est généré uniquement après exécution réelle du
+périmètre Ruff et de toute la suite sous environnement inoffensif :
+
+```powershell
+.\.venv\Scripts\python.exe `
+  scripts\evaluate_world_order_flow_forward.py attest-ci
+```
 
 Le CLI interdit `--as-of-date` avec une capture réseau : cette option est
 réservée aux vérifications cache-only afin d'empêcher un faux backfill causal.

@@ -17,6 +17,7 @@ STRESS_COST_BPS = 150.0
 MIN_UNIVERSE = 30
 MIN_ELIGIBLE_WEEKS = 100
 MIN_EXPOSED_WEEKS = 30
+MIN_FORWARD_WEEKS = 30
 FAMILYWISE_P_THRESHOLD = 0.0166667
 BOOTSTRAP_REPLICATIONS = 10_000
 RANDOM_SEED = 20_260_826
@@ -65,12 +66,7 @@ def _finite_positive(value: Any) -> float | None:
 
 def _is_monday_utc(timestamp: int) -> bool:
     moment = datetime.fromtimestamp(timestamp, tz=UTC)
-    return (
-        moment.weekday() == 0
-        and moment.hour == 0
-        and moment.minute == 0
-        and moment.second == 0
-    )
+    return moment.weekday() == 0 and moment.hour == 0 and moment.minute == 0 and moment.second == 0
 
 
 def build_asset_weeks(
@@ -251,9 +247,7 @@ def _sign_permutation_p_value(
     rng = random.Random(RANDOM_SEED)
     exceedances = 0
     for _ in range(replications):
-        permuted = statistics.fmean(
-            value if rng.random() >= 0.5 else -value for value in exposed
-        )
+        permuted = statistics.fmean(value if rng.random() >= 0.5 else -value for value in exposed)
         if permuted >= observed:
             exceedances += 1
     return (exceedances + 1) / (replications + 1)
@@ -284,9 +278,7 @@ def analyze_portfolios(
         if positive_gains > 0
         else 1.0
     )
-    leave_one_quarter_out = {
-        quarter: sum(primary) - value for quarter, value in quarterly.items()
-    }
+    leave_one_quarter_out = {quarter: sum(primary) - value for quarter, value in quarterly.items()}
     gates = {
         "eligible_weeks_at_least_100": len(ordered) >= MIN_ELIGIBLE_WEEKS,
         "exposed_weeks_at_least_30": len(exposed) >= MIN_EXPOSED_WEEKS,
@@ -314,4 +306,110 @@ def analyze_portfolios(
         "leave_one_quarter_out": leave_one_quarter_out,
         "gates": gates,
         "portfolio_weeks": [asdict(row) for row in ordered],
+    }
+
+
+def evaluate_forward_outcomes(
+    outcomes: Sequence[Mapping[str, Any]],
+    *,
+    causal_journal_verified: bool,
+    cache_reproduction_verified: bool = False,
+    ci_verified: bool = False,
+) -> dict[str, Any]:
+    """Evaluate immutable H-WOF-002 outcomes without reading the network.
+
+    Collection horizon, scientific gates and operational evidence are kept
+    separate so an economically attractive sample can never silently bypass
+    the frozen 30/100-week requirements, the byte-for-byte cache replay or CI.
+    """
+
+    flow_rows: list[Mapping[str, Any]] = []
+    price_rows: list[Mapping[str, Any]] = []
+    universe_by_week: dict[int, list[str]] = {}
+    complete_weeks = 0
+    excluded_weeks = 0
+    seen_weeks: set[int] = set()
+    malformed_outcomes = 0
+
+    for outcome in outcomes:
+        status = outcome.get("status")
+        rows = outcome.get("rows")
+        if not isinstance(rows, list):
+            malformed_outcomes += 1
+            continue
+        if status == "excluded_incomplete_source_week":
+            excluded_weeks += 1
+            if rows:
+                malformed_outcomes += 1
+            continue
+        if status != "complete" or not rows:
+            malformed_outcomes += 1
+            continue
+        raw_week = rows[0].get("week_start") if isinstance(rows[0], Mapping) else None
+        if (
+            isinstance(raw_week, bool)
+            or not isinstance(raw_week, int)
+            or raw_week in seen_weeks
+            or any(
+                not isinstance(row, Mapping) or row.get("week_start") != raw_week for row in rows
+            )
+        ):
+            malformed_outcomes += 1
+            continue
+        seen_weeks.add(raw_week)
+        complete_weeks += 1
+        universe_by_week[raw_week] = [str(row.get("base_asset", "")) for row in rows]
+        flow_rows.extend(rows)
+        price_rows.extend(rows)
+
+    asset_weeks, join_quality = build_asset_weeks(flow_rows, price_rows, universe_by_week)
+    portfolios = build_portfolio_weeks(asset_weeks)
+    analysis = analyze_portfolios(portfolios)
+    complete_inputs = (
+        malformed_outcomes == 0
+        and join_quality["invalid_flow_rows"] == 0
+        and join_quality["invalid_price_rows"] == 0
+        and join_quality["missing_asset_weeks"] == 0
+        and join_quality["incomplete_weeks_excluded"] == 0
+        and len(portfolios) == complete_weeks
+    )
+    gates = {
+        "causal_journal_verified": bool(causal_journal_verified),
+        "complete_week_inputs": complete_inputs,
+        "independent_forward_weeks_at_least_30": complete_weeks >= MIN_FORWARD_WEEKS,
+        **analysis["gates"],
+        "cache_only_reproduction_exact": bool(cache_reproduction_verified),
+        "ci_scope_verified": bool(ci_verified),
+    }
+    scientific_gates = {
+        key: value
+        for key, value in gates.items()
+        if key not in {"cache_only_reproduction_exact", "ci_scope_verified"}
+    }
+    horizon_ready = (
+        complete_weeks >= MIN_FORWARD_WEEKS and analysis["eligible_weeks"] >= MIN_ELIGIBLE_WEEKS
+    )
+    if not horizon_ready:
+        status = "collecting"
+    elif not all(scientific_gates.values()):
+        status = "no_go"
+    elif not all(gates.values()):
+        status = "evidence_pending"
+    else:
+        status = "candidate_for_forward_observation"
+    return {
+        "schema_version": "hwof002-forward-evaluation-v1",
+        "status": status,
+        "decision": "REVIEW_REQUIRED" if status == "candidate_for_forward_observation" else "NO-GO",
+        "complete_source_weeks": complete_weeks,
+        "excluded_source_weeks": excluded_weeks,
+        "malformed_outcomes": malformed_outcomes,
+        "join_quality": join_quality,
+        "analysis": analysis,
+        "gates": gates,
+        "safety": {
+            "authorizes_orders": False,
+            "authorizes_paper_or_live": False,
+            "human_review_required": True,
+        },
     }

@@ -79,6 +79,23 @@ et non plus uniquement la fraîcheur des snapshots. Au contrôle du 26 août à
 attendu. La première issue possible pour la semaine source du 31 août sera
 finalisée au plus tôt lors du run du 15 septembre 2026.
 
+La chaîne de décision WOF est également matérialisée avant le premier jour
+causal. Chaque jour et outcome scelle les hashes du pré-enregistrement, du
+collecteur, du harnais d'analyse et de l'évaluateur. Le moniteur crée un
+baseline cache-only pour chaque couple journal/sources, puis exige sa
+reproduction exacte dans un processus ultérieur. Un reçu CI séparé doit être
+lié aux mêmes hashes. Le contrôle réel à 20:11 UTC a reproduit exactement le
+journal vide de bootstrap, mais retourne correctement `collecting`, `NO-GO`,
+zéro semaine éligible et aucune autorisation paper/live.
+
+Le reçu CI lié au jeu de sources
+`af6af9a50bc3de919abc701172b79752dfe3f39493ed665953dd6636d05e5419`
+a ensuite été émis après Ruff `src tests scripts`, collecte de 1 165 tests et
+passage intégral de ces 1 165 tests sous transport mock et triple verrou live à
+`false`. Le moniteur réel lit `ci_verified=true` et
+`reproduction_verified=true`, sans que ces preuves puissent contourner
+l'horizon : le verdict reste `collecting`, `NO-GO` avec zéro semaine.
+
 La désinstallation est locale et réversible via
 `scripts/uninstall_edge_forward_tasks.ps1`.
 

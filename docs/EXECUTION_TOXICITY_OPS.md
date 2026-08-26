@@ -65,7 +65,9 @@ Il installe également la collecte quotidienne H-WOF-002 à 02:15 heure locale.
 Une troisième tâche `KrakenEdge-Forward-Health` vérifie toutes les quinze
 minutes les actions enregistrées, la fraîcheur du raw H-EXE et des snapshots
 WOF, l'intégrité complète des manifests quotidiens et des outcomes WOF arrivés
-à maturité, ainsi qu'une réserve disque minimale de 250 Gio. Elle produit des digests
+à maturité. Deux occurrences successives établissent puis reproduisent aussi le
+verdict WOF cache-only lié aux hashes gelés. La tâche contrôle enfin une réserve
+disque minimale de 250 Gio. Elle produit des digests
 JSON immuables sous `data/collector_cache/edge_forward_health/` et retourne un
 code non nul fail-closed en cas d'anomalie. L'exécution planifiée utilise le
 contrôleur Python `check_edge_forward_production.py` pour vérifier rapidement les

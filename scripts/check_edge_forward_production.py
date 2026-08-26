@@ -22,6 +22,7 @@ from scripts.collect_world_order_flow_forward import (  # noqa: E402
 from scripts.collect_world_order_flow_forward import (  # noqa: E402
     healthcheck_forward,
 )
+from src.data.collectors._common import CollectorError  # noqa: E402
 
 
 def _latest(root: Path, pattern: str) -> Path | None:
@@ -156,6 +157,43 @@ def write_health(payload: dict[str, Any], output_root: Path) -> Path:
     return digest_path
 
 
+def attach_wof_evaluation(payload: dict[str, Any], *, repo_root: Path) -> None:
+    """Run one cache-only evidence step and attach its safe summary.
+
+    A newly observed journal gets a baseline.  A later health process sees the
+    baseline and performs the distinct replay required by gate 10.
+    """
+
+    from scripts.collect_world_order_flow_forward import _current_source_hashes
+    from scripts.evaluate_world_order_flow_forward import (
+        _source_set_sha256,
+        evaluate_and_write,
+    )
+
+    root = Path(repo_root).resolve() / DEFAULT_WOF_ROOT
+    journal_sha = str(payload["h_wof_journal"]["journal_sha256"])
+    source_set = _source_set_sha256(_current_source_hashes())
+    baseline = root / "evaluations" / "baselines" / f"baseline-{journal_sha}-{source_set}.json"
+    mode = "verify-cache" if baseline.is_file() else "baseline"
+    evaluation, digest = evaluate_and_write(
+        root=root,
+        mode=mode,
+        today=datetime.fromisoformat(str(payload["generated_at"])).date(),
+    )
+    result = evaluation["evaluation"]
+    payload["h_wof_evaluation"] = {
+        "mode": mode,
+        "status": result["status"],
+        "decision": result["decision"],
+        "complete_source_weeks": result["complete_source_weeks"],
+        "eligible_weeks": result["analysis"]["eligible_weeks"],
+        "reproduction_verified": evaluation["reproduction"]["verified"],
+        "ci_verified": evaluation["ci"]["verified"],
+        "digest": str(digest.resolve()),
+        "authorizes_paper_or_live": False,
+    }
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo-root", type=Path, default=REPO_ROOT)
@@ -166,6 +204,11 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     payload = build_health(repo_root=args.repo_root)
+    try:
+        attach_wof_evaluation(payload, repo_root=args.repo_root)
+    except (OSError, RuntimeError, ValueError, CollectorError) as exc:
+        payload["reason_codes"].append(f"WOF_EVALUATION:{exc}")
+        payload["healthy"] = False
     digest = write_health(payload, args.output_root)
     print(json.dumps(payload, indent=2, sort_keys=True))
     print(f"digest={digest.resolve()}")

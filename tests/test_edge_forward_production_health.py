@@ -5,7 +5,11 @@ import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from scripts.check_edge_forward_production import build_health, write_health
+from scripts.check_edge_forward_production import (
+    attach_wof_evaluation,
+    build_health,
+    write_health,
+)
 from scripts.collect_world_order_flow_forward import (
     _capture_kraken_snapshot,
     _capture_snapshot,
@@ -117,3 +121,26 @@ def test_health_fails_closed_on_stale_or_unsafe_progress(tmp_path: Path) -> None
     assert "H_EXE_PROGRESS_STALE_GT_2_MIN" in health["reason_codes"]
     assert "H_EXE_PROGRESS_SAFETY_INVARIANT_FAILED" in health["reason_codes"]
     assert "DISK_FREE_BELOW_250_GIB" in health["reason_codes"]
+
+
+def test_health_uses_two_runs_for_wof_cache_reproduction(tmp_path: Path) -> None:
+    now = datetime(2026, 8, 26, 20, tzinfo=UTC)
+    _seed_runtime(tmp_path, now)
+    first = build_health(
+        repo_root=tmp_path,
+        now=now,
+        disk_free_bytes=500 * 1024**3,
+    )
+    attach_wof_evaluation(first, repo_root=tmp_path)
+    assert first["h_wof_evaluation"]["mode"] == "baseline"
+    assert first["h_wof_evaluation"]["reproduction_verified"] is False
+    second = build_health(
+        repo_root=tmp_path,
+        now=now + timedelta(minutes=15),
+        disk_free_bytes=500 * 1024**3,
+    )
+    attach_wof_evaluation(second, repo_root=tmp_path)
+    assert second["h_wof_evaluation"]["mode"] == "verify-cache"
+    assert second["h_wof_evaluation"]["reproduction_verified"] is True
+    assert second["h_wof_evaluation"]["status"] == "collecting"
+    assert second["h_wof_evaluation"]["authorizes_paper_or_live"] is False

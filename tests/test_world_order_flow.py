@@ -9,6 +9,7 @@ from src.research.world_order_flow import (
     analyze_portfolios,
     build_asset_weeks,
     build_portfolio_weeks,
+    evaluate_forward_outcomes,
 )
 
 MONDAY = 1_704_067_200
@@ -109,3 +110,57 @@ def test_all_analysis_gates_are_cumulative() -> None:
     assert result["eligible_weeks"] == 104
     assert result["status"] == "candidate_for_forward_observation"
     assert all(result["gates"].values())
+
+
+def _outcomes(weeks: int) -> list[dict]:
+    flows, prices, _ = _inputs(weeks=weeks)
+    price_by_key = {(row["week_start"], row["base_asset"]): row for row in prices}
+    by_week: dict[int, list[dict]] = {}
+    for flow in flows:
+        key = (flow["week_start"], flow["base_asset"])
+        by_week.setdefault(flow["week_start"], []).append({**flow, **price_by_key[key]})
+    return [{"status": "complete", "rows": rows} for _, rows in sorted(by_week.items())]
+
+
+def test_forward_evaluation_stays_collecting_before_frozen_horizon() -> None:
+    result = evaluate_forward_outcomes(
+        _outcomes(29),
+        causal_journal_verified=True,
+        cache_reproduction_verified=True,
+        ci_verified=True,
+    )
+    assert result["status"] == "collecting"
+    assert result["decision"] == "NO-GO"
+    assert result["gates"]["independent_forward_weeks_at_least_30"] is False
+    assert result["safety"]["authorizes_paper_or_live"] is False
+
+
+def test_forward_evaluation_requires_reproduction_and_ci_after_scientific_pass() -> None:
+    with (
+        patch(
+            "src.research.world_order_flow._block_bootstrap_lower_bound",
+            return_value=0.001,
+        ),
+        patch(
+            "src.research.world_order_flow._sign_permutation_p_value",
+            return_value=0.001,
+        ),
+    ):
+        pending = evaluate_forward_outcomes(
+            _outcomes(104),
+            causal_journal_verified=True,
+        )
+        passed = evaluate_forward_outcomes(
+            _outcomes(104),
+            causal_journal_verified=True,
+            cache_reproduction_verified=True,
+            ci_verified=True,
+        )
+    assert pending["status"] == "evidence_pending"
+    assert pending["decision"] == "NO-GO"
+    assert pending["gates"]["cache_only_reproduction_exact"] is False
+    assert pending["gates"]["ci_scope_verified"] is False
+    assert passed["status"] == "candidate_for_forward_observation"
+    assert passed["decision"] == "REVIEW_REQUIRED"
+    assert all(passed["gates"].values())
+    assert passed["safety"]["authorizes_orders"] is False

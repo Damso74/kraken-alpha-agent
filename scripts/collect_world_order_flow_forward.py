@@ -77,6 +77,23 @@ NON_CRYPTO_BASE_ASSETS = {
     "PYUSD",
 }
 KRAKEN_BASE_ALIASES = {"XBT": "BTC", "XDG": "DOGE"}
+REPO_ROOT = Path(__file__).resolve().parents[1]
+FROZEN_SOURCE_PATHS = {
+    "preregistration_sha256": REPO_ROOT / "docs/WORLD_ORDER_FLOW_PREREGISTRATION.md",
+    "analysis_sha256": REPO_ROOT / "src/research/world_order_flow.py",
+    "collector_sha256": Path(__file__).resolve(),
+    "evaluator_sha256": REPO_ROOT / "scripts/evaluate_world_order_flow_forward.py",
+}
+
+
+def _current_source_hashes() -> dict[str, str]:
+    hashes: dict[str, str] = {}
+    for label, path in FROZEN_SOURCE_PATHS.items():
+        digest = sha256_file(path)
+        if digest is None:
+            raise CollectorError(f"could not hash frozen H-WOF source: {path}")
+        hashes[label] = digest
+    return hashes
 
 
 def _atomic_write_json(path: Path, payload: Mapping[str, Any]) -> None:
@@ -436,6 +453,13 @@ def _verify_day_file(path: Path, *, expected_day: date) -> tuple[dict[str, Any],
     rows = raw.get("rows")
     if not isinstance(rows, list) or raw.get("row_count") != len(rows):
         raise CollectorError(f"invalid forward day rows: {path}")
+    source_hashes = raw.get("source_hashes")
+    if (
+        not isinstance(source_hashes, dict)
+        or set(source_hashes) != set(FROZEN_SOURCE_PATHS)
+        or any(not isinstance(value, str) or len(value) != 64 for value in source_hashes.values())
+    ):
+        raise CollectorError(f"invalid frozen source hashes in forward day: {path}")
     prohibited = {"return", "returns", "exit_price", "outcome", "pnl", "position"}
     if prohibited & set(raw):
         raise CollectorError(f"forward day contains prohibited outcome fields: {path}")
@@ -508,6 +532,13 @@ def _verify_week_outcome_file(
         raise CollectorError(f"invalid forward week outcome status: {path}")
     if not isinstance(rows, list) or raw.get("row_count") != len(rows):
         raise CollectorError(f"invalid forward week outcome rows: {path}")
+    source_hashes = raw.get("source_hashes")
+    if (
+        not isinstance(source_hashes, dict)
+        or set(source_hashes) != set(FROZEN_SOURCE_PATHS)
+        or any(not isinstance(value, str) or len(value) != 64 for value in source_hashes.values())
+    ):
+        raise CollectorError(f"invalid frozen source hashes in week outcome: {path}")
     week_timestamp = _unix_day_start(expected_week_start)
     entry_timestamp = week_timestamp + WEEK_SECONDS + ENTRY_DELAY_SECONDS
     exit_timestamp = entry_timestamp + WEEK_SECONDS
@@ -603,6 +634,7 @@ def collect_mature_week_outcome(
     if not pending:
         return {"mode": "no-mature-week"}
     source_week = pending[0]
+    outcome_source_hashes = _current_source_hashes()
     existing_path = _week_outcome_path(root, source_week)
     if existing_path.is_file():
         verified, digest = _verify_week_outcome_file(existing_path, expected_week_start=source_week)
@@ -613,6 +645,7 @@ def collect_mature_week_outcome(
             "sha256": digest,
             "status": verified["status"],
             "row_count": verified["row_count"],
+            "source_hashes": verified["source_hashes"],
         }
         _append_typed_manifest(
             _week_outcome_manifest_path(root),
@@ -650,16 +683,21 @@ def collect_mature_week_outcome(
         expected_week = source_week.isoformat()
         binance_hashes = {str(day.get("binance_snapshot_sha256")) for day in days}
         kraken_hashes = {str(day.get("kraken_universe_sha256")) for day in days}
+        source_hash_sets = {json.dumps(day.get("source_hashes"), sort_keys=True) for day in days}
         asset_sets = [{str(row["base_asset"]) for row in day.get("rows", [])} for day in days]
         if (
             any(day.get("causal_week_start") != expected_week for day in days)
             or len(binance_hashes) != 1
             or len(kraken_hashes) != 1
+            or len(source_hash_sets) != 1
             or any(asset_set != asset_sets[0] for asset_set in asset_sets[1:])
         ):
             status = "excluded_incomplete_source_week"
             reason_codes.append("INCONSISTENT_CAUSAL_WEEK_SOURCE")
         else:
+            outcome_source_hashes = dict(days[0]["source_hashes"])
+            if outcome_source_hashes != _current_source_hashes():
+                raise CollectorError("frozen H-WOF source hashes changed before finalization")
             kraken_digest = next(iter(kraken_hashes))
             kraken_records = _load_typed_manifest(
                 _kraken_universe_manifest_path(root),
@@ -730,6 +768,7 @@ def collect_mature_week_outcome(
         "source_params": {"interval": 60},
         "missing_days": missing_days,
         "daily_source_hashes": daily_hashes,
+        "source_hashes": outcome_source_hashes,
         "row_count": len(rows),
         "rows": rows,
         "safety": {
@@ -748,6 +787,7 @@ def collect_mature_week_outcome(
         "sha256": digest,
         "status": verified["status"],
         "row_count": verified["row_count"],
+        "source_hashes": verified["source_hashes"],
     }
     _append_typed_manifest(
         _week_outcome_manifest_path(root),
@@ -815,6 +855,7 @@ def collect_forward_day(
             "row_count": raw["row_count"],
             "binance_snapshot_sha256": raw["binance_snapshot_sha256"],
             "kraken_universe_sha256": raw["kraken_universe_sha256"],
+            "source_hashes": raw["source_hashes"],
         }
         if record is None:
             _append_manifest(_manifest_path(root), expected_record)
@@ -874,6 +915,7 @@ def collect_forward_day(
         "binance_snapshot_sha256": snapshot_digest,
         "kraken_universe_observed_at": kraken_snapshot["observed_at"],
         "kraken_universe_sha256": kraken_universe_digest,
+        "source_hashes": _current_source_hashes(),
         "row_count": len(rows),
         "rows": rows,
     }
@@ -889,6 +931,7 @@ def collect_forward_day(
         "row_count": len(rows),
         "binance_snapshot_sha256": snapshot_digest,
         "kraken_universe_sha256": kraken_universe_digest,
+        "source_hashes": payload["source_hashes"],
     }
     _append_manifest(_manifest_path(root), record)
     return {
@@ -907,6 +950,7 @@ def healthcheck_forward(*, root: Path, today: date, maximum_lag_days: int = 1) -
     errors: list[str] = []
     records: list[dict[str, Any]] = []
     snapshots: list[UniverseSnapshot] = []
+    current_source_hashes = _current_source_hashes()
     try:
         records = _load_manifest(_manifest_path(root))
         snapshots = load_universe_snapshots(_snapshot_log(root))
@@ -962,11 +1006,14 @@ def healthcheck_forward(*, root: Path, today: date, maximum_lag_days: int = 1) -
                 or raw["row_count"] != record.get("row_count")
                 or raw["binance_snapshot_sha256"] != record.get("binance_snapshot_sha256")
                 or raw["kraken_universe_sha256"] != record.get("kraken_universe_sha256")
+                or raw["source_hashes"] != record.get("source_hashes")
+                or raw["source_hashes"] != current_source_hashes
             ):
                 raise CollectorError("manifest digest or row count mismatch")
             verified_records.append(
                 f"{record['day']}:{digest}:{record['binance_snapshot_sha256']}:"
-                f"{record['kraken_universe_sha256']}"
+                f"{record['kraken_universe_sha256']}:"
+                f"{json.dumps(record['source_hashes'], sort_keys=True)}"
             )
         except (CollectorError, KeyError, ValueError) as exc:
             errors.append(f"manifest_record_invalid:{record.get('day')}:{exc}")
@@ -1006,10 +1053,13 @@ def healthcheck_forward(*, root: Path, today: date, maximum_lag_days: int = 1) -
                 outcome_digest != record.get("sha256")
                 or payload["status"] != record.get("status")
                 or payload["row_count"] != record.get("row_count")
+                or payload["source_hashes"] != record.get("source_hashes")
+                or payload["source_hashes"] != current_source_hashes
             ):
                 raise CollectorError("week outcome manifest mismatch")
             verified_outcomes.append(
                 f"{week.isoformat()}:{outcome_digest}:{payload['status']}:{payload['row_count']}"
+                f":{json.dumps(payload['source_hashes'], sort_keys=True)}"
             )
         completed_weeks = {date.fromisoformat(str(record["day"])) for record in outcome_records}
         overdue = [
